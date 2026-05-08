@@ -1,0 +1,22 @@
+name: Fetch Market Data
+on:
+  schedule:
+    - cron: '3,43 * * * *'   # :03 and :43 past each hour (avoids :00/:30)
+  workflow_dispatch: {}        # Manual trigger
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/fetch.js
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/hourly/
+          git diff --cached --quiet || git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z"
+          git push

@@ -1,0 +1,14 @@
+{
+  "name": "mwi-market-observatory",
+  "version": "1.0.0",
+  "description": "Automated MWI market price data collection and analytics via GitHub Actions",
+  "main": "scripts/fetch.js",
+  "scripts": {
+    "fetch": "node scripts/fetch.js",
+    "aggregate": "node scripts/aggregate.js",
+    "prune": "node scripts/prune.js"
+  },
+  "keywords": ["mwi", "milky-way-idle", "market", "data"],
+  "author": "",
+  "license": "MIT"
+}

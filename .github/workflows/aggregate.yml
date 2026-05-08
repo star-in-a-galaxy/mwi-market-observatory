@@ -1,0 +1,25 @@
+name: Daily Aggregate
+on:
+  schedule:
+    - cron: '17 0 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  aggregate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: node scripts/aggregate.js
+      - run: node scripts/prune.js
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "aggregate: $(date -u +%Y-%m-%d)"
+          git push
