@@ -25,12 +25,34 @@ function contentType(filePath) {
   }
 }
 
+function cacheControl(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  switch (ext) {
+    case '.svg':
+    case '.png':
+    case '.jpg':
+    case '.jpeg':
+    case '.ico':
+      return 'public, max-age=31536000, immutable';
+    case '.css':
+    case '.js':
+      return 'public, max-age=86400';
+    case '.json':
+    case '.html':
+    default:
+      return 'no-cache';
+  }
+}
+
 function tryServeFile(filePath, response) {
   if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
     return false;
   }
 
-  response.writeHead(200, { 'Content-Type': contentType(filePath) });
+  response.writeHead(200, {
+    'Content-Type': contentType(filePath),
+    'Cache-Control': cacheControl(filePath),
+  });
   response.end(fs.readFileSync(filePath));
   return true;
 }
@@ -57,12 +79,18 @@ const server = http.createServer((request, response) => {
 
   const fallback = path.join(siteDir, '404.html');
   if (fs.existsSync(fallback)) {
-    response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    response.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-cache',
+    });
     response.end(fs.readFileSync(fallback));
     return;
   }
 
-  response.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+  response.writeHead(404, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'no-cache',
+  });
   response.end('Not found');
 });
 

@@ -327,13 +327,14 @@ function analyze() {
 
   const iconFiles = loadItemIconFiles();
 
+  // Slim index: only slug and name for homepage search, no itemId or levels
   writeJson(path.join(publicDir, 'index.json'), {
     generatedAt,
     source: {
       dailyRange: earliestDaily && latestDaily ? { start: earliestDaily, end: latestDaily } : null,
       hourlyRange: earliestHourly && latestHourly ? { start: earliestHourly, end: latestHourly } : null,
     },
-    items: itemIndex,
+    items: itemIndex.map((item) => ({ slug: item.slug, name: item.name })),
   });
 
   writeJson(path.join(publicDir, 'item-icons.json'), {
@@ -347,7 +348,8 @@ function analyze() {
       slug: bundle.slug,
       itemId: bundle.itemId,
       name: bundle.name,
-      levels: toSerializableBundle(bundle).levels,
+      levels: Array.from(bundle.levels.keys()).sort((left, right) => Number(left) - Number(right)),
+      data: toSerializableBundle(bundle).levels,
     });
   }
 
