@@ -608,7 +608,7 @@ async function renderHome(root) {
         <div id="item-list" class="item-grid"></div>
       </section>
     `,
-    'Browse item pages with direct links that work on GitHub Pages.'
+    'Browse the market history of any item in the game'
   );
 
   const search = document.getElementById('item-search');

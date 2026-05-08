@@ -3,7 +3,7 @@ name: Build And Deploy Pages
 on:
   push:
     branches:
-      - main
+      - web
     paths:
       - site/**
       - data/public/**
@@ -64,7 +64,7 @@ jobs:
           path: _site
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/web'
     needs: build
     runs-on: ubuntu-latest
     permissions:
