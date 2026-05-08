@@ -301,17 +301,6 @@ function analyze() {
       dailyRange: earliestDaily && latestDaily ? { start: earliestDaily, end: latestDaily } : null,
       hourlyRange: earliestHourly && latestHourly ? { start: earliestHourly, end: latestHourly } : null,
     },
-    iconFiles,
-    items: itemIndex,
-  });
-
-  writeJson(path.join(publicDir, 'catalog.json'), {
-    generatedAt,
-    source: {
-      dailyRange: earliestDaily && latestDaily ? { start: earliestDaily, end: latestDaily } : null,
-      hourlyRange: earliestHourly && latestHourly ? { start: earliestHourly, end: latestHourly } : null,
-    },
-    iconFiles,
     items: itemIndex,
   });
 

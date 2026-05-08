@@ -419,13 +419,21 @@ async function loadCatalog() {
   try {
     const catalog = await fetchJson(assetPath('data/public/index.json'));
     if (Array.isArray(catalog.items)) {
+      // Load icon mappings separately from item-icons.json
+      try {
+        const iconData = await fetchJson(assetPath('data/public/item-icons.json'));
+        catalog.iconFiles = iconData.iconFiles || {};
+      } catch (error) {
+        console.warn('Failed to load icon mappings:', error);
+        catalog.iconFiles = {};
+      }
       return catalog;
     }
   } catch (error) {
     // Fallback handled below.
   }
 
-  return { items: [] };
+  return { items: [], iconFiles: {} };
 }
 
 function sortItemsByRefineAndSuffix(items) {
