@@ -1,13 +1,15 @@
 # MWI Market Observatory
 
-Automated data collection and analytics for [Milky Way Idle](https://www.milkywayidle.com/) marketplace using GitHub Actions.
+Automated market data collectio for [Milky Way Idle](https://www.milkywayidle.com/) marketplace.
 
 ## Overview
 
 This repository automatically:
-- **Fetches** market price data every ~40 minutes via GitHub Actions
+- **Fetches** market price data every ~30 minutes through cron-job.org-triggered GitHub Actions
 - **Stores** hourly snapshots for 7 days (kept for comparison)
 - **Aggregates** hourly data into daily OHLCV (Open, High, Low, Close, Volume) files
+- **Builds** public site data and icon manifests into `data/public/`
+- **Deploys** the static site to GitHub Pages from `main`
 - **Prunes** old hourly data to keep the repository clean
 
 ## Data Source
@@ -17,32 +19,42 @@ Data is fetched from the public MWI marketplace API:
 https://www.milkywayidle.com/game_data/marketplace.json
 ```
 
-No authentication is required.
-
 ## Repository Structure
 
 ```
 mwi-market-observatory/
 ├── .github/
 │   └── workflows/
-│       ├── fetch.yml          # Runs every 40 min — fetch + commit
-│       └── aggregate.yml      # Runs daily — aggregate hourly → daily, prune old hourly
-├── scripts/
-│   ├── fetch.js               # Fetch API, dedupe, write hourly file
-│   ├── aggregate.js           # Combine hourly files into daily OHLCV
-│   └── prune.js               # Delete hourly files older than 7 days
+│       ├── aggregate.yml      # Daily aggregate/prune/analyze commit flow
+│       ├── fetch.yml          # Fetches marketplace snapshots
+│       └── pages.yml          # Builds and deploys site from main
 ├── data/
+│   ├── daily/                 # YYYY-MM-DD.json (kept forever)
 │   ├── hourly/                # YYYY-MM-DD/HH-MM.json (kept for 7 days)
-│   └── daily/                 # YYYY-MM-DD.json (kept forever)
+│   └── public/                # Generated site data consumed by the frontend
+├── scripts/
+│   ├── aggregate.js           # Combine hourly files into daily OHLCV
+│   ├── analyze.js             # Build public data bundles and icon manifests
+│   ├── fetch.js               # Fetch API, dedupe, write hourly file
+│   ├── prune.js               # Delete hourly files older than 7 days
+│   └── serve.js               # Local static server
+├── site/
+│   ├── 404.html
+│   ├── index.html
+│   └── assets/
+│       ├── app.js
+│       ├── item_categories/
+│       ├── item_icons/
+│       └── styles.css
 ├── package.json
 └── README.md
 ```
 
 ## Workflows
 
-### fetch.yml (Every 40 Minutes)
+### fetch.yml (Every 30 Minutes)
 
-Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
+Triggered externally every 30 minutes by cron-job.org.
 
 **Steps:**
 1. Fetch marketplace data from the API
@@ -50,7 +62,9 @@ Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
 3. Write hourly snapshot to `data/hourly/YYYY-MM-DD/HH-MM.json`
 4. Commit and push if data changed
 
-### aggregate.yml (Daily at 00:17 UTC)
+### aggregate.yml (Daily)
+
+Triggered externally once per day by cron-job.org.
 
 **Steps:**
 1. Read all hourly files from yesterday
@@ -58,6 +72,15 @@ Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
 3. Write daily summary to `data/daily/YYYY-MM-DD.json`
 4. Prune hourly directories older than 7 days
 5. Commit and push
+
+### pages.yml (Main branch Pages pipeline)
+
+Pushes to `main` build and deploy to GitHub Pages.
+Pull requests targeting `main` run build validation only.
+
+The site source is in `site/`. The UI is item-first: the home page is a searchable item browser and item pages live at `/items/<item_slug>`.
+During workflow execution, `data/hourly/`, `data/daily/`, and `data/public/` are copied into the deploy artifact, and `scripts/analyze.js` turns the hourly snapshots into the hourly series used by the charts.
+
 
 ## Data Format
 
@@ -116,30 +139,29 @@ Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
 
 ## Local Testing
 
-### Fetch Market Data
+The item chart always uses hourly data. The selected range controls the total span shown, with options for 1 Day, 7 Days, 15 Days, 30 Days, 60 Days, 90 Days, and 120 Days.
+
+Generate data for the site:
+```bash
+npm run aggregate
+npm run analyze
+```
+
+Serve the site locally:
+```bash
+npm run serve
+```
+
+Then open:
+- `http://localhost:4173/` for the item browser
+- `http://localhost:4173/items/cursed_bow` for an item detail page
+
+Optional refresh commands:
 ```bash
 npm run fetch
-```
-
-### Aggregate Daily Data
-```bash
-npm run aggregate                  # Aggregates yesterday
-npm run aggregate -- --date=2026-05-06  # Aggregates specific date
-```
-
-### Prune Old Hourly Data
-```bash
+npm run aggregate -- --date=2026-05-06
 npm run prune
 ```
-
-## Design Decisions
-
-- **Public Repository** → Unlimited GitHub Actions minutes; data is already public
-- **~40-minute interval** → 2 fetches per hour at off-minutes; ~48 runs/day
-- **Dedup by timestamp** → Skips writes if API data hasn't refreshed; keeps git history clean
-- **Compact daily keys** → Minimizes file size at scale
-- **No dependencies** → Uses Node 20's native `fetch` and `fs` modules
-- **Hourly filenames** → `HH-MM.json` supports multiple snapshots per hour
 
 ## License
 
