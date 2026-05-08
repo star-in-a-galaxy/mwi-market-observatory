@@ -56,6 +56,19 @@ function formatNumber(value) {
   return value.toLocaleString();
 }
 
+function formatCompactNumber(value) {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '-';
+  }
+
+  // Uses Intl.NumberFormat for clean 'k', 'm', 'b' abbreviations
+  return new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    compactDisplay: 'short',
+    maximumFractionDigits: 1,
+  }).format(value).toLowerCase();
+}
+
 function formatPercent(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '-';
@@ -71,6 +84,27 @@ function formatCurrency(value) {
   }
 
   return value.toLocaleString('en-US');
+}
+
+function formatDayLabel(dateStr) {
+  const date = new Date(`${dateStr}T00:00:00Z`);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    timeZone: 'UTC',
+  });
+}
+
+function formatHourLabel(isoString) {
+  const date = new Date(isoString);
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  });
 }
 
 function formatChange(value) {
@@ -104,12 +138,13 @@ function calcTaxedPrice(value, taxMultiplier) {
   return value * taxMultiplier;
 }
 
-function buildChart(points, width = 960, height = 360, fixedMinValue = null, fixedMaxValue = null, smoothLines = false, windowConfig = null, fullSeries = null) {
+function buildChart(points, width = 960, height = 360, fixedMinValue = null, fixedMaxValue = null, windowConfig = null, fullSeries = null) {
   const errorReturn = (msg) => ({
     html: `<div class="empty-state">${msg}</div>`,
     pointPositions: [],
-    padding: { top: 20, right: 20, bottom: 34, left: 96 },
-    innerWidth: 864,
+    pointData: [],
+    padding: { top: 20, right: 48, bottom: 34, left: 60 },
+    innerWidth: 852,
   });
 
   if (!points.length) {
@@ -121,57 +156,67 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     return errorReturn('No usable ask or bid values are available for this selection yet.');
   }
 
-  // Use fixed min/max if provided (for consistent scaling across time windows),
-  // otherwise compute from current points
   const maxValue = fixedMaxValue !== null ? fixedMaxValue : Math.max(...yValues);
   const minValue = fixedMinValue !== null ? fixedMinValue : Math.min(...yValues);
-  const maxLabelLength = formatNumber(Math.max(Math.abs(maxValue), Math.abs(minValue))).length;
-  const padding = { top: 20, right: 20, bottom: 34, left: Math.max(96, maxLabelLength * 10 + 18) };
-  const innerWidth = width - padding.left - padding.right;
-  const innerHeight = height - padding.top - padding.bottom;
 
-  const getYAxisTickStep = (value) => {
-    const safeValue = Math.max(1, Math.abs(value));
-    const magnitude = Math.floor(Math.log10(safeValue));
-    return Math.pow(10, Math.max(0, magnitude - 1));
+  // ----------------------------------------------------------------------
+  // Market Step Logic (Game-aware price increments)
+  // ----------------------------------------------------------------------
+  const getMarketStep = (price) => {
+    const p = Math.abs(price);
+    if (p < 50) return 1;
+    if (p < 100) return 2;
+    const mag = Math.floor(Math.log10(p));
+    const base = p / Math.pow(10, mag);
+    if (base < 3) return 5 * Math.pow(10, mag - 2);
+    if (base < 5) return 10 * Math.pow(10, mag - 2);
+    return 20 * Math.pow(10, mag - 2);
   };
 
-  // Snap the visible chart bounds to whole tick steps and keep one extra
-  // tick step of leeway above and below the actual range.
-  const tickStep = getYAxisTickStep(Math.max(Math.abs(maxValue), Math.abs(minValue)));
-  const paddedMin = Math.floor(minValue / tickStep) * tickStep - tickStep;
+  const tickStep = (() => {
+    const minStep = getMarketStep(maxValue);
+    const chartSpan = maxValue - minValue;
+    const roughStep = chartSpan / 5;
+    const multiplier = Math.max(1, Math.round(roughStep / minStep));
+    return minStep * multiplier;
+  })();
+
+  const paddedMin = Math.floor(minValue / tickStep) * tickStep - (tickStep * 2);
   const paddedMax = Math.ceil(maxValue / tickStep) * tickStep + tickStep;
   const span = paddedMax - paddedMin;
 
-  // Calculate X-scale based on actual time if window config is provided
+  // Reduced padding to 60px to span chart wider
+  const padding = { top: 20, right: 48, bottom: 34, left: 60 }; 
+  const innerWidth = width - padding.left - padding.right;
+  const innerHeight = height - padding.top - padding.bottom;
+
+  const halfHourMs = 30 * 60 * 1000;
+  let latestTimestamp = null;
+  let windowStart = null;
   let scaleX;
+
   if (windowConfig && fullSeries && fullSeries.length > 0) {
-    // Use time-based scaling with right-bound alignment
-    const windowHours = windowConfig.hours;
-    const windowMs = windowHours * 60 * 60 * 1000; // Convert hours to milliseconds
-    
-    // Get latest timestamp from full series (right edge of chart)
+    const windowMs = windowConfig.hours * 60 * 60 * 1000; 
     const timestamps = fullSeries
       .map((p) => p.timestamp)
       .filter((ts) => typeof ts === 'number' && ts > 0);
     
     if (timestamps.length > 0) {
-      const latestTimestamp = Math.max(...timestamps);
-      const windowStart = latestTimestamp - windowMs; // Left edge is always window_start
+      latestTimestamp = Math.max(...timestamps);
+      windowStart = latestTimestamp - windowMs; 
       
-      // Scale each point by its position within the selected time window
       scaleX = (point, index) => {
         if (!point || typeof point.timestamp !== 'number') return padding.left;
-        const timeOffset = point.timestamp - windowStart;
-        const position = (timeOffset / windowMs) * innerWidth;
-        return padding.left + position;
+        const displayTimestamp = windowConfig.hours <= 24
+          ? Math.round(point.timestamp / halfHourMs) * halfHourMs
+          : point.timestamp;
+        const timeOffset = displayTimestamp - windowStart;
+        return padding.left + (timeOffset / windowMs) * innerWidth; 
       };
     } else {
-      // Fallback to index-based if no timestamps
       scaleX = (_, index) => padding.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
     }
   } else {
-    // Original index-based scaling
     scaleX = (_, index) => padding.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
   }
 
@@ -185,124 +230,18 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   }));
 
   const toPath = (accessor) => {
-    if (smoothLines && points.length > 1) {
-      // Build smooth curve using cardinal spline with optimal tension for flowing curves
-      let pathStr = '';
-      const validIndices = [];
-      
-      // Find all valid (non-null) data points
-      for (let i = 0; i < points.length; i++) {
-        if (accessor(points[i]) != null) {
-          validIndices.push(i);
-        }
-      }
-      
-      if (validIndices.length === 0) return '';
-      if (validIndices.length === 1) {
-        const idx = validIndices[0];
-        const pos = pointPositions[idx];
-        const y = scaleY(accessor(points[idx]));
-        return `M ${pos.x.toFixed(1)} ${y.toFixed(1)}`;
-      }
-      
-      // Start from first valid point
-      let firstIdx = validIndices[0];
-      let firstPos = pointPositions[firstIdx];
-      pathStr += `M ${firstPos.x.toFixed(1)} ${scaleY(accessor(points[firstIdx])).toFixed(1)}`;
-      
-      // Create smooth segments - use higher tension for very smooth, flowing curves
-      for (let i = 1; i < validIndices.length; i++) {
-        const prevIdx = validIndices[i - 1];
-        const currIdx = validIndices[i];
-        const nextIdx = i + 1 < validIndices.length ? validIndices[i + 1] : currIdx;
-        const prevPrevIdx = i - 2 >= 0 ? validIndices[i - 2] : prevIdx;
-        
-        const xPrev = pointPositions[prevIdx].x;
-        const yPrev = scaleY(accessor(points[prevIdx]));
-        const xCurr = pointPositions[currIdx].x;
-        const yCurr = scaleY(accessor(points[currIdx]));
-        const xNext = pointPositions[nextIdx].x;
-        const yNext = scaleY(accessor(points[nextIdx]));
-        const xPrevPrev = pointPositions[prevPrevIdx].x;
-        const yPrevPrev = scaleY(accessor(points[prevPrevIdx]));
-        
-        // Catmull-Rom spline with low tension for gentle, smooth curves
-        const t = 0.15;
-        const cp1x = xPrev + (xNext - xPrevPrev) * t;
-        const cp1y = yPrev + (yNext - yPrevPrev) * t;
-        const cp2x = xCurr - (xNext - xPrev) * t;
-        const cp2y = yCurr - (yNext - yPrev) * t;
-        
-        pathStr += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${xCurr.toFixed(1)} ${yCurr.toFixed(1)}`;
-      }
-      return pathStr;
-    } else {
-      // Straight line (original logic)
-      return points
-        .map((point, index) => accessor(point) != null
-          ? `${index === 0 ? 'M' : 'L'} ${pointPositions[index].x.toFixed(1)} ${scaleY(accessor(point)).toFixed(1)}`
-          : '')
-        .join(' ');
-    }
+    return points.map((point, index) => accessor(point) != null ? `${index === 0 ? 'M' : 'L'} ${pointPositions[index].x.toFixed(1)} ${scaleY(accessor(point)).toFixed(1)}` : '').join(' ');
   };
 
   const toAreaPath = (accessor) => {
     const validIndices = [];
-    
-    for (let i = 0; i < points.length; i++) {
-      if (accessor(points[i]) != null) {
-        validIndices.push(i);
-      }
-    }
-    
+    for (let i = 0; i < points.length; i++) if (accessor(points[i]) != null) validIndices.push(i);
     if (validIndices.length === 0) return '';
-    
-    let pathStr = '';
-    let firstIdx = validIndices[0];
-    let firstPos = pointPositions[firstIdx];
-    pathStr += `M ${firstPos.x.toFixed(1)} ${scaleY(accessor(points[firstIdx])).toFixed(1)}`;
-    
-    if (smoothLines && points.length > 1) {
-      // Same smooth curve logic for area
-      for (let i = 1; i < validIndices.length; i++) {
-        const prevIdx = validIndices[i - 1];
-        const currIdx = validIndices[i];
-        const nextIdx = i + 1 < validIndices.length ? validIndices[i + 1] : currIdx;
-        const prevPrevIdx = i - 2 >= 0 ? validIndices[i - 2] : prevIdx;
-        
-        const xPrev = pointPositions[prevIdx].x;
-        const yPrev = scaleY(accessor(points[prevIdx]));
-        const xCurr = pointPositions[currIdx].x;
-        const yCurr = scaleY(accessor(points[currIdx]));
-        const xNext = pointPositions[nextIdx].x;
-        const yNext = scaleY(accessor(points[nextIdx]));
-        const xPrevPrev = pointPositions[prevPrevIdx].x;
-        const yPrevPrev = scaleY(accessor(points[prevPrevIdx]));
-        
-        const t = 0.15;
-        const cp1x = xPrev + (xNext - xPrevPrev) * t;
-        const cp1y = yPrev + (yNext - yPrevPrev) * t;
-        const cp2x = xCurr - (xNext - xPrev) * t;
-        const cp2y = yCurr - (yNext - yPrev) * t;
-        
-        pathStr += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)} ${cp2x.toFixed(1)} ${cp2y.toFixed(1)} ${xCurr.toFixed(1)} ${yCurr.toFixed(1)}`;
-      }
-    } else {
-      // Straight lines for area
-      for (let i = 1; i < validIndices.length; i++) {
-        const idx = validIndices[i];
-        const pos = pointPositions[idx];
-        pathStr += ` L ${pos.x.toFixed(1)} ${scaleY(accessor(points[idx])).toFixed(1)}`;
-      }
-    }
-    
-    // Close the path at bottom
+    let pathStr = toPath(accessor);
+    const firstIdx = validIndices[0];
     const lastIdx = validIndices[validIndices.length - 1];
-    const lastPos = pointPositions[lastIdx];
     const bottomY = padding.top + innerHeight;
-    pathStr += ` L ${lastPos.x.toFixed(1)} ${bottomY.toFixed(1)}`;
-    pathStr += ` L ${firstPos.x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
-    
+    pathStr += ` L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)} L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
     return pathStr;
   };
 
@@ -314,42 +253,95 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     const y = padding.top + (1 - (tickValue - paddedMin) / span) * innerHeight;
     grid.push(`
       <line x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}" class="chart-grid" />
-      <text x="${padding.left - 12}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatNumber(Math.round(tickValue))}</text>
-    `);
+      <text x="${padding.left - 12}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>
+    `); // Uses compact number formatting (k/m/b)
   }
 
-  const xLabels = points.length > 6
-    ? [0, Math.floor(points.length / 2), points.length - 1]
-    : points.map((_, index) => index);
-  const seen = new Set();
-  let lastDateLabel = null;
-  const xAxis = xLabels
-    .filter((index) => !seen.has(index) && seen.add(index))
-    .map((index) => {
-      const point = points[index];
-      const pos = pointPositions[index];
-      
-      // Extract date only (everything before the comma in "May 07, 11:34 PM")
-      const fullLabel = point.label || point.t || '';
-      const dateLabel = fullLabel.split(',')[0].trim(); // Get "May 07"
-      
-      // Only show label if date is different from previous
-      if (dateLabel === lastDateLabel) {
-        return ''; // Skip duplicate dates
-      }
-      lastDateLabel = dateLabel;
-      
-      return `
-        <text x="${pos.x.toFixed(1)}" y="${height - 6}" text-anchor="middle" class="chart-label">${escapeHtml(dateLabel)}</text>
-      `;
-    })
-    .filter(label => label !== '') // Remove empty strings
-    .join('');
+  const isIntraday = windowConfig && windowConfig.hours <= 24;
+  let lastLabelX = -100;
+  let lastDisplayedLabel = null;
+  
+  const xAxis = points.map((point, index) => {
+    const pos = pointPositions[index];
+    const fullLabel = point.label || point.t || '';
+    let displayLabel = fullLabel.includes(',') ? (isIntraday ? fullLabel.split(',')[1].trim() : fullLabel.split(',')[0].trim()) : fullLabel;
+    
+    if (displayLabel === lastDisplayedLabel || pos.x - lastLabelX < 60) return '';
+    lastDisplayedLabel = displayLabel;
+    lastLabelX = pos.x;
+    return `<text x="${pos.x.toFixed(1)}" y="${height - 6}" text-anchor="middle" class="chart-label">${escapeHtml(displayLabel)}</text>`;
+  }).filter(Boolean).join('');
 
-  const markers = pointPositions.map((point, index) => {
-    const data = points[index];
-    const askCircle = point.askY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.askY.toFixed(1)}" r="2.8" class="chart-point chart-point-ask" />` : '';
-    const bidCircle = point.bidY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.bidY.toFixed(1)}" r="2.8" class="chart-point chart-point-bid" />` : '';
+  // ----------------------------------------------------------------------
+  // Volume Bars Logic
+  // ----------------------------------------------------------------------
+  const volumes = points.map((p) => p?.v || 0).filter((v) => v > 0);
+  const avgVolume = volumes.length > 0 ? volumes.reduce((a, b) => a + b, 0) / volumes.length : 1;
+  const maxVolume = volumes.length > 0 ? Math.max(...volumes) : 1;
+  
+  const getVolumeTickStep = (max) => {
+    if (max <= 0) return 1;
+    const roughStep = max / 3; 
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const normalized = roughStep / magnitude;
+    let multiplier = normalized <= 2 ? 2 : (normalized <= 5 ? 5 : 10);
+    return multiplier * magnitude;
+  };
+
+  const volStep = getVolumeTickStep(maxVolume);
+  const maxVolumeForScale = Math.ceil(maxVolume / volStep) * volStep;
+  const volumeBarMaxHeight = (innerHeight / (span / tickStep)) * 1.5; 
+  const volumeBaseY = height - padding.bottom; 
+  
+  const minMarkerSpacing = pointPositions.length > 1
+    ? pointPositions.slice(1).reduce((smallest, point, index) => Math.min(smallest, point.x - pointPositions[index].x), innerWidth) 
+    : innerWidth;
+    
+  const volumeBarWidth = Math.max(2, Math.min(80, minMarkerSpacing * 0.8));
+  const volumeTextX = width - padding.right + (volumeBarWidth / 2) + 4;
+
+  const volumeBars = pointPositions.map((point, index) => {
+    const volume = points[index]?.v || 0;
+    if (volume === 0) return '';
+    const barHeight = (volume / maxVolumeForScale) * volumeBarMaxHeight;
+    const isAboveAverage = volume >= avgVolume;
+    return `<rect x="${(point.x - volumeBarWidth / 2).toFixed(1)}" y="${(volumeBaseY - barHeight).toFixed(1)}" width="${volumeBarWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${isAboveAverage ? '#2ecc71' : '#95e1d3'}" opacity="${isAboveAverage ? '0.8' : '0.5'}" rx="1" ry="1" />`;
+  }).join('');
+
+  // ----------------------------------------------------------------------
+  // Volume Trendline (5-Period SMA)
+  // ----------------------------------------------------------------------
+  const smaPeriod = 5;
+  const volumeTrend = points.map((pt, i) => {
+    let sum = 0, count = 0;
+    for (let j = Math.max(0, i - smaPeriod + 1); j <= i; j++) { sum += points[j]?.v || 0; count++; }
+    return count > 0 ? sum / count : 0;
+  });
+
+  const scaleVolumeY = (vol) => volumeBaseY - (vol / maxVolumeForScale) * volumeBarMaxHeight;
+  const volumeTrendPathStr = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${pointPositions[i].x.toFixed(1)} ${scaleVolumeY(volumeTrend[i]).toFixed(1)}`).join(' ');
+
+  const volumeTrendSvg = volumeTrend.some(v => v > 0) 
+    ? `<path d="${volumeTrendPathStr}" fill="none" stroke="#f39c12" stroke-width="1.5" opacity="0.9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 4" />` 
+    : '';
+
+  const volumeAxisLabels = [];
+  for (let tickVal = volStep; tickVal <= maxVolumeForScale; tickVal += volStep) {
+      const yPos = volumeBaseY - (volumeBarMaxHeight * (tickVal / maxVolumeForScale));
+      volumeAxisLabels.push(`
+          <line x1="${padding.left}" y1="${yPos.toFixed(1)}" x2="${width - padding.right}" y2="${yPos.toFixed(1)}" class="chart-grid" stroke-dasharray="4 4" opacity="0.6" />
+          <text x="${volumeTextX.toFixed(1)}" y="${yPos.toFixed(1)}" text-anchor="start" class="chart-label chart-label-y chart-label-volume" alignment-baseline="middle" font-size="10px">${formatCompactNumber(tickVal)}</text>
+      `);
+  }
+
+  const volumeAxis = pointPositions.length > 0 ? `
+    <text x="${volumeTextX.toFixed(1)}" y="${(volumeBaseY - volumeBarMaxHeight - 14).toFixed(1)}" text-anchor="start" class="chart-label chart-label-y chart-label-volume" font-weight="bold">Vol</text>
+    ${volumeAxisLabels.join('')}
+  ` : '';
+
+  const markers = pointPositions.map((point) => {
+    const askCircle = point?.askY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.askY.toFixed(1)}" r="2.8" class="chart-point chart-point-ask" />` : '';
+    const bidCircle = point?.bidY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.bidY.toFixed(1)}" r="2.8" class="chart-point chart-point-bid" />` : '';
     return `${askCircle}${bidCircle}`;
   }).join('');
 
@@ -368,10 +360,13 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
           </linearGradient>
         </defs>
         ${grid.join('')}
-        <path d="${toAreaPath((point) => getEffectivePrice(point.ask))}" class="chart-area chart-area-ask" fill="url(#ask-fill)" />
-        <path d="${toAreaPath((point) => getEffectivePrice(point.bid))}" class="chart-area chart-area-bid" fill="url(#bid-fill)" />
-        <path d="${toPath((point) => getEffectivePrice(point.ask))}" class="chart-line chart-line-ask" />
-        <path d="${toPath((point) => getEffectivePrice(point.bid))}" class="chart-line chart-line-bid" />
+        <path d="${toAreaPath((p) => getEffectivePrice(p.ask))}" class="chart-area chart-area-ask" fill="url(#ask-fill)" />
+        <path d="${toAreaPath((p) => getEffectivePrice(p.bid))}" class="chart-area chart-area-bid" fill="url(#bid-fill)" />
+        <path d="${toPath((p) => getEffectivePrice(p.ask))}" class="chart-line chart-line-ask" />
+        <path d="${toPath((p) => getEffectivePrice(p.bid))}" class="chart-line chart-line-bid" />
+        ${volumeBars}
+        ${volumeTrendSvg}
+        ${volumeAxis}
         ${markers}
         ${xAxis}
       </svg>
@@ -380,6 +375,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     </div>
   `,
     pointPositions,
+    pointData: points,
     padding,
     innerWidth,
   };
@@ -697,7 +693,17 @@ function windowPoints(points, windowKey) {
   if (!config) {
     return points;
   }
-  return points.slice(-config.hours);
+  const timestamps = points
+    .map((point) => point.timestamp)
+    .filter((timestamp) => typeof timestamp === 'number' && Number.isFinite(timestamp) && timestamp > 0);
+
+  if (!timestamps.length) {
+    return points.slice(-config.hours);
+  }
+
+  const latestTimestamp = Math.max(...timestamps);
+  const windowStart = latestTimestamp - (config.hours * 60 * 60 * 1000);
+  return points.filter((point) => typeof point.timestamp === 'number' && point.timestamp >= windowStart);
 }
 
 async function renderItem(root, slug) {
@@ -716,7 +722,6 @@ async function renderItem(root, slug) {
   const levelKeys = Object.keys(levels).length ? Object.keys(levels) : (itemMeta?.levels || ['0']);
   let selectedLevel = levelKeys.includes('0') ? '0' : levelKeys[0];
   let selectedWindow = DEFAULT_WINDOW;
-  let smoothLines = false;
 
   const renderLevelButtons = () => levelKeys
     .map((level) => `<button class="pill ${level === selectedLevel ? 'active' : ''}" data-level="${escapeHtml(level)}">+${escapeHtml(level)}</button>`)
@@ -726,24 +731,70 @@ async function renderItem(root, slug) {
     .map((key) => `<button class="pill ${key === selectedWindow ? 'active' : ''}" data-window="${escapeHtml(key)}">${escapeHtml(WINDOW_CONFIG[key].label)}</button>`)
     .join('');
 
-  const currentPoints = () => {
-    const levelData = levels[selectedLevel] || {};
-    const series = levelData.hourly || [];
-    return windowPoints(series, selectedWindow);
+  const usesDailySeries = (windowKey) => (WINDOW_CONFIG[windowKey]?.hours || 0) > (24 * 30);
+
+  const displayBucketMsForWindow = (windowKey) => {
+    const hourMs = 60 * 60 * 1000;
+    if (windowKey === '1d') return 1 * hourMs; 
+    if (windowKey === '7d') return 6 * hourMs;
+    if (windowKey === '15d') return 12 * hourMs;
+    if (windowKey === '30d') return 24 * hourMs;
+    if (windowKey === '60d') return 48 * hourMs;
+    if (windowKey === '90d') return 72 * hourMs;
+    if (windowKey === '120d') return 96 * hourMs;
+    return 24 * hourMs;
   };
 
-  const getPointByIndex = (index) => currentPoints()[index] || null;
+  const aggregateDisplaySeries = (series, windowKey) => {
+    const bucketMs = displayBucketMsForWindow(windowKey);
+    if (!bucketMs) return series.map((point) => ({ ...point }));
 
-  // Compute the global min/max for the current level (across all time windows)
-  // to keep the Y-axis consistent regardless of selected window
-  const getGlobalRange = () => {
-    const levelData = levels[selectedLevel] || {};
-    const allPoints = levelData.hourly || [];
-    const allYValues = allPoints.flatMap((point) => [point.ask, point.bid]).filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0);
-    if (!allYValues.length) {
-      return { min: null, max: null };
+    const grouped = [];
+    let currentBucket = null;
+
+    for (const point of series) {
+      if (!point || typeof point.timestamp !== 'number') continue;
+      const bucketStart = Math.floor(point.timestamp / bucketMs) * bucketMs;
+      if (!currentBucket || currentBucket.bucketStart !== bucketStart) {
+        if (currentBucket) grouped.push(currentBucket);
+        currentBucket = { bucketStart, points: [point] };
+      } else {
+        currentBucket.points.push(point);
+      }
     }
-    return { min: Math.min(...allYValues), max: Math.max(...allYValues) };
+    if (currentBucket) grouped.push(currentBucket);
+
+    return grouped.map(({ bucketStart, points: bucketPoints }) => {
+      const representative = bucketPoints[bucketPoints.length - 1];
+      const askPoint = [...bucketPoints].reverse().find((point) => typeof point.ask === 'number' && point.ask > 0) || representative;
+      const bidPoint = [...bucketPoints].reverse().find((point) => typeof point.bid === 'number' && point.bid > 0) || representative;
+      const timestamp = bucketStart; 
+      const volume = bucketPoints.reduce((sum, point) => sum + (typeof point.v === 'number' && point.v > 0 ? point.v : 0), 0);
+      const ask = askPoint.ask ?? null;
+      const bid = bidPoint.bid ?? null;
+      const spread = ask != null && bid != null ? ask - bid : null;
+      const spreadPct = spread != null && bid > 0 ? spread / bid : null;
+      const dateObj = new Date(timestamp);
+      const label = bucketMs >= 24 * 60 * 60 * 1000 ? formatDayLabel(dateObj.toISOString().split('T')[0]) : formatHourLabel(dateObj.toISOString());
+
+      return { ...representative, t: timestamp, timestamp, label, ask, bid, a: ask, b: bid, v: volume, sp: spread, spPct: spreadPct };
+    });
+  };
+
+  const currentSeries = () => {
+    const levelData = levels[selectedLevel] || {};
+    return usesDailySeries(selectedWindow) ? (levelData.daily || []) : (levelData.hourly || []);
+  };
+
+  const currentPoints = () => {
+    const series = currentSeries();
+    return aggregateDisplaySeries(windowPoints(series, selectedWindow), selectedWindow);
+  };
+
+  const getGlobalRange = () => {
+    const allPoints = currentPoints();
+    const allYValues = allPoints.flatMap((point) => [point.ask, point.bid]).filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0);
+    return allYValues.length ? { min: Math.min(...allYValues), max: Math.max(...allYValues) } : { min: null, max: null };
   };
 
   const updateView = () => {
@@ -752,218 +803,154 @@ async function renderItem(root, slug) {
     const chart = document.getElementById('price-chart');
     const stats = document.getElementById('item-stats');
     const latest = points[points.length - 1];
-    const previous = points[points.length - 2];
+    const latestHourly = ((levels[selectedLevel] || {}).hourly || []).at(-1) || null;
+    const latestDaily = ((levels[selectedLevel] || {}).daily || []).at(-1) || null;
 
     if (chart) {
-      const levelData = levels[selectedLevel] || {};
-      const fullSeries = levelData.hourly || [];
       const windowConfig = WINDOW_CONFIG[selectedWindow];
-      const chartData = buildChart(points, 960, 360, globalRange.min, globalRange.max, smoothLines, windowConfig, fullSeries);
+      const chartData = buildChart(points, 960, 400, globalRange.min, globalRange.max, windowConfig, points);
       chart.innerHTML = chartData.html;
-      // Store for hover logic
-      chart.dataset.pointPositions = JSON.stringify(chartData.pointPositions.map(p => ({ x: p.x })));
-      chart.dataset.padding = JSON.stringify(chartData.padding);
-      chart.dataset.innerWidth = chartData.innerWidth;
+      
+      const cachedPosData = chartData.pointPositions || [];
+      const cachedDataPoints = chartData.pointData || [];
+
+      const chartHover = document.getElementById('chart-hover');
+      const chartGuide = document.getElementById('chart-guide');
+      const chartWrap = document.querySelector('.chart-wrap');
+      
+      if (chartHover && chartGuide && chartWrap && points.length) {
+        const svg = chartWrap.querySelector('svg');
+        const svgBounds = svg.getBoundingClientRect();
+        const svgScaleX = svgBounds.width / 960;
+
+        const hideHover = () => {
+          chartHover.classList.add('is-hidden');
+          chartGuide.classList.add('is-hidden');
+        };
+
+        const showHoverForClientX = (clientX) => {
+          const hoverWidth = 240;
+          const hoverGap = 16;
+          const hoverMargin = 12;
+          const relativeX = (clientX - svgBounds.left) / svgScaleX;
+          
+          let closestIndex = 0;
+          let closestDistance = Infinity;
+          
+          cachedPosData.forEach((p, i) => {
+            const d = Math.abs(p.x - relativeX);
+            if (d < closestDistance) { closestDistance = d; closestIndex = i; }
+          });
+          
+          const point = cachedDataPoints[closestIndex];
+          if (!point) { hideHover(); return; }
+
+          const x = cachedPosData[closestIndex].x * svgScaleX;
+          chartGuide.classList.remove('is-hidden');
+          chartGuide.style.left = `${x - 1}px`;
+
+          chartHover.classList.remove('is-hidden');
+          const spaceRight = svgBounds.width - x;
+          const hoverLeft = (spaceRight < hoverWidth + hoverGap + hoverMargin) ? Math.max(hoverMargin, x - hoverWidth - hoverGap) : Math.min(x + hoverGap, svgBounds.width - hoverWidth - hoverMargin);
+
+          chartHover.style.left = `${hoverLeft}px`;
+          chartHover.style.top = `20px`;
+          chartHover.innerHTML = `
+            <div class="chart-hover-date">${escapeHtml(point.label)}</div>
+            <div class="chart-hover-row"><span>Ask</span><strong>${formatCurrency(point.a)}</strong></div>
+            <div class="chart-hover-row"><span>Bid</span><strong>${formatCurrency(point.b)}</strong></div>
+            <div class="chart-hover-row"><span>Spread</span><strong>${formatCurrency(point.sp)}</strong></div>
+            <div class="chart-hover-row"><span>Spread %</span><strong>${formatPercent(point.spPct)}</strong></div>
+            <div class="chart-hover-row"><span>Volume</span><strong>${formatNumber(point.v)}</strong></div>
+          `;
+        };
+
+        chartWrap.onmouseleave = hideHover;
+        chartWrap.onmousemove = (event) => showHoverForClientX(event.clientX);
+      }
     }
 
     if (stats) {
-      stats.innerHTML = latest
-        ? `
-          <div><span class="stat-label">Ask</span><strong>${formatNumber(latest.a)}</strong></div>
-          <div><span class="stat-label">Bid</span><strong>${formatNumber(latest.b)}</strong></div>
-          <div><span class="stat-label">Spread</span><strong>${formatNumber(latest.sp)}</strong></div>
-          <div><span class="stat-label">Spread %</span><strong>${formatPercent(latest.spPct)}</strong></div>
-        `
-        : '<div class="empty-state">No points available for this selection.</div>';
+      stats.innerHTML = latest ? `
+        <div><span class="stat-label">Ask</span><strong>${formatNumber(latest.a)}</strong></div>
+        <div><span class="stat-label">Bid</span><strong>${formatNumber(latest.b)}</strong></div>
+        <div><span class="stat-label">Spread</span><strong>${formatNumber(latest.sp)}</strong></div>
+        <div><span class="stat-label">Spread %</span><strong>${formatPercent(latest.spPct)}</strong></div>
+        <div><span class="stat-label">Volume (24h)</span><strong>${formatNumber(latestHourly?.rolling?.['1d'])}</strong></div>
+        <div><span class="stat-label">Volume (7d avg)</span><strong>${formatNumber(latestDaily?.rolling?.['7d'])}</strong></div>
+      ` : '<div class="empty-state">No data available.</div>';
     }
 
     const levelButtons = document.getElementById('level-buttons');
-    if (levelButtons) {
-      levelButtons.innerHTML = renderLevelButtons();
-    }
+    if (levelButtons) levelButtons.innerHTML = renderLevelButtons();
 
     const windowButtons = document.getElementById('window-buttons');
-    if (windowButtons) {
-      windowButtons.innerHTML = renderWindowButtons();
-    }
+    if (windowButtons) windowButtons.innerHTML = renderWindowButtons();
 
     const pointMeta = document.getElementById('point-meta');
     if (pointMeta) {
-      pointMeta.textContent = points.length
-        ? `${points.length} hourly points in ${calcWindowLabel(selectedWindow)}`
-        : `No data available for ${calcWindowLabel(selectedWindow)}`;
+      pointMeta.textContent = points.length ? `${points.length} displayed points in ${calcWindowLabel(selectedWindow)}` : `No data available for ${calcWindowLabel(selectedWindow)}`;
     }
-
-    const chartHover = document.getElementById('chart-hover');
-    const chartGuide = document.getElementById('chart-guide');
-    const chartWrap = document.querySelector('.chart-wrap');
-    if (!chartHover || !chartGuide || !chartWrap || !points.length) {
-      if (chartHover) {
-        chartHover.classList.add('is-hidden');
-      }
-      if (chartGuide) {
-        chartGuide.classList.add('is-hidden');
-      }
-      return;
-    }
-
-    const svg = chartWrap.querySelector('svg');
-    if (!svg) {
-      return;
-    }
-
-    const svgBounds = svg.getBoundingClientRect();
-    const svgScaleX = svgBounds.width > 0 ? svgBounds.width / 960 : 1;
-    const padding = { top: 20, right: 20, bottom: 34, left: Math.max(96, formatNumber(Math.max(...points.flatMap((point) => [point.ask, point.bid]).filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0))).length * 10 + 18) };
-    const innerWidth = 960 - padding.left - padding.right;
-
-    const hideHover = () => {
-      chartHover.classList.add('is-hidden');
-      chartGuide.classList.add('is-hidden');
-    };
-
-    const showHoverForClientX = (clientX) => {
-      const hoverWidth = 240;
-      const hoverGap = 16;
-      const hoverMargin = 12;
-      const relativeX = clientX - svgBounds.left;
-      const relativeXSvg = relativeX / svgScaleX;
-      
-      // Parse stored point positions
-      const posData = chart.dataset.pointPositions ? JSON.parse(chart.dataset.pointPositions) : [];
-      const paddingData = chart.dataset.padding ? JSON.parse(chart.dataset.padding) : { left: padding.left, right: 20, top: 20, bottom: 34 };
-      
-      // Find the closest point by X position
-      let closestIndex = 0;
-      let closestDistance = posData.length > 0 ? Math.abs(posData[0].x - relativeXSvg) : Infinity;
-      
-      for (let i = 1; i < posData.length; i++) {
-        const distance = Math.abs(posData[i].x - relativeXSvg);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestIndex = i;
-        }
-      }
-      
-      const index = closestIndex;
-      const point = getPointByIndex(index);
-      if (!point || !posData[index]) {
-        hideHover();
-        return;
-      }
-
-      const x = posData[index].x * svgScaleX;
-      const ask = point.a;
-      const bid = point.b;
-      const spread = point.sp;
-      const spreadPct = point.spPct;
-      const effectiveSell = typeof ask === 'number' ? ask * 0.98 : null;
-      const effectiveBuy = typeof bid === 'number' ? bid * 0.98 : null;
-
-      chartGuide.classList.remove('is-hidden');
-      chartGuide.style.left = `${x - 1}px`;
-
-      chartHover.classList.remove('is-hidden');
-      const spaceRight = svgBounds.width - x;
-      const spaceLeft = x;
-      const placeLeft = spaceRight < hoverWidth + hoverGap + hoverMargin && spaceLeft > hoverWidth + hoverGap + hoverMargin;
-      const hoverLeft = placeLeft
-        ? Math.max(hoverMargin, x - hoverWidth - hoverGap)
-        : Math.min(Math.max(hoverMargin, x + hoverGap), Math.max(hoverMargin, svgBounds.width - hoverWidth - hoverMargin));
-
-      chartHover.style.left = `${hoverLeft}px`;
-      chartHover.style.top = `${Math.max(12, Math.min(svgBounds.height - 180, 16))}px`;
-      chartHover.innerHTML = `
-        <div class="chart-hover-date">${escapeHtml(point.label || point.t)}</div>
-        <div class="chart-hover-row"><span>Ask</span><strong>${formatCurrency(ask)}</strong></div>
-        <div class="chart-hover-row"><span>Bid</span><strong>${formatCurrency(bid)}</strong></div>
-        <div class="chart-hover-row"><span>Spread</span><strong>${formatCurrency(spread)}</strong></div>
-        <div class="chart-hover-row"><span>Spread %</span><strong>${formatPercent(spreadPct)}</strong></div>
-        <div class="chart-hover-row"><span>Effective sell</span><strong>${formatCurrency(effectiveSell)}</strong></div>
-        <div class="chart-hover-row"><span>Effective buy</span><strong>${formatCurrency(effectiveBuy)}</strong></div>
-      `;
-    };
-
-    chartWrap.onmouseleave = hideHover;
-    chartWrap.onmousemove = (event) => showHoverForClientX(event.clientX);
-    chartWrap.onmouseenter = (event) => showHoverForClientX(event.clientX);
   };
 
-  const pageContent = `
-    <section class="card item-page">
-      <div class="item-header">
-        <div>
-          <a class="back-link" href="${SITE_BASE_PATH}">All items</a>
-          <h2>${escapeHtml(itemName)}</h2>
-          <p class="item-slug">/${escapeHtml(slug)}</p>
-        </div>
-        <div class="controls">
-          <div>
-            <p class="control-label">Enhancement</p>
-            <div id="level-buttons" class="button-row">${renderLevelButtons()}</div>
-          </div>
-          <div>
-            <p class="control-label">Range</p>
-            <div id="window-buttons" class="button-row">${renderWindowButtons()}</div>
-          </div>
-        </div>
-      </div>
+  const enhancementBlock = levelKeys.length > 1 ? `
+    <div class="control-group">
+      <p class="control-label">Enhancement</p>
+      <div id="level-buttons" class="button-row">${renderLevelButtons()}</div>
+    </div>
+  ` : '';
 
-      <div class="chart-shell">
-        <div id="price-chart">${(() => {
-          const globalRange = getGlobalRange();
-          const levelData = levels[selectedLevel] || {};
-          const fullSeries = levelData.hourly || [];
-          const windowConfig = WINDOW_CONFIG[selectedWindow];
-          const chartData = buildChart(currentPoints(), 960, 360, globalRange.min, globalRange.max, smoothLines, windowConfig, fullSeries);
-          return chartData.html;
-        })()}</div>
-        <p id="point-meta" class="chart-meta"></p>
-        <div class="toggle-smooth-lines">
-          <label class="toggle-label">Smooth lines</label>
-          <div id="toggle-smooth" class="toggle-switch"></div>
-        </div>
-      </div>
-
-      <div id="item-stats" class="stats-grid"></div>
-    </section>
+  // Centered Range selection without label
+  const rangeBlock = `
+    <div class="range-container">
+      <div id="window-buttons" class="button-row">${renderWindowButtons()}</div>
+    </div>
   `;
 
   const iconUrlSvg = resolveIconAssetPath(catalog.iconFiles, slug, 'svg');
   const iconUrlPng = resolveIconAssetPath(catalog.iconFiles, slug, 'png');
-  const iconHtml = `<img class="item-page-icon" src="${iconUrlSvg}" alt="${escapeHtml(itemName)}" onerror="if(!this._tried){this._tried=true;this.src='${iconUrlPng}'}else{this.style.display='none'}" />`;
-  renderShell(root, itemName, pageContent, 'Hourly price graph with level and range controls.', iconHtml);
+  const iconHtml = `<img class="dashboard-icon" src="${iconUrlSvg}" alt="${itemName}" onerror="if(!this._tried){this._tried=true;this.src='${iconUrlPng}'}else{this.style.display='none'}" />`;
+
+  root.innerHTML = `
+    <div class="dashboard-layout">
+      <a class="minimal-back-link outside-back" href="${SITE_BASE_PATH}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        Back to items
+      </a>
+      
+      <section class="dashboard-card">
+        <header class="dashboard-header">
+          <div class="item-identity">
+            ${iconHtml}
+            <h1>${escapeHtml(itemName)}</h1>
+          </div>
+          ${enhancementBlock}
+        </header>
+
+        <div class="chart-container">
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-dash ask"></span> Ask</div>
+            <div class="legend-item"><span class="legend-dash bid"></span> Bid</div>
+          </div>
+          <div id="price-chart"></div>
+          <p id="point-meta" class="chart-meta"></p>
+        </div>
+
+        ${rangeBlock}
+
+        <div id="item-stats" class="stats-grid"></div>
+      </section>
+    </div>
+  `;
+
   updateView();
 
   const rootElement = document.getElementById('app');
-  if (!rootElement) {
-    return;
-  }
-
   rootElement.addEventListener('click', (event) => {
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) {
-      return;
-    }
-
-    const level = target.getAttribute('data-level');
-    if (level) {
-      selectedLevel = level;
-      updateView();
-      return;
-    }
-
-    const windowKey = target.getAttribute('data-window');
-    if (windowKey) {
-      selectedWindow = windowKey;
-      updateView();
-    }
-
-    if (target.id === 'toggle-smooth') {
-      smoothLines = !smoothLines;
-      target.classList.toggle('active', smoothLines);
-      updateView();
-    }
+    const level = event.target.getAttribute('data-level');
+    if (level) { selectedLevel = level; updateView(); return; }
+    const windowKey = event.target.getAttribute('data-window');
+    if (windowKey) { selectedWindow = windowKey; updateView(); }
   });
 }
 

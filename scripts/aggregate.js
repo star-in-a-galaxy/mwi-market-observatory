@@ -74,7 +74,7 @@ function aggregate(dateStr) {
         lb: Math.min(...bids.filter(b => b > 0)),
         ca: last.a,
         cb: last.b,
-        v: last.v
+        v: snapshots.reduce((sum, s) => sum + (s.v || 0), 0) // <-- We DO need to sum these!
       };
     }
   }

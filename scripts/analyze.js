@@ -233,6 +233,7 @@ function analyze() {
           previousBid: previous?.bid,
         });
 
+        point.timestamp = Date.parse(dateStr);
         appendPoint(series.daily, point);
       }
     }
@@ -274,10 +275,41 @@ function analyze() {
     }
   }
 
+  function addRollingVolumes(series, isHourly) {
+    for (let i = 0; i < series.length; i++) {
+      const point = series[i];
+      if (!point.timestamp) continue;
+
+      point.rolling = {};
+
+      if (isHourly) {
+        // Sum all snapshot volumes in the last 24 hours
+        const windowMs = 24 * 60 * 60 * 1000;
+        const cutoff = point.timestamp - windowMs;
+        const volumeSum = series.slice(0, i + 1)
+          .filter((p) => (p.timestamp || 0) > cutoff)
+          .reduce((sum, p) => sum + (p.v || 0), 0);
+        point.rolling['1d'] = volumeSum;
+      } else {
+        // Average the daily volumes over the available days (up to 7)
+        const windowMs = 7 * 24 * 60 * 60 * 1000;
+        const cutoff = point.timestamp - windowMs;
+        const validPoints = series.slice(0, i + 1).filter((p) => (p.timestamp || 0) > cutoff);
+        
+        const volumeSum = validPoints.reduce((sum, p) => sum + (p.v || 0), 0);
+        const daysAvailable = Math.max(1, validPoints.length); 
+        
+        point.rolling['7d'] = Math.round(volumeSum / daysAvailable);
+      }
+    }
+  }
+
   for (const bundle of bundles.values()) {
     for (const series of bundle.levels.values()) {
       series.daily.sort((left, right) => Date.parse(left.t) - Date.parse(right.t));
       series.hourly.sort((left, right) => Date.parse(left.t) - Date.parse(right.t));
+      addRollingVolumes(series.daily, false);
+      addRollingVolumes(series.hourly, true);
     }
 
     itemIndex.push({
