@@ -1,8 +1,11 @@
 name: Fetch Market Data
 on:
   schedule:
-    - cron: '3,43 * * * *'   # :03 and :43 past each hour (avoids :00/:30)
+    - cron: '10,40 * * * *'   # :10 and :40 past each hour (avoids :00/:30)
   workflow_dispatch: {}        # Manual trigger
+
+permissions:
+  contents: write
 
 jobs:
   fetch:
