@@ -1,0 +1,79 @@
+name: Build And Deploy Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - site/**
+      - data/public/**
+      - data/daily/**
+      - .github/workflows/pages.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - site/**
+      - data/public/**
+      - data/daily/**
+      - .github/workflows/pages.yml
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build public analysis files
+        run: node scripts/analyze.js
+
+      - name: Prepare site artifact
+        run: |
+          mkdir -p _site/data
+          cp -R site/. _site/
+
+          if [ -d data/public ]; then
+            mkdir -p _site/data/public
+            cp -R data/public/. _site/data/public/
+          fi
+
+          if [ -d data/daily ]; then
+            mkdir -p _site/data/daily
+            cp -R data/daily/. _site/data/daily/
+          fi
+
+          touch _site/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

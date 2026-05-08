@@ -17,6 +17,7 @@ jobs:
           node-version: '20'
       - run: node scripts/aggregate.js
       - run: node scripts/prune.js
+      - run: node scripts/analyze.js
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"

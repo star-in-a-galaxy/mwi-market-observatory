@@ -40,9 +40,9 @@ mwi-market-observatory/
 
 ## Workflows
 
-### fetch.yml (Every 40 Minutes)
+### fetch.yml (Every 30 Minutes)
 
-Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
+Runs at :10 and :40 past each hour (to avoid congestion at :00 and :30).
 
 **Steps:**
 1. Fetch marketplace data from the API
@@ -50,7 +50,7 @@ Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
 3. Write hourly snapshot to `data/hourly/YYYY-MM-DD/HH-MM.json`
 4. Commit and push if data changed
 
-### aggregate.yml (Daily at 00:17 UTC)
+### aggregate.yml (Daily at 3:00 UTC)
 
 **Steps:**
 1. Read all hourly files from yesterday
@@ -58,6 +58,21 @@ Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
 3. Write daily summary to `data/daily/YYYY-MM-DD.json`
 4. Prune hourly directories older than 7 days
 5. Commit and push
+
+### pages.yml (Branch-aware Pages pipeline)
+
+This workflow supports your side-branch experiment flow:
+
+1. Pushes to `web` build the static site artifact for validation, but do not deploy.
+2. Pushes to `main` build and deploy to GitHub Pages.
+3. Pull requests targeting `main` run build validation only.
+
+The site source is in `site/`. The UI is item-first: the home page is a searchable item browser and item pages live at `/items/<item_slug>`.
+During workflow execution, `data/daily/` and `data/public/` (if present) are copied into the deploy artifact.
+
+To activate hosting, set Pages source to **GitHub Actions** in repository settings:
+
+- `Settings` -> `Pages` -> `Build and deployment` -> `Source: GitHub Actions`
 
 ## Data Format
 
@@ -116,19 +131,27 @@ Runs at :03 and :43 past each hour (to avoid congestion at :00 and :30).
 
 ## Local Testing
 
-### Fetch Market Data
+The item chart always uses hourly data. The selected range controls the total span shown, with options for 1 Day, 7 Days, 15 Days, 30 Days, 60 Days, 90 Days, and 120 Days.
+
+Generate data for the site:
+```bash
+npm run aggregate
+npm run analyze
+```
+
+Serve the site locally:
+```bash
+npm run serve
+```
+
+Then open:
+- `http://localhost:4173/` for the item browser
+- `http://localhost:4173/items/cursed_bow` for an item detail page
+
+Optional refresh commands:
 ```bash
 npm run fetch
-```
-
-### Aggregate Daily Data
-```bash
-npm run aggregate                  # Aggregates yesterday
-npm run aggregate -- --date=2026-05-06  # Aggregates specific date
-```
-
-### Prune Old Hourly Data
-```bash
+npm run aggregate -- --date=2026-05-06
 npm run prune
 ```
 

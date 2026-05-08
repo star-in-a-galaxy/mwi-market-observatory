@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MWI Market Observatory</title>
+    <script>
+      (function () {
+        var segments = window.location.pathname.split('/').filter(Boolean);
+        var base = segments.length > 0 && segments[0] !== 'items' ? '/' + segments[0] + '/' : '/';
+        window.__SITE_BASE__ = base;
+        document.write('<base href="' + base + '">');
+      })();
+    </script>
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <main id="app" class="shell"></main>
+
+    <script src="./assets/app.js"></script>
+  </body>
+</html>
