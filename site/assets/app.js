@@ -813,6 +813,7 @@ async function renderItem(root, slug) {
     }
 
     const svgBounds = svg.getBoundingClientRect();
+    const svgScaleX = svgBounds.width > 0 ? svgBounds.width / 960 : 1;
     const padding = { top: 20, right: 20, bottom: 34, left: Math.max(96, formatNumber(Math.max(...points.flatMap((point) => [point.ask, point.bid]).filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0))).length * 10 + 18) };
     const innerWidth = 960 - padding.left - padding.right;
 
@@ -822,7 +823,11 @@ async function renderItem(root, slug) {
     };
 
     const showHoverForClientX = (clientX) => {
+      const hoverWidth = 240;
+      const hoverGap = 16;
+      const hoverMargin = 12;
       const relativeX = clientX - svgBounds.left;
+      const relativeXSvg = relativeX / svgScaleX;
       
       // Parse stored point positions
       const posData = chart.dataset.pointPositions ? JSON.parse(chart.dataset.pointPositions) : [];
@@ -830,10 +835,10 @@ async function renderItem(root, slug) {
       
       // Find the closest point by X position
       let closestIndex = 0;
-      let closestDistance = posData.length > 0 ? Math.abs(posData[0].x - relativeX) : Infinity;
+      let closestDistance = posData.length > 0 ? Math.abs(posData[0].x - relativeXSvg) : Infinity;
       
       for (let i = 1; i < posData.length; i++) {
-        const distance = Math.abs(posData[i].x - relativeX);
+        const distance = Math.abs(posData[i].x - relativeXSvg);
         if (distance < closestDistance) {
           closestDistance = distance;
           closestIndex = i;
@@ -847,7 +852,7 @@ async function renderItem(root, slug) {
         return;
       }
 
-      const x = posData[index].x;
+      const x = posData[index].x * svgScaleX;
       const ask = point.a;
       const bid = point.b;
       const spread = point.sp;
@@ -856,10 +861,17 @@ async function renderItem(root, slug) {
       const effectiveBuy = typeof bid === 'number' ? bid * 0.98 : null;
 
       chartGuide.classList.remove('is-hidden');
-      chartGuide.style.left = `${x}px`;
+      chartGuide.style.left = `${x - 1}px`;
 
       chartHover.classList.remove('is-hidden');
-      chartHover.style.left = `${Math.min(Math.max(12, x + 16), Math.max(12, svgBounds.width - 260))}px`;
+      const spaceRight = svgBounds.width - x;
+      const spaceLeft = x;
+      const placeLeft = spaceRight < hoverWidth + hoverGap + hoverMargin && spaceLeft > hoverWidth + hoverGap + hoverMargin;
+      const hoverLeft = placeLeft
+        ? Math.max(hoverMargin, x - hoverWidth - hoverGap)
+        : Math.min(Math.max(hoverMargin, x + hoverGap), Math.max(hoverMargin, svgBounds.width - hoverWidth - hoverMargin));
+
+      chartHover.style.left = `${hoverLeft}px`;
       chartHover.style.top = `${Math.max(12, Math.min(svgBounds.height - 180, 16))}px`;
       chartHover.innerHTML = `
         <div class="chart-hover-date">${escapeHtml(point.label || point.t)}</div>
