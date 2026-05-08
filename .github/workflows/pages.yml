@@ -3,9 +3,10 @@ name: Build And Deploy Pages
 on:
   push:
     branches:
-      - web
+      - main
     paths:
       - site/**
+      - data/hourly/**
       - data/public/**
       - data/daily/**
       - .github/workflows/pages.yml
@@ -14,6 +15,7 @@ on:
       - main
     paths:
       - site/**
+      - data/hourly/**
       - data/public/**
       - data/daily/**
       - .github/workflows/pages.yml
@@ -64,7 +66,7 @@ jobs:
           path: _site
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/web'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:

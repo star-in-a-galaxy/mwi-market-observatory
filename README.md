@@ -1,13 +1,15 @@
 # MWI Market Observatory
 
-Automated data collection and analytics for [Milky Way Idle](https://www.milkywayidle.com/) marketplace using GitHub Actions.
+Automated market data collectio for [Milky Way Idle](https://www.milkywayidle.com/) marketplace.
 
 ## Overview
 
 This repository automatically:
-- **Fetches** market price data every ~40 minutes via GitHub Actions
+- **Fetches** market price data every ~30 minutes through cron-job.org-triggered GitHub Actions
 - **Stores** hourly snapshots for 7 days (kept for comparison)
 - **Aggregates** hourly data into daily OHLCV (Open, High, Low, Close, Volume) files
+- **Builds** public site data and icon manifests into `data/public/`
+- **Deploys** the static site to GitHub Pages from `main`
 - **Prunes** old hourly data to keep the repository clean
 
 ## Data Source
@@ -17,23 +19,33 @@ Data is fetched from the public MWI marketplace API:
 https://www.milkywayidle.com/game_data/marketplace.json
 ```
 
-No authentication is required.
-
 ## Repository Structure
 
 ```
 mwi-market-observatory/
 ├── .github/
 │   └── workflows/
-│       ├── fetch.yml          # Runs every 40 min — fetch + commit
-│       └── aggregate.yml      # Runs daily — aggregate hourly → daily, prune old hourly
-├── scripts/
-│   ├── fetch.js               # Fetch API, dedupe, write hourly file
-│   ├── aggregate.js           # Combine hourly files into daily OHLCV
-│   └── prune.js               # Delete hourly files older than 7 days
+│       ├── aggregate.yml      # Daily aggregate/prune/analyze commit flow
+│       ├── fetch.yml          # Fetches marketplace snapshots
+│       └── pages.yml          # Builds and deploys site from main
 ├── data/
+│   ├── daily/                 # YYYY-MM-DD.json (kept forever)
 │   ├── hourly/                # YYYY-MM-DD/HH-MM.json (kept for 7 days)
-│   └── daily/                 # YYYY-MM-DD.json (kept forever)
+│   └── public/                # Generated site data consumed by the frontend
+├── scripts/
+│   ├── aggregate.js           # Combine hourly files into daily OHLCV
+│   ├── analyze.js             # Build public data bundles and icon manifests
+│   ├── fetch.js               # Fetch API, dedupe, write hourly file
+│   ├── prune.js               # Delete hourly files older than 7 days
+│   └── serve.js               # Local static server
+├── site/
+│   ├── 404.html
+│   ├── index.html
+│   └── assets/
+│       ├── app.js
+│       ├── item_categories/
+│       ├── item_icons/
+│       └── styles.css
 ├── package.json
 └── README.md
 ```
@@ -42,7 +54,7 @@ mwi-market-observatory/
 
 ### fetch.yml (Every 30 Minutes)
 
-Runs at :10 and :40 past each hour (to avoid congestion at :00 and :30).
+Triggered externally every 30 minutes by cron-job.org.
 
 **Steps:**
 1. Fetch marketplace data from the API
@@ -50,7 +62,9 @@ Runs at :10 and :40 past each hour (to avoid congestion at :00 and :30).
 3. Write hourly snapshot to `data/hourly/YYYY-MM-DD/HH-MM.json`
 4. Commit and push if data changed
 
-### aggregate.yml (Daily at 3:00 UTC)
+### aggregate.yml (Daily)
+
+Triggered externally once per day by cron-job.org.
 
 **Steps:**
 1. Read all hourly files from yesterday
@@ -59,16 +73,13 @@ Runs at :10 and :40 past each hour (to avoid congestion at :00 and :30).
 4. Prune hourly directories older than 7 days
 5. Commit and push
 
-### pages.yml (Branch-aware Pages pipeline)
+### pages.yml (Main branch Pages pipeline)
 
-This workflow supports your side-branch experiment flow:
-
-1. Pushes to `web` build the static site artifact for validation, but do not deploy.
-2. Pushes to `main` build and deploy to GitHub Pages.
-3. Pull requests targeting `main` run build validation only.
+Pushes to `main` build and deploy to GitHub Pages.
+Pull requests targeting `main` run build validation only.
 
 The site source is in `site/`. The UI is item-first: the home page is a searchable item browser and item pages live at `/items/<item_slug>`.
-During workflow execution, `data/daily/` and `data/public/` (if present) are copied into the deploy artifact.
+During workflow execution, `data/hourly/`, `data/daily/`, and `data/public/` are copied into the deploy artifact, and `scripts/analyze.js` turns the hourly snapshots into the hourly series used by the charts.
 
 
 ## Data Format
