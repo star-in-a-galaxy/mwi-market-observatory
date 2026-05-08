@@ -1,7 +1,5 @@
 name: Fetch Market Data
 on:
-  schedule:
-    - cron: '10,40 * * * *'   # :10 and :40 past each hour (avoids :00/:30)
   workflow_dispatch: {}        # Manual trigger
 
 permissions:
