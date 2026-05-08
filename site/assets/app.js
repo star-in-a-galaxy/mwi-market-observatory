@@ -14,6 +14,9 @@ function getSiteBasePath() {
 const SITE_BASE_PATH = getSiteBasePath();
 const ROUTE_PREFIX = `${SITE_BASE_PATH}items/`;
 const DEFAULT_WINDOW = '15d';
+
+// Global catalog cache to prevent redundant parsing
+let G_CATALOG_CACHE = null;
 const WINDOW_CONFIG = {
   '1d': { label: '1 Day', hours: 24 },
   '7d': { label: '7 Days', hours: 24 * 7 },
@@ -138,13 +141,31 @@ function calcTaxedPrice(value, taxMultiplier) {
   return value * taxMultiplier;
 }
 
+function getSpanTickStep(minValue, maxValue) {
+  const span = Math.max(0, maxValue - minValue);
+  if (!Number.isFinite(span) || span <= 0) {
+    return 1;
+  }
+
+  const roughStep = span / 5;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(Math.max(roughStep, 1))));
+  const normalized = roughStep / magnitude;
+
+  let multiplier;
+  if (normalized <= 2) multiplier = 2;
+  else if (normalized <= 5) multiplier = 5;
+  else multiplier = 10;
+
+  return Math.max(1, multiplier * magnitude);
+}
+
 function buildChart(points, width = 960, height = 360, fixedMinValue = null, fixedMaxValue = null, windowConfig = null, fullSeries = null) {
   const errorReturn = (msg) => ({
     html: `<div class="empty-state">${msg}</div>`,
     pointPositions: [],
     pointData: [],
-    padding: { top: 20, right: 48, bottom: 34, left: 60 },
-    innerWidth: 852,
+    padding: { top: 20, right: 48, bottom: 34, left: 96 },
+    innerWidth: 864,
   });
 
   if (!points.length) {
@@ -158,34 +179,12 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
 
   const maxValue = fixedMaxValue !== null ? fixedMaxValue : Math.max(...yValues);
   const minValue = fixedMinValue !== null ? fixedMinValue : Math.min(...yValues);
-
-  // ----------------------------------------------------------------------
-  // Market Step Logic (Game-aware price increments)
-  // ----------------------------------------------------------------------
-  const getMarketStep = (price) => {
-    const p = Math.abs(price);
-    if (p < 50) return 1;
-    if (p < 100) return 2;
-    const mag = Math.floor(Math.log10(p));
-    const base = p / Math.pow(10, mag);
-    if (base < 3) return 5 * Math.pow(10, mag - 2);
-    if (base < 5) return 10 * Math.pow(10, mag - 2);
-    return 20 * Math.pow(10, mag - 2);
-  };
-
-  const tickStep = (() => {
-    const minStep = getMarketStep(maxValue);
-    const chartSpan = maxValue - minValue;
-    const roughStep = chartSpan / 5;
-    const multiplier = Math.max(1, Math.round(roughStep / minStep));
-    return minStep * multiplier;
-  })();
-
+  const tickStep = getSpanTickStep(minValue, maxValue);
   const paddedMin = Math.floor(minValue / tickStep) * tickStep - (tickStep * 2);
   const paddedMax = Math.ceil(maxValue / tickStep) * tickStep + tickStep;
   const span = paddedMax - paddedMin;
 
-  // Reduced padding to 60px to span chart wider
+  const maxLabelLength = formatNumber(Math.max(Math.abs(paddedMax), Math.abs(paddedMin))).length;
   const padding = { top: 20, right: 48, bottom: 34, left: 60 }; 
   const innerWidth = width - padding.left - padding.right;
   const innerHeight = height - padding.top - padding.bottom;
@@ -211,7 +210,8 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
           ? Math.round(point.timestamp / halfHourMs) * halfHourMs
           : point.timestamp;
         const timeOffset = displayTimestamp - windowStart;
-        return padding.left + (timeOffset / windowMs) * innerWidth; 
+        const position = (timeOffset / windowMs) * innerWidth; 
+        return padding.left + position;
       };
     } else {
       scaleX = (_, index) => padding.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
@@ -237,11 +237,15 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     const validIndices = [];
     for (let i = 0; i < points.length; i++) if (accessor(points[i]) != null) validIndices.push(i);
     if (validIndices.length === 0) return '';
+    
     let pathStr = toPath(accessor);
+    
     const firstIdx = validIndices[0];
     const lastIdx = validIndices[validIndices.length - 1];
     const bottomY = padding.top + innerHeight;
-    pathStr += ` L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)} L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
+    pathStr += ` L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)}`;
+    pathStr += ` L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
+    
     return pathStr;
   };
 
@@ -254,7 +258,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     grid.push(`
       <line x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}" class="chart-grid" />
       <text x="${padding.left - 12}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>
-    `); // Uses compact number formatting (k/m/b)
+    `); // Changed formatNumber to formatCompactNumber
   }
 
   const isIntraday = windowConfig && windowConfig.hours <= 24;
@@ -264,16 +268,26 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   const xAxis = points.map((point, index) => {
     const pos = pointPositions[index];
     const fullLabel = point.label || point.t || '';
-    let displayLabel = fullLabel.includes(',') ? (isIntraday ? fullLabel.split(',')[1].trim() : fullLabel.split(',')[0].trim()) : fullLabel;
     
-    if (displayLabel === lastDisplayedLabel || pos.x - lastLabelX < 60) return '';
+    let displayLabel = fullLabel;
+    if (fullLabel.includes(',')) {
+      displayLabel = isIntraday 
+        ? fullLabel.split(',')[1].trim() 
+        : fullLabel.split(',')[0].trim();
+    }
+    
+    if (displayLabel === lastDisplayedLabel) return '';
+    if (pos.x - lastLabelX < 60) return '';
+    
     lastDisplayedLabel = displayLabel;
     lastLabelX = pos.x;
+    
     return `<text x="${pos.x.toFixed(1)}" y="${height - 6}" text-anchor="middle" class="chart-label">${escapeHtml(displayLabel)}</text>`;
   }).filter(Boolean).join('');
 
+
   // ----------------------------------------------------------------------
-  // Volume Bars Logic
+  // Volume Bars & Ticks 
   // ----------------------------------------------------------------------
   const volumes = points.map((p) => p?.v || 0).filter((v) => v > 0);
   const avgVolume = volumes.length > 0 ? volumes.reduce((a, b) => a + b, 0) / volumes.length : 1;
@@ -284,37 +298,74 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     const roughStep = max / 3; 
     const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
     const normalized = roughStep / magnitude;
-    let multiplier = normalized <= 2 ? 2 : (normalized <= 5 ? 5 : 10);
+    
+    let multiplier;
+    if (normalized <= 2) multiplier = 2;
+    else if (normalized <= 5) multiplier = 5;
+    else multiplier = 10;
+    
     return multiplier * magnitude;
   };
 
   const volStep = getVolumeTickStep(maxVolume);
   const maxVolumeForScale = Math.ceil(maxVolume / volStep) * volStep;
-  const volumeBarMaxHeight = (innerHeight / (span / tickStep)) * 1.5; 
+  
+  const tickHeightPx = innerHeight / (span / tickStep);
+  const volumeBarMaxHeight = tickHeightPx * 1.5; 
   const volumeBaseY = height - padding.bottom; 
   
+  let theoreticalWidth = 80;
+  if (windowConfig && windowConfig.hours > 0) {
+    const windowMs = windowConfig.hours * 60 * 60 * 1000;
+    let stepMs = 60 * 60 * 1000;
+    
+    if (windowConfig.hours <= 24) stepMs = 60 * 60 * 1000;
+    else if (windowConfig.hours <= 168) stepMs = 6 * 60 * 60 * 1000;
+    else if (windowConfig.hours <= 360) stepMs = 12 * 60 * 60 * 1000;
+    else if (windowConfig.hours <= 720) stepMs = 24 * 60 * 60 * 1000;
+    else if (windowConfig.hours <= 1440) stepMs = 48 * 60 * 60 * 1000;
+    else if (windowConfig.hours <= 2160) stepMs = 72 * 60 * 60 * 1000;
+    else stepMs = 96 * 60 * 60 * 1000;
+    
+    theoreticalWidth = (stepMs / windowMs) * innerWidth * 0.8;
+  }
+
   const minMarkerSpacing = pointPositions.length > 1
-    ? pointPositions.slice(1).reduce((smallest, point, index) => Math.min(smallest, point.x - pointPositions[index].x), innerWidth) 
+    ? pointPositions.slice(1).reduce((smallest, point, index) => {
+      const gap = point.x - pointPositions[index].x;
+      return Number.isFinite(gap) && gap > 0 ? Math.min(smallest, gap) : smallest;
+    }, innerWidth) 
     : innerWidth;
     
-  const volumeBarWidth = Math.max(2, Math.min(80, minMarkerSpacing * 0.8));
+  const volumeBarWidth = Math.max(2, Math.min(theoreticalWidth, minMarkerSpacing * 0.8, 80));
   const volumeTextX = width - padding.right + (volumeBarWidth / 2) + 4;
 
   const volumeBars = pointPositions.map((point, index) => {
     const volume = points[index]?.v || 0;
     if (volume === 0) return '';
+    
     const barHeight = (volume / maxVolumeForScale) * volumeBarMaxHeight;
+    const barY = volumeBaseY - barHeight;
+    const barX = point.x - volumeBarWidth / 2;
+    
     const isAboveAverage = volume >= avgVolume;
-    return `<rect x="${(point.x - volumeBarWidth / 2).toFixed(1)}" y="${(volumeBaseY - barHeight).toFixed(1)}" width="${volumeBarWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${isAboveAverage ? '#2ecc71' : '#95e1d3'}" opacity="${isAboveAverage ? '0.8' : '0.5'}" rx="1" ry="1" />`;
+    const fillColor = isAboveAverage ? '#2ecc71' : '#95e1d3';
+    const opacity = isAboveAverage ? '0.8' : '0.5';
+    
+    return `<rect x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="${volumeBarWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" fill="${fillColor}" opacity="${opacity}" rx="1" ry="1" />`;
   }).join('');
 
   // ----------------------------------------------------------------------
-  // Volume Trendline (5-Period SMA)
+  // Volume Trendline (5-Period Simple Moving Average)
   // ----------------------------------------------------------------------
   const smaPeriod = 5;
   const volumeTrend = points.map((pt, i) => {
-    let sum = 0, count = 0;
-    for (let j = Math.max(0, i - smaPeriod + 1); j <= i; j++) { sum += points[j]?.v || 0; count++; }
+    let sum = 0;
+    let count = 0;
+    for (let j = Math.max(0, i - smaPeriod + 1); j <= i; j++) {
+       sum += points[j]?.v || 0;
+       count++;
+    }
     return count > 0 ? sum / count : 0;
   });
 
@@ -330,12 +381,13 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
       const yPos = volumeBaseY - (volumeBarMaxHeight * (tickVal / maxVolumeForScale));
       volumeAxisLabels.push(`
           <line x1="${padding.left}" y1="${yPos.toFixed(1)}" x2="${width - padding.right}" y2="${yPos.toFixed(1)}" class="chart-grid" stroke-dasharray="4 4" opacity="0.6" />
-          <text x="${volumeTextX.toFixed(1)}" y="${yPos.toFixed(1)}" text-anchor="start" class="chart-label chart-label-y chart-label-volume" alignment-baseline="middle" font-size="10px">${formatCompactNumber(tickVal)}</text>
+          <text x="${volumeTextX.toFixed(1)}" y="${yPos.toFixed(1)}" text-anchor="start" class="chart-label chart-label-y chart-label-volume" alignment-baseline="middle" dominant-baseline="middle" font-size="10px">${formatCompactNumber(tickVal)}</text>
       `);
   }
 
+  const volTitleY = volumeBaseY - volumeBarMaxHeight - 14;
   const volumeAxis = pointPositions.length > 0 ? `
-    <text x="${volumeTextX.toFixed(1)}" y="${(volumeBaseY - volumeBarMaxHeight - 14).toFixed(1)}" text-anchor="start" class="chart-label chart-label-y chart-label-volume" font-weight="bold">Vol</text>
+    <text x="${volumeTextX.toFixed(1)}" y="${volTitleY.toFixed(1)}" text-anchor="start" class="chart-label chart-label-y chart-label-volume" font-weight="bold">Vol</text>
     ${volumeAxisLabels.join('')}
   ` : '';
 
@@ -360,10 +412,10 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
           </linearGradient>
         </defs>
         ${grid.join('')}
-        <path d="${toAreaPath((p) => getEffectivePrice(p.ask))}" class="chart-area chart-area-ask" fill="url(#ask-fill)" />
-        <path d="${toAreaPath((p) => getEffectivePrice(p.bid))}" class="chart-area chart-area-bid" fill="url(#bid-fill)" />
-        <path d="${toPath((p) => getEffectivePrice(p.ask))}" class="chart-line chart-line-ask" />
-        <path d="${toPath((p) => getEffectivePrice(p.bid))}" class="chart-line chart-line-bid" />
+        <path d="${toAreaPath((point) => getEffectivePrice(point.ask))}" class="chart-area chart-area-ask" fill="url(#ask-fill)" />
+        <path d="${toAreaPath((point) => getEffectivePrice(point.bid))}" class="chart-area chart-area-bid" fill="url(#bid-fill)" />
+        <path d="${toPath((point) => getEffectivePrice(point.ask))}" class="chart-line chart-line-ask" />
+        <path d="${toPath((point) => getEffectivePrice(point.bid))}" class="chart-line chart-line-bid" />
         ${volumeBars}
         ${volumeTrendSvg}
         ${volumeAxis}
@@ -405,6 +457,22 @@ function assetPath(relativePath) {
   return `${SITE_BASE_PATH}${relativePath.replace(/^\/+/, '')}`;
 }
 
+async function registerServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    return;
+  }
+
+  if (window.location.protocol === 'file:') {
+    return;
+  }
+
+  try {
+    await navigator.serviceWorker.register(`${SITE_BASE_PATH}sw.js`, { scope: SITE_BASE_PATH });
+  } catch (error) {
+    console.warn('Service worker registration failed:', error);
+  }
+}
+
 function resolveIconAssetPath(iconFiles, slug, extension) {
   const slugLower = slug.toLowerCase();
   const fileName = iconFiles?.[slugLower]?.[extension] || `${slugLower}.${extension}`;
@@ -412,6 +480,11 @@ function resolveIconAssetPath(iconFiles, slug, extension) {
 }
 
 async function loadCatalog() {
+  // Return cached catalog if it exists
+  if (G_CATALOG_CACHE) {
+    return G_CATALOG_CACHE;
+  }
+
   try {
     const catalog = await fetchJson(assetPath('data/public/index.json'));
     if (Array.isArray(catalog.items)) {
@@ -423,13 +496,16 @@ async function loadCatalog() {
         console.warn('Failed to load icon mappings:', error);
         catalog.iconFiles = {};
       }
+      // Cache the catalog for future use
+      G_CATALOG_CACHE = catalog;
       return catalog;
     }
   } catch (error) {
     // Fallback handled below.
   }
 
-  return { items: [], iconFiles: {} };
+  G_CATALOG_CACHE = { items: [], iconFiles: {} };
+  return G_CATALOG_CACHE;
 }
 
 function sortItemsByRefineAndSuffix(items) {
@@ -718,8 +794,8 @@ async function renderItem(root, slug) {
     itemData = null;
   }
 
-  const levels = itemData?.levels || {};
-  const levelKeys = Object.keys(levels).length ? Object.keys(levels) : (itemMeta?.levels || ['0']);
+  const levels = itemData?.data || {};
+  const levelKeys = itemData?.levels || ['0'];
   let selectedLevel = levelKeys.includes('0') ? '0' : levelKeys[0];
   let selectedWindow = DEFAULT_WINDOW;
 
@@ -967,6 +1043,8 @@ async function main() {
     } else {
       await renderHome(root);
     }
+
+    void registerServiceWorker();
   } catch (error) {
     renderShell(root, 'Market Observatory', `<section class="card"><div class="empty-state">Unable to load data: ${escapeHtml(error.message)}</div></section>`, '');
   }
