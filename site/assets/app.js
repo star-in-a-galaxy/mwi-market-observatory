@@ -409,6 +409,12 @@ function assetPath(relativePath) {
   return `${SITE_BASE_PATH}${relativePath.replace(/^\/+/, '')}`;
 }
 
+function resolveIconAssetPath(iconFiles, slug, extension) {
+  const slugLower = slug.toLowerCase();
+  const fileName = iconFiles?.[slugLower]?.[extension] || `${slugLower}.${extension}`;
+  return assetPath(`assets/item_icons/${encodeURIComponent(fileName)}`);
+}
+
 async function loadCatalog() {
   try {
     const catalog = await fetchJson(assetPath('data/public/index.json'));
@@ -519,9 +525,8 @@ async function renderHome(root) {
   const renderItemCards = (itemsToRender) => {
     return itemsToRender
       .map((item) => {
-        const slugLower = item.slug.toLowerCase();
-        const iconSvg = assetPath(`assets/item_icons/${slugLower}.svg`);
-        const iconPng = assetPath(`assets/item_icons/${slugLower}.png`);
+        const iconSvg = resolveIconAssetPath(catalog.iconFiles, item.slug, 'svg');
+        const iconPng = resolveIconAssetPath(catalog.iconFiles, item.slug, 'png');
           const displayName = (item.name || slugToTitle(item.slug)).replace(/\s+Refined$/, ' (R)');
         return `
       <a class="item-card" href="${itemLink(item.slug)}" loading="lazy">
@@ -904,9 +909,8 @@ async function renderItem(root, slug) {
     </section>
   `;
 
-  const slugLower = slug.toLowerCase();
-  const iconUrlSvg = assetPath(`assets/item_icons/${encodeURIComponent(slugLower)}.svg`);
-  const iconUrlPng = assetPath(`assets/item_icons/${encodeURIComponent(slugLower)}.png`);
+  const iconUrlSvg = resolveIconAssetPath(catalog.iconFiles, slug, 'svg');
+  const iconUrlPng = resolveIconAssetPath(catalog.iconFiles, slug, 'png');
   const iconHtml = `<img class="item-page-icon" src="${iconUrlSvg}" alt="${escapeHtml(itemName)}" onerror="if(!this._tried){this._tried=true;this.src='${iconUrlPng}'}else{this.style.display='none'}" />`;
   renderShell(root, itemName, pageContent, 'Hourly price graph with level and range controls.', iconHtml);
   updateView();

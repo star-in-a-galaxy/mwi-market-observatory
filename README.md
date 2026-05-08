@@ -70,9 +70,6 @@ This workflow supports your side-branch experiment flow:
 The site source is in `site/`. The UI is item-first: the home page is a searchable item browser and item pages live at `/items/<item_slug>`.
 During workflow execution, `data/daily/` and `data/public/` (if present) are copied into the deploy artifact.
 
-To activate hosting, set Pages source to **GitHub Actions** in repository settings:
-
-- `Settings` -> `Pages` -> `Build and deployment` -> `Source: GitHub Actions`
 
 ## Data Format
 
@@ -154,15 +151,6 @@ npm run fetch
 npm run aggregate -- --date=2026-05-06
 npm run prune
 ```
-
-## Design Decisions
-
-- **Public Repository** → Unlimited GitHub Actions minutes; data is already public
-- **~40-minute interval** → 2 fetches per hour at off-minutes; ~48 runs/day
-- **Dedup by timestamp** → Skips writes if API data hasn't refreshed; keeps git history clean
-- **Compact daily keys** → Minimizes file size at scale
-- **No dependencies** → Uses Node 20's native `fetch` and `fs` modules
-- **Hourly filenames** → `HH-MM.json` supports multiple snapshots per hour
 
 ## License
 

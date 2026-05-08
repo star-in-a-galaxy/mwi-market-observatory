@@ -119,6 +119,39 @@ function loadHourlyFiles() {
   return listFilesRecursive(hourlyDir).sort();
 }
 
+function loadItemIconFiles() {
+  const iconDir = path.join('site', 'assets', 'item_icons');
+  const iconFiles = {};
+
+  if (!fs.existsSync(iconDir)) {
+    return iconFiles;
+  }
+
+  const entries = fs.readdirSync(iconDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .sort((left, right) => left.name.localeCompare(right.name));
+
+  for (const entry of entries) {
+    const extension = path.extname(entry.name).slice(1).toLowerCase();
+    if (!extension) {
+      continue;
+    }
+
+    const slug = path.basename(entry.name, path.extname(entry.name)).toLowerCase();
+    if (!iconFiles[slug]) {
+      iconFiles[slug] = {};
+    }
+
+    const currentName = iconFiles[slug][extension];
+    const exactLowercaseName = `${slug}.${extension}`;
+    if (!currentName || entry.name === exactLowercaseName) {
+      iconFiles[slug][extension] = entry.name;
+    }
+  }
+
+  return iconFiles;
+}
+
 function ensureBundle(bundles, itemId) {
   const slug = slugFromItemId(itemId);
   if (!bundles.has(slug)) {
@@ -260,12 +293,15 @@ function analyze() {
   const publicDir = path.join('data', 'public');
   fs.mkdirSync(publicDir, { recursive: true });
 
+  const iconFiles = loadItemIconFiles();
+
   writeJson(path.join(publicDir, 'index.json'), {
     generatedAt,
     source: {
       dailyRange: earliestDaily && latestDaily ? { start: earliestDaily, end: latestDaily } : null,
       hourlyRange: earliestHourly && latestHourly ? { start: earliestHourly, end: latestHourly } : null,
     },
+    iconFiles,
     items: itemIndex,
   });
 
@@ -275,7 +311,13 @@ function analyze() {
       dailyRange: earliestDaily && latestDaily ? { start: earliestDaily, end: latestDaily } : null,
       hourlyRange: earliestHourly && latestHourly ? { start: earliestHourly, end: latestHourly } : null,
     },
+    iconFiles,
     items: itemIndex,
+  });
+
+  writeJson(path.join(publicDir, 'item-icons.json'), {
+    generatedAt,
+    iconFiles,
   });
 
   for (const bundle of bundles.values()) {
