@@ -682,12 +682,6 @@ async function renderHome(root) {
           <p>Search or browse to open a dedicated price page.</p>
         </div>
         <input id="item-search" class="search" type="search" placeholder="Search items..." autocomplete="off" />
-        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:0.5rem;">
-          <div id="grid-size-controls" class="grid-size-controls">
-            <button class="grid-size-button" data-cols="6">6</button>
-            <button class="grid-size-button active" data-cols="8">8</button>
-            <button class="grid-size-button" data-cols="10">10</button>
-          </div>
           <div id="category-filters" class="category-filters">${filtersHtml}</div>
         </div>
         <div id="item-list" class="item-grid"></div>
@@ -873,78 +867,82 @@ async function renderItem(root, slug) {
     return allYValues.length ? { min: Math.min(...allYValues), max: Math.max(...allYValues) } : { min: null, max: null };
   };
 
-  const updateView = () => {
+  const renderChartInteractive = () => {
     const points = currentPoints();
     const globalRange = getGlobalRange();
     const chart = document.getElementById('price-chart');
+    
+    if (!chart) return;
+    
+    const windowConfig = WINDOW_CONFIG[selectedWindow];
+    const chartData = buildChart(points, 960, 400, globalRange.min, globalRange.max, windowConfig, points);
+    chart.innerHTML = chartData.html;
+    
+    const cachedPosData = chartData.pointPositions || [];
+    const cachedDataPoints = chartData.pointData || [];
+
+    const chartHover = document.getElementById('chart-hover');
+    const chartGuide = document.getElementById('chart-guide');
+    const chartWrap = document.querySelector('.chart-wrap');
+    
+    if (chartHover && chartGuide && chartWrap && points.length) {
+      const svg = chartWrap.querySelector('svg');
+      const svgBounds = svg.getBoundingClientRect();
+      const svgScaleX = svgBounds.width / 960;
+
+      const hideHover = () => {
+        chartHover.classList.add('is-hidden');
+        chartGuide.classList.add('is-hidden');
+      };
+
+      const showHoverForClientX = (clientX) => {
+        const hoverWidth = 240;
+        const hoverGap = 16;
+        const hoverMargin = 12;
+        const relativeX = (clientX - svgBounds.left) / svgScaleX;
+        
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+        
+        cachedPosData.forEach((p, i) => {
+          const d = Math.abs(p.x - relativeX);
+          if (d < closestDistance) { closestDistance = d; closestIndex = i; }
+        });
+        
+        const point = cachedDataPoints[closestIndex];
+        if (!point) { hideHover(); return; }
+
+        const x = cachedPosData[closestIndex].x * svgScaleX;
+        chartGuide.classList.remove('is-hidden');
+        chartGuide.style.left = `${x - 1}px`;
+
+        chartHover.classList.remove('is-hidden');
+        const spaceRight = svgBounds.width - x;
+        const hoverLeft = (spaceRight < hoverWidth + hoverGap + hoverMargin) ? Math.max(hoverMargin, x - hoverWidth - hoverGap) : Math.min(x + hoverGap, svgBounds.width - hoverWidth - hoverMargin);
+
+        chartHover.style.left = `${hoverLeft}px`;
+        chartHover.style.top = `20px`;
+        chartHover.innerHTML = `
+          <div class="chart-hover-date">${escapeHtml(point.label)}</div>
+          <div class="chart-hover-row"><span>Ask</span><strong>${formatCurrency(point.a)}</strong></div>
+          <div class="chart-hover-row"><span>Bid</span><strong>${formatCurrency(point.b)}</strong></div>
+          <div class="chart-hover-row"><span>Spread</span><strong>${formatCurrency(point.sp)}</strong></div>
+          <div class="chart-hover-row"><span>Spread %</span><strong>${formatPercent(point.spPct)}</strong></div>
+          <div class="chart-hover-row"><span>Volume</span><strong>${formatNumber(point.v)}</strong></div>
+        `;
+      };
+
+      chartWrap.onmouseleave = hideHover;
+      chartWrap.onmousemove = (event) => showHoverForClientX(event.clientX);
+    }
+  };
+
+  const updateView = () => {
+    const points = currentPoints();
     const stats = document.getElementById('item-stats');
     const latest = points[points.length - 1];
     const latestHourly = ((levels[selectedLevel] || {}).hourly || []).at(-1) || null;
     const latestDaily = ((levels[selectedLevel] || {}).daily || []).at(-1) || null;
-
-    if (chart) {
-      const windowConfig = WINDOW_CONFIG[selectedWindow];
-      const chartData = buildChart(points, 960, 400, globalRange.min, globalRange.max, windowConfig, points);
-      chart.innerHTML = chartData.html;
-      
-      const cachedPosData = chartData.pointPositions || [];
-      const cachedDataPoints = chartData.pointData || [];
-
-      const chartHover = document.getElementById('chart-hover');
-      const chartGuide = document.getElementById('chart-guide');
-      const chartWrap = document.querySelector('.chart-wrap');
-      
-      if (chartHover && chartGuide && chartWrap && points.length) {
-        const svg = chartWrap.querySelector('svg');
-        const svgBounds = svg.getBoundingClientRect();
-        const svgScaleX = svgBounds.width / 960;
-
-        const hideHover = () => {
-          chartHover.classList.add('is-hidden');
-          chartGuide.classList.add('is-hidden');
-        };
-
-        const showHoverForClientX = (clientX) => {
-          const hoverWidth = 240;
-          const hoverGap = 16;
-          const hoverMargin = 12;
-          const relativeX = (clientX - svgBounds.left) / svgScaleX;
-          
-          let closestIndex = 0;
-          let closestDistance = Infinity;
-          
-          cachedPosData.forEach((p, i) => {
-            const d = Math.abs(p.x - relativeX);
-            if (d < closestDistance) { closestDistance = d; closestIndex = i; }
-          });
-          
-          const point = cachedDataPoints[closestIndex];
-          if (!point) { hideHover(); return; }
-
-          const x = cachedPosData[closestIndex].x * svgScaleX;
-          chartGuide.classList.remove('is-hidden');
-          chartGuide.style.left = `${x - 1}px`;
-
-          chartHover.classList.remove('is-hidden');
-          const spaceRight = svgBounds.width - x;
-          const hoverLeft = (spaceRight < hoverWidth + hoverGap + hoverMargin) ? Math.max(hoverMargin, x - hoverWidth - hoverGap) : Math.min(x + hoverGap, svgBounds.width - hoverWidth - hoverMargin);
-
-          chartHover.style.left = `${hoverLeft}px`;
-          chartHover.style.top = `20px`;
-          chartHover.innerHTML = `
-            <div class="chart-hover-date">${escapeHtml(point.label)}</div>
-            <div class="chart-hover-row"><span>Ask</span><strong>${formatCurrency(point.a)}</strong></div>
-            <div class="chart-hover-row"><span>Bid</span><strong>${formatCurrency(point.b)}</strong></div>
-            <div class="chart-hover-row"><span>Spread</span><strong>${formatCurrency(point.sp)}</strong></div>
-            <div class="chart-hover-row"><span>Spread %</span><strong>${formatPercent(point.spPct)}</strong></div>
-            <div class="chart-hover-row"><span>Volume</span><strong>${formatNumber(point.v)}</strong></div>
-          `;
-        };
-
-        chartWrap.onmouseleave = hideHover;
-        chartWrap.onmousemove = (event) => showHoverForClientX(event.clientX);
-      }
-    }
 
     if (stats) {
       stats.innerHTML = latest ? `
@@ -966,6 +964,12 @@ async function renderItem(root, slug) {
     const pointMeta = document.getElementById('point-meta');
     if (pointMeta) {
       pointMeta.textContent = points.length ? `${points.length} displayed points in ${calcWindowLabel(selectedWindow)}` : `No data available for ${calcWindowLabel(selectedWindow)}`;
+    }
+
+    if (typeof requestIdleCallback !== 'undefined') {
+      requestIdleCallback(() => renderChartInteractive(), { timeout: 2000 });
+    } else {
+      setTimeout(renderChartInteractive, 0);
     }
   };
 
