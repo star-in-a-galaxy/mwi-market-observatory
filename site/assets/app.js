@@ -163,7 +163,14 @@ function calcTaxedPrice(value, taxMultiplier) {
 }
 
 function getSpanTickStep(minValue, maxValue) {
-  const span = Math.max(0, maxValue - minValue);
+  let span = Math.max(0, maxValue - minValue);
+  
+  // If span is zero (single value or all same), use 10% of the value as reference range
+  if (!Number.isFinite(span) || span <= 0) {
+    const refValue = Math.abs(minValue) || 1;
+    span = refValue * 0.1;
+  }
+  
   if (!Number.isFinite(span) || span <= 0) {
     return 1;
   }
