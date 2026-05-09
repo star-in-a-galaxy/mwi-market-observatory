@@ -19,6 +19,10 @@ on:
       - data/public/**
       - data/daily/**
       - .github/workflows/pages.yml
+  workflow_run:
+    workflows: ['Fetch Market Data']
+    types: [completed]
+    branches: [main]
   workflow_dispatch: {}
 
 permissions:

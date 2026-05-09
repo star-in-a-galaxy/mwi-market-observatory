@@ -15,6 +15,27 @@ const SITE_BASE_PATH = getSiteBasePath();
 const ROUTE_PREFIX = `${SITE_BASE_PATH}items/`;
 const DEFAULT_WINDOW = '15d';
 
+// Filter cache management
+const FILTER_CACHE_KEY = 'mwi_home_filters';
+
+function saveFilters(category, searchQuery) {
+  try {
+    localStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({ category, searchQuery }));
+  } catch (e) {
+    console.warn('Failed to save filter cache:', e);
+  }
+}
+
+function loadFilters() {
+  try {
+    const cached = localStorage.getItem(FILTER_CACHE_KEY);
+    return cached ? JSON.parse(cached) : { category: 'all', searchQuery: '' };
+  } catch (e) {
+    console.warn('Failed to load filter cache:', e);
+    return { category: 'all', searchQuery: '' };
+  }
+}
+
 // Global catalog cache to prevent redundant parsing
 let G_CATALOG_CACHE = null;
 const WINDOW_CONFIG = {
@@ -229,8 +250,48 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     bidY: typeof point.bid === 'number' && point.bid > 0 ? scaleY(point.bid) : null,
   }));
 
+  const validPriceIndices = [];
+  for (let i = 0; i < points.length; i++) {
+    if (getEffectivePrice(points[i].ask) != null || getEffectivePrice(points[i].bid) != null) {
+      validPriceIndices.push(i);
+    }
+  }
+
+  let firstPriceX = padding.left;
+  let lastPriceX = width - padding.right;
+  let leftHalfStep = innerWidth * 0.125;
+  let rightHalfStep = innerWidth * 0.125;
+
+  if (validPriceIndices.length > 0) {
+    const firstIdx = validPriceIndices[0];
+    const lastIdx = validPriceIndices[validPriceIndices.length - 1];
+    firstPriceX = pointPositions[firstIdx].x;
+    lastPriceX = pointPositions[lastIdx].x;
+
+    if (validPriceIndices.length > 1) {
+      const secondIdx = validPriceIndices[1];
+      const prevIdx = validPriceIndices[validPriceIndices.length - 2];
+      leftHalfStep = Math.max(0, (pointPositions[secondIdx].x - firstPriceX) / 2);
+      rightHalfStep = Math.max(0, (lastPriceX - pointPositions[prevIdx].x) / 2);
+    }
+  }
+
+  // Shift all plotted points left so the left extension starts at the chart start.
+  const leftShift = Math.max(0, (firstPriceX - leftHalfStep) - padding.left);
+  if (leftShift > 0) {
+    for (let i = 0; i < pointPositions.length; i++) {
+      pointPositions[i].x -= leftShift;
+    }
+    firstPriceX -= leftShift;
+    lastPriceX -= leftShift;
+  }
+
+  const chartStartX = firstPriceX - leftHalfStep;
+  const chartEndX = lastPriceX + rightHalfStep;
+
   const toPath = (accessor) => {
-    return points.map((point, index) => accessor(point) != null ? `${index === 0 ? 'M' : 'L'} ${pointPositions[index].x.toFixed(1)} ${scaleY(accessor(point)).toFixed(1)}` : '').join(' ');
+    const pathSegments = points.map((point, index) => accessor(point) != null ? `${index === 0 ? 'M' : 'L'} ${pointPositions[index].x.toFixed(1)} ${scaleY(accessor(point)).toFixed(1)}` : '').filter(Boolean);
+    return pathSegments.join(' ');
   };
 
   const toAreaPath = (accessor) => {
@@ -239,10 +300,10 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     if (validIndices.length === 0) return '';
     
     let pathStr = toPath(accessor);
-    
-    const firstIdx = validIndices[0];
     const lastIdx = validIndices[validIndices.length - 1];
+    const firstIdx = validIndices[0];
     const bottomY = padding.top + innerHeight;
+    
     pathStr += ` L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)}`;
     pathStr += ` L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
     
@@ -255,10 +316,16 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
 
   for (let tickValue = firstTick; tickValue <= lastTick; tickValue += tickStep) {
     const y = padding.top + (1 - (tickValue - paddedMin) / span) * innerHeight;
+    // Main grid line
     grid.push(`
-      <line x1="${padding.left}" y1="${y.toFixed(1)}" x2="${width - padding.right}" y2="${y.toFixed(1)}" class="chart-grid" />
-      <text x="${padding.left - 12}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>
-    `); // Changed formatNumber to formatCompactNumber
+      <line x1="${firstPriceX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${lastPriceX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid" />
+      <text x="${(chartStartX - 12).toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>
+    `);
+    // Extended dashed lines on left and right
+    grid.push(`
+      <line x1="${chartStartX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${firstPriceX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid-extended" stroke-dasharray="4 4" opacity="0.4" />
+      <line x1="${lastPriceX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${chartEndX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid-extended" stroke-dasharray="4 4" opacity="0.4" />
+    `);
   }
 
   const isIntraday = windowConfig && windowConfig.hours <= 24;
@@ -391,6 +458,47 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     ${volumeAxisLabels.join('')}
   ` : '';
 
+  const toExtensionPaths = (accessor) => {
+    const validIndices = [];
+    for (let i = 0; i < points.length; i++) if (accessor(points[i]) != null) validIndices.push(i);
+    if (validIndices.length === 0) return { left: '', right: '' };
+    
+    const firstIdx = validIndices[0];
+    const lastIdx = validIndices[validIndices.length - 1];
+    const firstX = pointPositions[firstIdx].x;
+    const firstY = scaleY(accessor(points[firstIdx]));
+    const lastX = pointPositions[lastIdx].x;
+    const lastY = scaleY(accessor(points[lastIdx]));
+    
+    // Calculate extension distances as half the distance to next/prev point
+    let leftExtDist, rightExtDist;
+    if (firstIdx < points.length - 1) {
+      const nextX = pointPositions[firstIdx + 1].x;
+      leftExtDist = (nextX - firstX) / 2;
+    } else {
+      leftExtDist = (innerWidth / 2) * 0.25;
+    }
+    
+    if (lastIdx > 0) {
+      const prevX = pointPositions[lastIdx - 1].x;
+      rightExtDist = (lastX - prevX) / 2;
+    } else {
+      rightExtDist = (innerWidth / 2) * 0.25;
+    }
+    
+    const leftExtX = firstX - leftExtDist;
+    const rightExtX = lastX + rightExtDist;
+    
+    // Simple horizontal lines
+    const leftPath = `M ${leftExtX.toFixed(1)} ${firstY.toFixed(1)} L ${firstX.toFixed(1)} ${firstY.toFixed(1)}`;
+    const rightPath = `M ${lastX.toFixed(1)} ${lastY.toFixed(1)} L ${rightExtX.toFixed(1)} ${lastY.toFixed(1)}`;
+    
+    return { left: leftPath, right: rightPath };
+  };
+
+  const askExtensions = toExtensionPaths((point) => getEffectivePrice(point.ask));
+  const bidExtensions = toExtensionPaths((point) => getEffectivePrice(point.bid));
+
   const markers = pointPositions.map((point) => {
     const askCircle = point?.askY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.askY.toFixed(1)}" r="2.8" class="chart-point chart-point-ask" />` : '';
     const bidCircle = point?.bidY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.bidY.toFixed(1)}" r="2.8" class="chart-point chart-point-bid" />` : '';
@@ -416,6 +524,10 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
         <path d="${toAreaPath((point) => getEffectivePrice(point.bid))}" class="chart-area chart-area-bid" fill="url(#bid-fill)" />
         <path d="${toPath((point) => getEffectivePrice(point.ask))}" class="chart-line chart-line-ask" />
         <path d="${toPath((point) => getEffectivePrice(point.bid))}" class="chart-line chart-line-bid" />
+        ${askExtensions.left ? `<path d="${askExtensions.left}" class="chart-line chart-line-ask" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
+        ${askExtensions.right ? `<path d="${askExtensions.right}" class="chart-line chart-line-ask" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
+        ${bidExtensions.left ? `<path d="${bidExtensions.left}" class="chart-line chart-line-bid" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
+        ${bidExtensions.right ? `<path d="${bidExtensions.right}" class="chart-line chart-line-bid" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
         ${volumeBars}
         ${volumeTrendSvg}
         ${volumeAxis}
@@ -433,7 +545,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   };
 }
 
-function renderShell(root, title, content, subtitle = '', iconHtml = '') {
+function renderShell(root, title, content, subtitle = '', iconHtml = '', logoHtml = '') {
   root.innerHTML = `
     <header class="hero">
       <p class="kicker">Milky Way Idle</p>
@@ -444,6 +556,7 @@ function renderShell(root, title, content, subtitle = '', iconHtml = '') {
           <p class="status">${escapeHtml(subtitle)}</p>
         </div>
       </div>
+      ${logoHtml ? `<div class="hero-logo">${logoHtml}</div>` : ''}
     </header>
     ${content}
   `;
@@ -672,6 +785,8 @@ async function renderHome(root) {
       : '<div class="empty-state">No items matched that search.</div>';
   };
 
+  const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" />`;
+
   renderShell(
     root,
     'Market Observatory',
@@ -687,7 +802,9 @@ async function renderHome(root) {
         <div id="item-list" class="item-grid"></div>
       </section>
     `,
-    'Browse the market history of any item in the game'
+    'Browse the market history of any item in the game',
+    '',
+    logoHtml
   );
 
   const search = document.getElementById('item-search');
@@ -697,7 +814,11 @@ async function renderHome(root) {
     return;
   }
 
-  let selectedCategory = 'all';
+  // Load cached filters
+  const cachedFilters = loadFilters();
+  let selectedCategory = cachedFilters.category;
+  search.value = cachedFilters.searchQuery;
+
   const filtersContainer = document.getElementById('category-filters');
   const gridControls = document.getElementById('grid-size-controls');
   const gridButtons = gridControls ? Array.from(gridControls.querySelectorAll('.grid-size-button')) : [];
@@ -719,8 +840,19 @@ async function renderHome(root) {
       const btn = ev.target.closest('button');
       if (!btn) return;
       const idx = btn.dataset.index;
-      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => b.classList.toggle('active', b === btn));
-      selectedCategory = idx === 'all' ? 'all' : Number(idx);
+      const newCategory = idx === 'all' ? 'all' : Number(idx);
+      
+      // If clicking the already selected button, toggle to 'all'
+      if (selectedCategory === newCategory && selectedCategory !== 'all') {
+        selectedCategory = 'all';
+      } else if (selectedCategory === 'all' && newCategory === 'all') {
+        // Already on 'all', clicking it again does nothing
+        return;
+      } else {
+        selectedCategory = newCategory;
+      }
+      
+      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => b.classList.toggle('active', b.dataset.index === String(selectedCategory)));
 
       const query = search.value.trim().toLowerCase();
       filteredItems = sortedItems.filter((item) => {
@@ -732,7 +864,8 @@ async function renderHome(root) {
         return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
       });
 
-        renderFilteredItems();
+      saveFilters(selectedCategory, query);
+      renderFilteredItems();
     });
   }
 
@@ -747,7 +880,27 @@ async function renderHome(root) {
       return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
     });
 
+    saveFilters(selectedCategory, query);
     renderFilteredItems();
+  });
+
+  // Apply cached filters to button states and render
+  if (filtersContainer && selectedCategory !== 'all') {
+    const targetBtn = filtersContainer.querySelector(`button[data-index="${selectedCategory}"]`);
+    if (targetBtn) {
+      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => b.classList.toggle('active', b === targetBtn));
+    }
+  }
+
+  // Filter items based on cached state
+  filteredItems = sortedItems.filter((item) => {
+    if (selectedCategory !== 'all') {
+      const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
+      if (catIdx !== selectedCategory) return false;
+    }
+    const query = search.value.trim().toLowerCase();
+    const name = (item.name || slugToTitle(item.slug)).toLowerCase();
+    return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
   });
 
   renderFilteredItems();
@@ -836,16 +989,21 @@ async function renderItem(root, slug) {
 
     return grouped.map(({ bucketStart, points: bucketPoints }) => {
       const representative = bucketPoints[bucketPoints.length - 1];
-      const askPoint = [...bucketPoints].reverse().find((point) => typeof point.ask === 'number' && point.ask > 0) || representative;
-      const bidPoint = [...bucketPoints].reverse().find((point) => typeof point.bid === 'number' && point.bid > 0) || representative;
-      const timestamp = bucketStart; 
+      const lastAskPoint = [...bucketPoints].reverse().find((point) => typeof point.ask === 'number' && Number.isFinite(point.ask) && point.ask > 0) || null;
+      const lastBidPoint = [...bucketPoints].reverse().find((point) => typeof point.bid === 'number' && Number.isFinite(point.bid) && point.bid > 0) || null;
+      const timestamp = bucketStart;
       const volume = bucketPoints.reduce((sum, point) => sum + (typeof point.v === 'number' && point.v > 0 ? point.v : 0), 0);
-      const ask = askPoint.ask ?? null;
-      const bid = bidPoint.bid ?? null;
+      const ask = lastAskPoint ? lastAskPoint.ask : null;
+      const bid = lastBidPoint ? lastBidPoint.bid : null;
       const spread = ask != null && bid != null ? ask - bid : null;
       const spreadPct = spread != null && bid > 0 ? spread / bid : null;
-      const dateObj = new Date(timestamp);
-      const label = bucketMs >= 24 * 60 * 60 * 1000 ? formatDayLabel(dateObj.toISOString().split('T')[0]) : formatHourLabel(dateObj.toISOString());
+      const startDate = new Date(bucketStart);
+      const endDate = new Date(bucketStart + bucketMs - 1);
+      const label = bucketMs > 24 * 60 * 60 * 1000
+        ? `${formatDayLabel(startDate.toISOString().split('T')[0])} - ${formatDayLabel(endDate.toISOString().split('T')[0])}`
+        : (bucketMs >= 24 * 60 * 60 * 1000
+            ? formatDayLabel(startDate.toISOString().split('T')[0])
+            : formatHourLabel(new Date(timestamp).toISOString()));
 
       return { ...representative, t: timestamp, timestamp, label, ask, bid, a: ask, b: bid, v: volume, sp: spread, spPct: spreadPct };
     });
@@ -859,6 +1017,47 @@ async function renderItem(root, slug) {
   const currentPoints = () => {
     const series = currentSeries();
     return aggregateDisplaySeries(windowPoints(series, selectedWindow), selectedWindow);
+  };
+
+  const getCoverageInfo = () => {
+    const requiredHours = WINDOW_CONFIG[selectedWindow]?.hours || 0;
+    const sourceSeries = currentSeries();
+    const timestamps = sourceSeries
+      .map((point) => point?.timestamp)
+      .filter((ts) => typeof ts === 'number' && Number.isFinite(ts) && ts > 0)
+      .sort((left, right) => left - right);
+
+    if (!requiredHours || !timestamps.length) {
+      return {
+        isInsufficient: false,
+        availableHours: 0,
+        requiredHours,
+      };
+    }
+
+    let stepMs = 0;
+    for (let i = 1; i < timestamps.length; i++) {
+      const diff = timestamps[i] - timestamps[i - 1];
+      if (diff > 0) {
+        stepMs = stepMs === 0 ? diff : Math.min(stepMs, diff);
+      }
+    }
+
+    // If only one point exists, treat one sampling interval as available width.
+    if (stepMs <= 0) {
+      stepMs = usesDailySeries(selectedWindow) ? (24 * 60 * 60 * 1000) : (60 * 60 * 1000);
+    }
+
+    const earliestTs = timestamps[0];
+    const latestTs = timestamps[timestamps.length - 1];
+    const availableMs = Math.max(0, (latestTs - earliestTs) + stepMs);
+    const requiredMs = requiredHours * 60 * 60 * 1000;
+
+    return {
+      isInsufficient: availableMs < requiredMs,
+      availableHours: availableMs / (60 * 60 * 1000),
+      requiredHours,
+    };
   };
 
   const getGlobalRange = () => {
@@ -966,6 +1165,20 @@ async function renderItem(root, slug) {
       pointMeta.textContent = points.length ? `${points.length} displayed points in ${calcWindowLabel(selectedWindow)}` : `No data available for ${calcWindowLabel(selectedWindow)}`;
     }
 
+    const chartWarning = document.getElementById('chart-warning');
+    if (chartWarning) {
+      const coverageInfo = getCoverageInfo();
+      if (points.length && coverageInfo.isInsufficient) {
+        const availableDays = (coverageInfo.availableHours / 24).toFixed(1);
+        const requiredDays = (coverageInfo.requiredHours / 24).toFixed(0);
+        chartWarning.textContent = `Warning: this range shows only ${availableDays} days of data.`;
+        chartWarning.classList.remove('is-hidden');
+      } else {
+        chartWarning.classList.add('is-hidden');
+        chartWarning.textContent = '';
+      }
+    }
+
     if (typeof requestIdleCallback !== 'undefined') {
       requestIdleCallback(() => renderChartInteractive(), { timeout: 2000 });
     } else {
@@ -990,6 +1203,7 @@ async function renderItem(root, slug) {
   const iconUrlSvg = resolveIconAssetPath(catalog.iconFiles, slug, 'svg');
   const iconUrlPng = resolveIconAssetPath(catalog.iconFiles, slug, 'png');
   const iconHtml = `<img class="dashboard-icon" src="${iconUrlSvg}" alt="${itemName}" onerror="if(!this._tried){this._tried=true;this.src='${iconUrlPng}'}else{this.style.display='none'}" />`;
+  const logoHtmlItem = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" onerror="this.style.display='none'" />`;
 
   root.innerHTML = `
     <div class="dashboard-layout">
@@ -999,6 +1213,7 @@ async function renderItem(root, slug) {
       </a>
       
       <section class="dashboard-card">
+        <div class="item-logo-container">${logoHtmlItem}</div>
         <header class="dashboard-header">
           <div class="item-identity">
             ${iconHtml}
@@ -1012,6 +1227,7 @@ async function renderItem(root, slug) {
             <div class="legend-item"><span class="legend-dash ask"></span> Ask</div>
             <div class="legend-item"><span class="legend-dash bid"></span> Bid</div>
           </div>
+          <p id="chart-warning" class="chart-warning is-hidden"></p>
           <div id="price-chart"></div>
           <p id="point-meta" class="chart-meta"></p>
         </div>

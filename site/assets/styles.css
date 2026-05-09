@@ -21,8 +21,10 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text-primary);
-  background: radial-gradient(circle at top right, #1e2749 0%, var(--bg-dark) 100%);
+  background: radial-gradient(circle at top right, #1e2749 0%, var(--bg-dark) 100%) !important;
+  background-attachment: fixed !important;
   min-height: 100vh;
+  filter: none !important;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -39,6 +41,36 @@ a { color: inherit; text-decoration: none; }
   background: linear-gradient(135deg, #1e2749 0%, #2d1b4e 100%);
   box-shadow: var(--shadow);
   padding: 1.5rem 1.6rem;
+  position: relative;
+}
+
+.hero-logo {
+  position: absolute;
+  top: 50%;
+  right: 1.6rem;
+  transform: translateY(-50%);
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.hero-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.hero-title {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.hero-title > div {
+  flex: 1;
 }
 
 .hero h1 { margin: 0.35rem 0 0.4rem; font-size: clamp(1.9rem, 3vw, 3rem); }
@@ -123,6 +155,22 @@ a { color: inherit; text-decoration: none; }
   padding: 1.5rem 2rem 2rem;
   backdrop-filter: blur(12px);
   overflow: hidden;
+  position: relative;
+}
+
+.item-logo-container {
+  position: absolute;
+  top: 1.5rem;
+  right: 2rem;
+  width: 80px;
+  height: 80px;
+  z-index: 1;
+}
+
+.item-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .dashboard-header {
@@ -229,6 +277,20 @@ a { color: inherit; text-decoration: none; }
 .legend-dash { width: 24px; height: 4px; border-radius: 2px; }
 .legend-dash.ask { background: var(--line-ask); box-shadow: 0 0 8px var(--line-ask); }
 .legend-dash.bid { background: var(--line-bid); box-shadow: 0 0 8px var(--line-bid); }
+
+.chart-warning {
+  margin: 0 auto 0.65rem;
+  width: fit-content;
+  max-width: min(100%, 720px);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(241, 196, 15, 0.45);
+  background: rgba(241, 196, 15, 0.12);
+  color: #ffd76a;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: center;
+}
 
 .chart-meta { color: var(--text-muted); font-size: 0.85rem; text-align: right; margin-top: 0.4rem; }
 

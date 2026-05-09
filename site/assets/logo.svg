@@ -1,0 +1,43 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#252d3d; stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a202c; stop-opacity:1" />
+    </radialGradient>
+    
+    <filter id="purpleGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="50" cy="50" r="48" fill="url(#bgGradient)" stroke="#252d3d" stroke-width="1"/>
+
+  <circle cx="50" cy="50" r="44" fill="none" stroke="#00d9ff" stroke-width="1" opacity="0.3" stroke-dasharray="2 2"/>
+  
+  <g stroke="#00d9ff" stroke-width="2.5" stroke-linecap="round" opacity="0.6">
+    <path d="M50 5 L50 12" /> <path d="M50 88 L50 95" /> <path d="M5 50 L12 50" /> <path d="M88 50 L95 50" /> </g>
+
+  <rect x="38" y="72" width="6" height="10" rx="1" fill="#00d9ff" opacity="0.9"/> <rect x="47" y="76" width="6" height="6" rx="1" fill="#c77dff" opacity="0.9"/> <rect x="56" y="69" width="6" height="13" rx="1" fill="#2ecc71" opacity="0.9"/> <path id="properStar" 
+        d="M50,32
+           L54.1,42.3
+           L65.2,43.1
+           L56.7,50.2
+           L59.4,60.9
+           L50,55.0
+           L40.6,60.9
+           L43.3,50.2
+           L34.8,43.1
+           L45.9,42.3 Z" 
+        fill="#c77dff" 
+        stroke="#e8eef5" 
+        stroke-width="1.2" 
+        filter="url(#purpleGlow)"/>
+  
+  <circle cx="24" cy="38" r="1.1" fill="#00d9ff" opacity="0.5"/>
+  <circle cx="80" cy="24" r="0.9" fill="#ffffff" opacity="0.7"/>
+  <circle cx="76" cy="70" r="1.2" fill="#ffd700" opacity="0.7"/>
+</svg>
