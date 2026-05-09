@@ -14,10 +14,11 @@ jobs:
         with:
           node-version: '20'
       - run: node scripts/fetch.js
+      - run: node scripts/analyze.js
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/hourly/
+          git add data/hourly/ data/public/
           git diff --cached --quiet || git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z"
           git push
