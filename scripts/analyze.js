@@ -50,24 +50,26 @@ function safeNumber(value) {
 }
 
 function buildPoint({ t, label, ask, bid, volume, previousAsk, previousBid }) {
-  const sp = ask != null && bid != null ? ask - bid : null;
-  const spPct = sp != null && bid > 0 ? sp / bid : null;
-  const retA = ask != null && previousAsk != null && previousAsk > 0 ? (ask / previousAsk) - 1 : null;
-  const retB = bid != null && previousBid != null && previousBid > 0 ? (bid / previousBid) - 1 : null;
-
   return {
     t,
-    label,
     ask,
     bid,
     a: ask,
     b: bid,
     v: volume,
-    sp,
-    spPct,
-    retA,
-    retB,
   };
+}
+
+function serializeSeriesPoint(point) {
+  return [point.timestamp, point.ask, point.bid, point.v];
+}
+
+function getTrailingDailySeries(series, limit = 120) {
+  if (!Array.isArray(series) || limit <= 0) {
+    return [];
+  }
+
+  return series.slice(-limit);
 }
 
 function appendPoint(series, point) {
@@ -177,24 +179,6 @@ function ensureLevel(bundle, level) {
   return bundle.levels.get(level);
 }
 
-function toSerializableBundle(bundle) {
-  const levels = {};
-
-  for (const [level, series] of bundle.levels.entries()) {
-    levels[level] = {
-      daily: series.daily,
-      hourly: series.hourly,
-    };
-  }
-
-  return {
-    slug: bundle.slug,
-    itemId: bundle.itemId,
-    name: bundle.name,
-    levels,
-  };
-}
-
 function analyze() {
   const generatedAt = new Date().toISOString();
   const bundles = new Map();
@@ -275,41 +259,10 @@ function analyze() {
     }
   }
 
-  function addRollingVolumes(series, isHourly) {
-    for (let i = 0; i < series.length; i++) {
-      const point = series[i];
-      if (!point.timestamp) continue;
-
-      point.rolling = {};
-
-      if (isHourly) {
-        // Sum all snapshot volumes in the last 24 hours
-        const windowMs = 24 * 60 * 60 * 1000;
-        const cutoff = point.timestamp - windowMs;
-        const volumeSum = series.slice(0, i + 1)
-          .filter((p) => (p.timestamp || 0) > cutoff)
-          .reduce((sum, p) => sum + (p.v || 0), 0);
-        point.rolling['1d'] = volumeSum;
-      } else {
-        // Average the daily volumes over the available days (up to 7)
-        const windowMs = 7 * 24 * 60 * 60 * 1000;
-        const cutoff = point.timestamp - windowMs;
-        const validPoints = series.slice(0, i + 1).filter((p) => (p.timestamp || 0) > cutoff);
-        
-        const volumeSum = validPoints.reduce((sum, p) => sum + (p.v || 0), 0);
-        const daysAvailable = Math.max(1, validPoints.length); 
-        
-        point.rolling['7d'] = Math.round(volumeSum / daysAvailable);
-      }
-    }
-  }
-
   for (const bundle of bundles.values()) {
     for (const series of bundle.levels.values()) {
       series.daily.sort((left, right) => Date.parse(left.t) - Date.parse(right.t));
       series.hourly.sort((left, right) => Date.parse(left.t) - Date.parse(right.t));
-      addRollingVolumes(series.daily, false);
-      addRollingVolumes(series.hourly, true);
     }
 
     itemIndex.push({
@@ -334,22 +287,28 @@ function analyze() {
       dailyRange: earliestDaily && latestDaily ? { start: earliestDaily, end: latestDaily } : null,
       hourlyRange: earliestHourly && latestHourly ? { start: earliestHourly, end: latestHourly } : null,
     },
+    iconFiles,
     items: itemIndex.map((item) => ({ slug: item.slug, name: item.name })),
   });
 
-  writeJson(path.join(publicDir, 'item-icons.json'), {
-    generatedAt,
-    iconFiles,
-  });
-
   for (const bundle of bundles.values()) {
+    const data = {};
+
+    for (const [level, series] of bundle.levels.entries()) {
+      data[level] = {
+        d: getTrailingDailySeries(series.daily).map(serializeSeriesPoint),
+        h: series.hourly.map(serializeSeriesPoint),
+      };
+    }
+
     writeJson(path.join(publicDir, 'items', `${bundle.slug}.json`), {
       generatedAt,
+      v: 2,
       slug: bundle.slug,
       itemId: bundle.itemId,
       name: bundle.name,
       levels: Array.from(bundle.levels.keys()).sort((left, right) => Number(left) - Number(right)),
-      data: toSerializableBundle(bundle).levels,
+      data,
     });
   }
 

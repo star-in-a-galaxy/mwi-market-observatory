@@ -14,7 +14,7 @@ function isIconRequest(requestUrl) {
 
 async function cacheManifestIcons(cache) {
   try {
-    const manifestResponse = await fetch(getAssetUrl('data/public/item-icons.json'));
+    const manifestResponse = await fetch(getAssetUrl('data/public/index.json'));
     if (!manifestResponse.ok) {
       return;
     }
