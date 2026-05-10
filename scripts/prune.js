@@ -14,7 +14,7 @@ function prune() {
   
   const directories = fs.readdirSync(hourlyDir);
   const hourlyCutoff = new Date();
-  hourlyCutoff.setUTCDate(hourlyCutoff.getUTCDate() - 31);
+  hourlyCutoff.setUTCDate(hourlyCutoff.getUTCDate() - 16);
   const hourlyCutoffStr = hourlyCutoff.toISOString().split('T')[0];
   
   console.log(`[prune] Hourly cutoff date: ${hourlyCutoffStr}`);

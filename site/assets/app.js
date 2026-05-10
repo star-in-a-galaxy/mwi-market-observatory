@@ -40,6 +40,7 @@ function loadFilters() {
 let G_CATALOG_CACHE = null;
 const WINDOW_CONFIG = {
   '1d': { label: '1 Day', hours: 24 },
+  '3d': { label: '3 Days', hours: 24 * 3 },
   '7d': { label: '7 Days', hours: 24 * 7 },
   '15d': { label: '15 Days', hours: 24 * 15 },
   '30d': { label: '30 Days', hours: 24 * 30 },
@@ -54,6 +55,151 @@ async function fetchJson(path) {
     throw new Error(`Request failed: ${path} (${response.status})`);
   }
   return response.json();
+}
+
+function normalizePublicSeriesPoint(point, kind, previousAsk, previousBid) {
+  let timestamp = null;
+  let ask = null;
+  let bid = null;
+  let volume = null;
+  let t = null;
+  let label = null;
+
+  if (Array.isArray(point)) {
+    [timestamp, ask, bid, volume] = point;
+    if (typeof timestamp === 'number' && Number.isFinite(timestamp)) {
+      const isoString = new Date(timestamp).toISOString();
+      t = kind === 'daily' ? isoString.split('T')[0] : isoString;
+      label = kind === 'daily' ? formatDayLabel(t) : formatHourLabel(isoString);
+    }
+  } else if (point && typeof point === 'object') {
+    timestamp = typeof point.timestamp === 'number' && Number.isFinite(point.timestamp)
+      ? point.timestamp
+      : (typeof point.t === 'number' && Number.isFinite(point.t) ? point.t : Date.parse(point.t || point.label || ''));
+    ask = typeof point.ask === 'number' ? point.ask : point.a;
+    bid = typeof point.bid === 'number' ? point.bid : point.b;
+    volume = typeof point.v === 'number' ? point.v : point.volume;
+    t = typeof point.t === 'string' ? point.t : null;
+    label = typeof point.label === 'string' ? point.label : null;
+  }
+
+  if (typeof timestamp !== 'number' || !Number.isFinite(timestamp) || timestamp <= 0) {
+    return null;
+  }
+
+  ask = typeof ask === 'number' && Number.isFinite(ask) && ask > 0 ? ask : null;
+  bid = typeof bid === 'number' && Number.isFinite(bid) && bid > 0 ? bid : null;
+  volume = typeof volume === 'number' && Number.isFinite(volume) && volume > 0 ? volume : null;
+
+  if (!t) {
+    const isoString = new Date(timestamp).toISOString();
+    t = kind === 'daily' ? isoString.split('T')[0] : isoString;
+  }
+
+  if (!label) {
+    label = kind === 'daily'
+      ? formatDayLabel(t)
+      : formatHourLabel(kind === 'daily' ? `${t}T00:00:00Z` : t);
+  }
+
+  const sp = ask != null && bid != null ? ask - bid : null;
+  const spPct = sp != null && bid > 0 ? sp / bid : null;
+  const retA = ask != null && previousAsk != null && previousAsk > 0 ? (ask / previousAsk) - 1 : null;
+  const retB = bid != null && previousBid != null && previousBid > 0 ? (bid / previousBid) - 1 : null;
+
+  return {
+    t,
+    timestamp,
+    label,
+    ask,
+    bid,
+    a: ask,
+    b: bid,
+    v: volume,
+    sp,
+    spPct,
+    retA,
+    retB,
+  };
+}
+
+function normalizePublicSeries(rawSeries, kind) {
+  const normalized = [];
+  let previousAsk = null;
+  let previousBid = null;
+
+  for (const rawPoint of rawSeries || []) {
+    const point = normalizePublicSeriesPoint(rawPoint, kind, previousAsk, previousBid);
+    if (!point) continue;
+
+    normalized.push(point);
+    if (point.ask != null) previousAsk = point.ask;
+    if (point.bid != null) previousBid = point.bid;
+  }
+
+  return normalized;
+}
+
+function normalizePublicItemData(rawItemData) {
+  if (!rawItemData || typeof rawItemData !== 'object') {
+    return { levels: [], data: {} };
+  }
+
+  const sourceLevels = rawItemData.v === 2 && rawItemData.data && typeof rawItemData.data === 'object'
+    ? rawItemData.data
+    : (rawItemData.data && typeof rawItemData.data === 'object'
+      ? rawItemData.data
+      : {});
+
+  const normalizedData = {};
+
+  for (const [level, levelData] of Object.entries(sourceLevels)) {
+    if (rawItemData.v === 2 || (levelData && Array.isArray(levelData.d)) || (levelData && Array.isArray(levelData.h))) {
+      normalizedData[level] = {
+        daily: normalizePublicSeries(levelData?.d || [], 'daily'),
+        hourly: normalizePublicSeries(levelData?.h || [], 'hourly'),
+      };
+    } else {
+      normalizedData[level] = {
+        daily: normalizePublicSeries(levelData?.daily || [], 'daily'),
+        hourly: normalizePublicSeries(levelData?.hourly || [], 'hourly'),
+      };
+    }
+  }
+
+  const levels = Array.isArray(rawItemData.levels)
+    ? rawItemData.levels.map((level) => String(level))
+    : Object.keys(normalizedData).sort((left, right) => Number(left) - Number(right));
+
+  return {
+    ...rawItemData,
+    levels,
+    data: normalizedData,
+  };
+}
+
+function getTrailingVolume(series, windowMs, mode = 'sum') {
+  if (!Array.isArray(series) || series.length === 0) {
+    return null;
+  }
+
+  const latestTimestamp = series[series.length - 1]?.timestamp;
+  if (typeof latestTimestamp !== 'number' || !Number.isFinite(latestTimestamp)) {
+    return null;
+  }
+
+  const cutoff = latestTimestamp - windowMs;
+  const relevantPoints = series.filter((point) => typeof point?.timestamp === 'number' && point.timestamp > cutoff);
+  if (!relevantPoints.length) {
+    return null;
+  }
+
+  const volumeSum = relevantPoints.reduce((sum, point) => sum + (typeof point.v === 'number' && point.v > 0 ? point.v : 0), 0);
+  if (mode === 'avg') {
+    return Math.round(volumeSum / relevantPoints.length);
+  }
+
+  return volumeSum;
 }
 
 function escapeHtml(value) {
@@ -608,14 +754,7 @@ async function loadCatalog() {
   try {
     const catalog = await fetchJson(assetPath('data/public/index.json'));
     if (Array.isArray(catalog.items)) {
-      // Load icon mappings separately from item-icons.json
-      try {
-        const iconData = await fetchJson(assetPath('data/public/item-icons.json'));
-        catalog.iconFiles = iconData.iconFiles || {};
-      } catch (error) {
-        console.warn('Failed to load icon mappings:', error);
-        catalog.iconFiles = {};
-      }
+      catalog.iconFiles = catalog.iconFiles || {};
       // Cache the catalog for future use
       G_CATALOG_CACHE = catalog;
       return catalog;
@@ -943,7 +1082,7 @@ async function renderItem(root, slug) {
 
   let itemData = null;
   try {
-    itemData = await fetchJson(assetPath(`data/public/items/${encodeURIComponent(slug)}.json`));
+    itemData = normalizePublicItemData(await fetchJson(assetPath(`data/public/items/${encodeURIComponent(slug)}.json`)));
   } catch (error) {
     itemData = null;
   }
@@ -961,11 +1100,12 @@ async function renderItem(root, slug) {
     .map((key) => `<button class="pill ${key === selectedWindow ? 'active' : ''}" data-window="${escapeHtml(key)}">${escapeHtml(WINDOW_CONFIG[key].label)}</button>`)
     .join('');
 
-  const usesDailySeries = (windowKey) => (WINDOW_CONFIG[windowKey]?.hours || 0) > (24 * 30);
+  const usesDailySeries = (windowKey) => (WINDOW_CONFIG[windowKey]?.hours || 0) >= (24 * 30);
 
   const displayBucketMsForWindow = (windowKey) => {
     const hourMs = 60 * 60 * 1000;
     if (windowKey === '1d') return 1 * hourMs; 
+    if (windowKey === '3d') return 3 * hourMs;
     if (windowKey === '7d') return 6 * hourMs;
     if (windowKey === '15d') return 12 * hourMs;
     if (windowKey === '30d') return 24 * hourMs;
@@ -985,6 +1125,34 @@ async function renderItem(root, slug) {
     for (const point of series) {
       if (!point || typeof point.timestamp !== 'number') continue;
       const bucketStart = Math.floor(point.timestamp / bucketMs) * bucketMs;
+      
+      // For 1D, if we have 2+ points in the same hour, infer based on neighbor buckets:
+      // - If previous hour empty: move 1st point to previous hour
+      // - Else if previous exists AND next hour empty: move 2nd point to next hour
+      // - Else aggregate both in current hour
+      if (windowKey === '1d' && currentBucket && currentBucket.bucketStart === bucketStart && currentBucket.points.length >= 1) {
+        const previousBucketStart = bucketStart - bucketMs;
+        const nextBucketStart = bucketStart + bucketMs;
+        const previousBucketExists = grouped.some((b) => b.bucketStart === previousBucketStart);
+        const nextBucketExists = grouped.some((b) => b.bucketStart === nextBucketStart);
+        
+        if (!previousBucketExists) {
+          // Move 1st point to previous bucket
+          const firstPoint = currentBucket.points.shift();
+          grouped.push({ bucketStart: previousBucketStart, points: [firstPoint] });
+          // Current point stays in current bucket
+        } else if (previousBucketExists && !nextBucketExists) {
+          // Move 2nd point to next bucket
+          grouped.push(currentBucket);
+          currentBucket = { bucketStart: nextBucketStart, points: [point] };
+          continue;
+        } else {
+          // Aggregate both in current hour
+          currentBucket.points.push(point);
+          continue;
+        }
+      }
+      
       if (!currentBucket || currentBucket.bucketStart !== bucketStart) {
         if (currentBucket) grouped.push(currentBucket);
         currentBucket = { bucketStart, points: [point] };
@@ -1018,7 +1186,28 @@ async function renderItem(root, slug) {
 
   const currentSeries = () => {
     const levelData = levels[selectedLevel] || {};
-    return usesDailySeries(selectedWindow) ? (levelData.daily || []) : (levelData.hourly || []);
+    const series = usesDailySeries(selectedWindow) ? (levelData.daily || []) : (levelData.hourly || []);
+    
+    // For 30d/60d/90d/120d, use daily series but append hourly data for the last bucket
+    if (['30d', '60d', '90d', '120d'].includes(selectedWindow) && usesDailySeries(selectedWindow)) {
+      const dailySeries = levelData.daily || [];
+      const hourlySeries = levelData.hourly || [];
+      if (dailySeries.length > 0 && hourlySeries.length > 0) {
+        const bucketMs = displayBucketMsForWindow(selectedWindow);
+        const now = Date.now();
+        const todayStart = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000);
+        const lastBucketStart = Math.floor(todayStart / bucketMs) * bucketMs;
+        
+        // Include all daily data before the last bucket, then append hourly data from last bucket start
+        const dailyBeforeBucket = dailySeries.filter((point) => point?.timestamp && point.timestamp < lastBucketStart);
+        const hourlyFromLastBucket = hourlySeries.filter((point) => point?.timestamp && point.timestamp >= lastBucketStart);
+        
+        if (hourlyFromLastBucket.length > 0) {
+          return [...dailyBeforeBucket, ...hourlyFromLastBucket];
+        }
+      }
+    }
+    return series;
   };
 
   const currentPoints = () => {
@@ -1147,8 +1336,13 @@ async function renderItem(root, slug) {
     const points = currentPoints();
     const stats = document.getElementById('item-stats');
     const latest = points[points.length - 1];
-    const latestHourly = ((levels[selectedLevel] || {}).hourly || []).at(-1) || null;
-    const latestDaily = ((levels[selectedLevel] || {}).daily || []).at(-1) || null;
+    const currentLevel = levels[selectedLevel] || {};
+    const hourlySeries = currentLevel.hourly || [];
+    const dailySeries = currentLevel.daily || [];
+    const latestHourly = hourlySeries.at(-1) || null;
+    const latestDaily = dailySeries.at(-1) || null;
+    const hourlyVolume24h = getTrailingVolume(hourlySeries, 24 * 60 * 60 * 1000, 'sum');
+    const dailyVolume7dAvg = getTrailingVolume(dailySeries, 7 * 24 * 60 * 60 * 1000, 'avg');
 
     if (stats) {
       stats.innerHTML = latest ? `
@@ -1156,8 +1350,8 @@ async function renderItem(root, slug) {
         <div><span class="stat-label">Bid</span><strong>${formatNumber(latest.b)}</strong></div>
         <div><span class="stat-label">Spread</span><strong>${formatNumber(latest.sp)}</strong></div>
         <div><span class="stat-label">Spread %</span><strong>${formatPercent(latest.spPct)}</strong></div>
-        <div><span class="stat-label">Volume (24h)</span><strong>${formatNumber(latestHourly?.rolling?.['1d'])}</strong></div>
-        <div><span class="stat-label">Volume (7d avg)</span><strong>${formatNumber(latestDaily?.rolling?.['7d'])}</strong></div>
+        <div><span class="stat-label">Volume (24h)</span><strong>${formatNumber(hourlyVolume24h)}</strong></div>
+        <div><span class="stat-label">Volume (7d avg)</span><strong>${formatNumber(dailyVolume7dAvg)}</strong></div>
       ` : '<div class="empty-state">No data available.</div>';
     }
 
