@@ -5,9 +5,10 @@
   "main": "scripts/fetch.js",
   "scripts": {
     "fetch": "node scripts/fetch.js",
-    "aggregate": "node scripts/aggregate.js",
+    "aggregate": "node scripts/aggregate.js && node scripts/prune.js && node scripts/analyze.js && node scripts/compute-arbitrage.js",
     "analyze": "node scripts/analyze.js",
     "prune": "node scripts/prune.js",
+    "arbitrage": "node scripts/compute-arbitrage.js",
     "serve": "node scripts/serve.js"
   },
   "keywords": ["mwi", "milky-way-idle", "market", "data"],

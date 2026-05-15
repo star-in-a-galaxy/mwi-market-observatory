@@ -12,6 +12,24 @@ function isIconRequest(requestUrl) {
   return requestUrl.origin === self.location.origin && requestUrl.pathname.includes('/assets/item_icons/');
 }
 
+function isArbitrageRequest(requestUrl) {
+  return requestUrl.origin === self.location.origin && /\/arbitrage(-\d+d)?\.json$/.test(requestUrl.pathname);
+}
+
+async function cacheArbitrageData(cache) {
+  const files = ['arbitrage.json', 'arbitrage-3d.json'];
+  for (const file of files) {
+    try {
+      const response = await fetch(getAssetUrl(`data/public/${file}`));
+      if (response.ok) {
+        await cache.put(getAssetUrl(`data/public/${file}`), response);
+      }
+    } catch (error) {
+      console.warn(`Failed to pre-cache ${file}:`, error);
+    }
+  }
+}
+
 async function cacheManifestIcons(cache) {
   try {
     const manifestResponse = await fetch(getAssetUrl('data/public/index.json'));
@@ -45,6 +63,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(ICON_CACHE_NAME);
     await cacheManifestIcons(cache);
+    await cacheArbitrageData(cache);
     await self.skipWaiting();
   })());
 });
@@ -65,7 +84,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
 
-  if (!isIconRequest(requestUrl) && event.request.destination !== 'image') {
+  if (!isIconRequest(requestUrl) && !isArbitrageRequest(requestUrl) && event.request.destination !== 'image') {
     return;
   }
 

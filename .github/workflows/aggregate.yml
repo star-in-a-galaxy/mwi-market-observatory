@@ -18,6 +18,7 @@ jobs:
       - run: node scripts/aggregate.js
       - run: node scripts/prune.js
       - run: node scripts/analyze.js
+      - run: node scripts/compute-arbitrage.js
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
