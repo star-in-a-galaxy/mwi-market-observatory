@@ -1621,8 +1621,8 @@ async function renderArbitrage(root) {
       const temporal = item.temporal;
       const askZStr = temporal ? temporal.askZ.toFixed(1) : '-';
       const bidZStr = temporal ? temporal.bidZ.toFixed(1) : '-';
-      const askZClass = temporal && temporal.askZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.askZ > 0.5 ? ' arb-z-bear' : '');
-      const bidZClass = temporal && temporal.bidZ > 0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ < -0.5 ? ' arb-z-bear' : '');
+      const askZClass = temporal && temporal.askZ > 0.5 ? ' arb-z-bull' : (temporal && temporal.askZ < -0.5 ? ' arb-z-bear' : '');
+      const bidZClass = temporal && temporal.bidZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ > 0.5 ? ' arb-z-bear' : '');
 
       const cols = [
         `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" onerror="if(!this._t){this._t=1;this.src='${iconUrls.pngUrl}'}else{this.style.display='none'}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
@@ -1657,8 +1657,8 @@ async function renderArbitrage(root) {
               <th class="arb-sort" data-sort="fillConfidence" data-tip="% of snapshots with sufficient volume">Fill</th>
               <th class="arb-sort" data-sort="score" data-tip="ROI × Reliability × Fill (normalized)">Score</th>
               <th data-tip="UTC hour with historically highest mean flip profit">Best</th>
-              <th class="arb-sort" data-sort="askZ" data-tip="Current ask vs window avg (σ). Negative = discount sellers">Ask Δ</th>
-              <th class="arb-sort" data-sort="bidZ" data-tip="Current bid vs window avg (σ). Positive = premium buyers">Bid Δ</th>
+              <th class="arb-sort" data-sort="askZ" data-tip="Z-score: current ask vs its avg. Positive = premium sellers → good to sell">Ask Δ</th>
+              <th class="arb-sort" data-sort="bidZ" data-tip="Z-score: current bid vs its avg. Negative = discounted sellers → good to buy">Bid Δ</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1740,8 +1740,8 @@ async function renderArbitrage(root) {
     const signalClass = t.signal ? ` arb-signal-${t.signal}` : '';
     const signalLabel = t.signal ? (signalMap[t.signal] || t.signal) : '—';
     return `
-      <div class="arb-stat-row"><span>Ask Δ (σ)</span><span class="${t.askZ < -0.5 ? 'arb-z-bull' : (t.askZ > 0.5 ? 'arb-z-bear' : '')}">${t.askZ.toFixed(2)}</span></div>
-      <div class="arb-stat-row"><span>Bid Δ (σ)</span><span class="${t.bidZ > 0.5 ? 'arb-z-bull' : (t.bidZ < -0.5 ? 'arb-z-bear' : '')}">${t.bidZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Ask Δ (σ)</span><span class="${t.askZ > 0.5 ? 'arb-z-bull' : (t.askZ < -0.5 ? 'arb-z-bear' : '')}">${t.askZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Bid Δ (σ)</span><span class="${t.bidZ < -0.5 ? 'arb-z-bull' : (t.bidZ > 0.5 ? 'arb-z-bear' : '')}">${t.bidZ.toFixed(2)}</span></div>
       <div class="arb-stat-row"><span>Spread Δ (σ)</span><span>${t.spreadZ.toFixed(2)}</span></div>
       <div class="arb-stat-row"><span>Signal</span><span class="${signalClass}">${signalLabel}</span></div>
     `;

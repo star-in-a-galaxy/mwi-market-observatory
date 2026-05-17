@@ -88,9 +88,9 @@ function computeTemporalMetrics(snaps) {
   const spreadZ = askZ - bidZ;
 
   let signal = '';
-  if (askZ < -1 && bidZ > 1) signal = 'flip';
-  else if (askZ < -1) signal = 'buy';
-  else if (bidZ > 1) signal = 'sell';
+  if (bidZ < -1 && askZ > 1) signal = 'flip';
+  else if (bidZ < -1) signal = 'buy';
+  else if (askZ > 1) signal = 'sell';
 
   return {
     askZ: Math.round(askZ * 100) / 100,
