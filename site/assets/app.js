@@ -237,6 +237,35 @@ function formatCompactNumber(value) {
   return value.toLocaleString('en-US');
 }
 
+function parseRoiInput(str) {
+  if (str == null || str === '') return 0;
+  const s = String(str).trim().replace(/,/g, '.');
+  const num = parseFloat(s);
+  return Number.isFinite(num) && num >= 0 ? num : 0;
+}
+
+function parseVolumeInput(str) {
+  if (str == null || str === '') return 0;
+  let s = String(str).trim().replace(/,/g, '');
+  if (!s) return 0;
+  const suffix = s.slice(-1).toUpperCase();
+  let mult = 1;
+  if (suffix === 'K') { mult = 1e3; s = s.slice(0, -1).trim(); }
+  else if (suffix === 'M') { mult = 1e6; s = s.slice(0, -1).trim(); }
+  else if (suffix === 'B') { mult = 1e9; s = s.slice(0, -1).trim(); }
+  const num = parseFloat(s);
+  return Number.isFinite(num) && num > 0 ? Math.round(num * mult) : 0;
+}
+
+function formatAbbrVolume(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '0';
+  if (value === 0) return '0';
+  if (value >= 1e9) return (value / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (value >= 1e6) return (value / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (value >= 1e3) return (value / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(value);
+}
+
 function formatPercent(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '-';
@@ -1542,11 +1571,14 @@ async function renderArbitrage(root) {
   let selectedCats = new Set();
   let minRoiFilter = 0;
   let minVolFilter = 0;
+  let arbFilterTimer;
   let sortField = 'score';
   let sortDir = -1;
   let expandedRow = null;
   let detailCache = {};
   let isLoading = true;
+  const ROI_PRESETS = [{ value: 0, label: '0%' }, { value: 1, label: '1%' }, { value: 2, label: '2%' }, { value: 5, label: '5%' }, { value: 10, label: '10%' }, { value: 20, label: '20%' }, { value: 50, label: '50%' }];
+  const VOL_PRESETS = [{ value: 0, label: '0' }, { value: 1000, label: '1K' }, { value: 10000, label: '10K' }, { value: 100000, label: '100K' }, { value: 1000000, label: '1M' }];
 
   const getArbField = (item, field) => {
     if (field === 'roi') return item.roi?.p25 ?? 0;
@@ -1590,6 +1622,13 @@ async function renderArbitrage(root) {
       ...catFiles.map((c, i) => `<button class="arb-filter-pill ${selectedCats.has(i) ? 'active' : ''}" data-cat="${i}">${escapeHtml(c.label)}</button>`)
     ].join('');
 
+    const roiPresetBtns = ROI_PRESETS.map(p =>
+      `<button class="arb-preset-btn${minRoiFilter === p.value ? ' active' : ''}" data-target="roi" data-value="${p.value}">${p.label}</button>`
+    ).join('');
+    const volPresetBtns = VOL_PRESETS.map(p =>
+      `<button class="arb-preset-btn${minVolFilter === p.value ? ' active' : ''}" data-target="vol" data-value="${p.value}">${p.label}</button>`
+    ).join('');
+
     return `
       <div class="arb-controls">
         <div class="arb-controls-row">
@@ -1597,8 +1636,8 @@ async function renderArbitrage(root) {
           <div class="button-row" id="arb-window-buttons">${windowButtons}</div>
         </div>
         <div class="arb-controls-row">
-          <label class="arb-label">Min ROI <input type="number" id="arb-min-roi" value="${minRoiFilter}" min="0" step="0.5" class="arb-input" />%</label>
-          <label class="arb-label">Min Vol <input type="number" id="arb-min-vol" value="${minVolFilter}" min="0" step="100" class="arb-input" /></label>
+          <label class="arb-label">Min ROI <input type="text" id="arb-min-roi" value="${minRoiFilter || ''}" class="arb-input" /><span class="arb-presets">${roiPresetBtns}</span></label>
+          <label class="arb-label">Min Vol <input type="text" id="arb-min-vol" value="${formatAbbrVolume(minVolFilter)}" class="arb-input" /><span class="arb-presets">${volPresetBtns}</span></label>
           <span id="arb-count" class="arb-count">${filteredItems.length} / ${items.length} items</span>
         </div>
         <div class="arb-cat-filters" id="arb-cat-filters">${catButtons}</div>
@@ -1613,35 +1652,7 @@ async function renderArbitrage(root) {
     if (!filteredItems.length) {
       return '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>';
     }
-    const rows = filteredItems.map((item, idx) => {
-      const isExpanded = expandedRow === `${item.slug}::${item.level}`;
-      const iconUrls = resolveIcon(item.slug);
-      const thinClass = item.fillConfidence < 0.5 ? ' arb-thin' : '';
-
-      const temporal = item.temporal;
-      const askZStr = temporal ? temporal.askZ.toFixed(1) : '-';
-      const bidZStr = temporal ? temporal.bidZ.toFixed(1) : '-';
-      const askZClass = temporal && temporal.askZ > 0.5 ? ' arb-z-bull' : (temporal && temporal.askZ < -0.5 ? ' arb-z-bear' : '');
-      const bidZClass = temporal && temporal.bidZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ > 0.5 ? ' arb-z-bear' : '');
-
-      const cols = [
-        `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" onerror="if(!this._t){this._t=1;this.src='${iconUrls.pngUrl}'}else{this.style.display='none'}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
-        `<td class="arb-num">+${item.level}</td>`,
-        `<td class="arb-num">${formatArbCoin(item.spread)}</td>`,
-        `<td class="arb-num arb-profit">${item.roi.p25.toFixed(1)}%</td>`,
-        `<td class="arb-num">${(item.reliability * 100).toFixed(0)}%</td>`,
-        `<td class="arb-num">${formatArbCoin(item.vol24h)}</td>`,
-        `<td class="arb-num">${(item.fillConfidence * 100).toFixed(0)}%</td>`,
-        `<td class="arb-num arb-score">${item.score.toFixed(3)}</td>`,
-        `<td class="arb-num arb-muted">${item.bestHour || '-'}</td>`,
-        `<td class="arb-num${askZClass}">${askZStr}</td>`,
-        `<td class="arb-num${bidZClass}">${bidZStr}</td>`,
-      ];
-
-      const detailHtml = isExpanded ? renderArbDetail(item) : '';
-
-      return `<tr class="${isExpanded ? 'arb-expanded' : ''}${thinClass}" data-key="${item.slug}::${item.level}">${cols.join('')}</tr>${isExpanded ? `<tr class="arb-detail-row"><td colspan="11">${detailHtml}</td></tr>` : ''}`;
-    }).join('');
+    const rows = renderArbTableRows();
 
     return `
       <div class="arb-table-wrap">
@@ -1654,8 +1665,8 @@ async function renderArbitrage(root) {
               <th class="arb-sort" data-sort="roi" data-tip="Conservative ROI: p25 flip profit / entry bid">p25 ROI</th>
               <th class="arb-sort" data-sort="reliability" data-tip="1 - (stddev/mean). Higher = more consistent">Reliab.</th>
               <th class="arb-sort" data-sort="vol24h" data-tip="Estimated 24h trade volume">Vol 24h</th>
-              <th class="arb-sort" data-sort="fillConfidence" data-tip="% of snapshots with sufficient volume">Fill</th>
-              <th class="arb-sort" data-sort="score" data-tip="ROI × Reliability × Fill (normalized)">Score</th>
+              <th class="arb-sort" data-sort="fillConfidence" data-tip="% of valid snapshots at or above the p25 profit level">p25+</th>
+              <th class="arb-sort" data-sort="score" data-tip="ROI × Reliability × p25+ (normalized)">Score</th>
               <th data-tip="UTC hour with historically highest mean flip profit">Best</th>
               <th class="arb-sort" data-sort="askZ" data-tip="Z-score: current ask vs its avg. Positive = premium sellers → good to sell">Ask Δ</th>
               <th class="arb-sort" data-sort="bidZ" data-tip="Z-score: current bid vs its avg. Negative = discounted sellers → good to buy">Bid Δ</th>
@@ -1690,7 +1701,7 @@ async function renderArbitrage(root) {
             </div>
             <div class="arb-detail-card">
               <h4>Market Health</h4>
-              <div class="arb-stat-row"><span>Fill confidence</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
+              <div class="arb-stat-row"><span>p25+ rate</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
               <div class="arb-stat-row"><span>Reliability</span><span>${(item.reliability * 100).toFixed(0)}%</span></div>
               <div class="arb-stat-row"><span>Best time</span><span>${item.bestHour || '-'}</span></div>
               <div class="arb-stat-row"><span>Snapshots</span><span>${item.snapCount}</span></div>
@@ -1721,7 +1732,7 @@ async function renderArbitrage(root) {
           </div>
           <div class="arb-detail-card">
             <h4>Market Health</h4>
-            <div class="arb-stat-row"><span>Fill confidence</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
+            <div class="arb-stat-row"><span>p25+ rate</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
             <div class="arb-stat-row"><span>Reliability</span><span>${(item.reliability * 100).toFixed(0)}%</span></div>
             <div class="arb-stat-row"><span>Best time</span><span>${item.bestHour || '-'}</span></div>
             <div class="arb-stat-row"><span>Snapshots</span><span>${item.snapCount}</span></div>
@@ -1755,8 +1766,8 @@ async function renderArbitrage(root) {
     renderShell(
       root,
       'Arbitrage Scanner',
-      `<a class="minimal-back-link outside-back" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Back to items</a>${renderArbHeader()}${renderArbTable()}`,
-      'Bid-ask flips ranked by ROI × reliability × fill confidence',
+      `<a class="minimal-back-link outside-back" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Back to items</a><div class="arb-warning">⚠️ Prototype — this data is for exploration only and should not be taken as financial truth.</div>${renderArbHeader()}${renderArbTable()}`,
+      'Bid-ask flips ranked by ROI × reliability × p25+',
       '',
       logoHtml
     );
@@ -1770,6 +1781,76 @@ async function renderArbitrage(root) {
         loadDetailChart(expandedItem);
       }
     }
+  }
+
+  function updateArbResults() {
+    applyFilters();
+
+    if (expandedRow) {
+      const stillVisible = filteredItems.some(i => `${i.slug}::${i.level}` === expandedRow);
+      if (!stillVisible) expandedRow = null;
+    }
+
+    const wrap = document.querySelector('.arb-table-wrap');
+    if (!filteredItems.length) {
+      if (wrap) {
+        wrap.innerHTML = '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>';
+      }
+    } else {
+      const hadEmptyState = wrap && !wrap.querySelector('.arb-table');
+      if (hadEmptyState || !wrap) {
+        if (wrap) {
+          wrap.innerHTML = renderArbTable();
+        }
+      } else {
+        const tbody = wrap.querySelector('.arb-table tbody');
+        if (tbody) {
+          tbody.innerHTML = renderArbTableRows();
+        }
+      }
+    }
+
+    const countEl = document.getElementById('arb-count');
+    if (countEl) countEl.textContent = `${filteredItems.length} / ${items.length} items`;
+
+    if (expandedRow && !detailCache[expandedRow]) {
+      const expandedItem = filteredItems.find(i => `${i.slug}::${i.level}` === expandedRow);
+      if (expandedItem) {
+        loadDetailChart(expandedItem);
+      }
+    }
+  }
+
+  function renderArbTableRows() {
+    return filteredItems.map((item, idx) => {
+      const isExpanded = expandedRow === `${item.slug}::${item.level}`;
+      const iconUrls = resolveIcon(item.slug);
+      const thinClass = item.fillConfidence < 0.5 ? ' arb-thin' : '';
+
+      const temporal = item.temporal;
+      const askZStr = temporal ? temporal.askZ.toFixed(1) : '-';
+      const bidZStr = temporal ? temporal.bidZ.toFixed(1) : '-';
+      const askZClass = temporal && temporal.askZ > 0.5 ? ' arb-z-bull' : (temporal && temporal.askZ < -0.5 ? ' arb-z-bear' : '');
+      const bidZClass = temporal && temporal.bidZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ > 0.5 ? ' arb-z-bear' : '');
+
+      const cols = [
+        `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" onerror="if(!this._t){this._t=1;this.src='${iconUrls.pngUrl}'}else{this.style.display='none'}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
+        `<td class="arb-num">+${item.level}</td>`,
+        `<td class="arb-num">${formatArbCoin(item.spread)}</td>`,
+        `<td class="arb-num arb-profit">${item.roi.p25.toFixed(1)}%</td>`,
+        `<td class="arb-num">${(item.reliability * 100).toFixed(0)}%</td>`,
+        `<td class="arb-num">${formatArbCoin(item.vol24h)}</td>`,
+        `<td class="arb-num">${(item.fillConfidence * 100).toFixed(0)}%</td>`,
+        `<td class="arb-num arb-score">${item.score.toFixed(3)}</td>`,
+        `<td class="arb-num arb-muted">${item.bestHour || '-'}</td>`,
+        `<td class="arb-num${askZClass}">${askZStr}</td>`,
+        `<td class="arb-num${bidZClass}">${bidZStr}</td>`,
+      ];
+
+      const detailHtml = isExpanded ? renderArbDetail(item) : '';
+
+      return `<tr class="${isExpanded ? 'arb-expanded' : ''}${thinClass}" data-key="${item.slug}::${item.level}">${cols.join('')}</tr>${isExpanded ? `<tr class="arb-detail-row"><td colspan="11">${detailHtml}</td></tr>` : ''}`;
+    }).join('');
   }
 
   async function loadDetailChart(item) {
@@ -1827,6 +1908,28 @@ async function renderArbitrage(root) {
   await loadPreset(selectedWindow);
 
   root.addEventListener('click', (event) => {
+    const presetBtn = event.target.closest('.arb-preset-btn');
+    if (presetBtn) {
+      const target = presetBtn.dataset.target;
+      const value = parseInt(presetBtn.dataset.value, 10);
+      if (target === 'roi') {
+        minRoiFilter = value;
+        const input = document.getElementById('arb-min-roi');
+        if (input) input.value = value || '';
+      } else if (target === 'vol') {
+        minVolFilter = value;
+        const input = document.getElementById('arb-min-vol');
+        if (input) input.value = formatAbbrVolume(value);
+      }
+      document.querySelectorAll(`.arb-preset-btn[data-target="${target}"]`).forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === value);
+      });
+      clearTimeout(arbFilterTimer);
+      expandedRow = null;
+      updateArbResults();
+      return;
+    }
+
     const sortTh = event.target.closest('th.arb-sort');
     if (sortTh) {
       const field = sortTh.dataset.sort;
@@ -1884,13 +1987,33 @@ async function renderArbitrage(root) {
 
   root.addEventListener('input', (event) => {
     if (event.target.id === 'arb-min-roi') {
-      minRoiFilter = parseFloat(event.target.value) || 0;
+      minRoiFilter = parseRoiInput(event.target.value);
+      document.querySelectorAll('.arb-preset-btn[data-target="roi"]').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === minRoiFilter);
+      });
       expandedRow = null;
-      renderArbPage();
+      clearTimeout(arbFilterTimer);
+      arbFilterTimer = setTimeout(() => updateArbResults(), 400);
     } else if (event.target.id === 'arb-min-vol') {
-      minVolFilter = parseInt(event.target.value) || 0;
+      minVolFilter = parseVolumeInput(event.target.value);
+      document.querySelectorAll('.arb-preset-btn[data-target="vol"]').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === minVolFilter);
+      });
       expandedRow = null;
-      renderArbPage();
+      clearTimeout(arbFilterTimer);
+      arbFilterTimer = setTimeout(() => updateArbResults(), 400);
+    }
+  });
+
+  root.addEventListener('focusin', (event) => {
+    if (event.target.id === 'arb-min-vol') {
+      event.target.value = minVolFilter || '';
+    }
+  });
+
+  root.addEventListener('focusout', (event) => {
+    if (event.target.id === 'arb-min-vol') {
+      event.target.value = formatAbbrVolume(minVolFilter);
     }
   });
 }

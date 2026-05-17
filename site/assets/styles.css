@@ -364,6 +364,20 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* --- ARBITRAGE --- */
+.arb-warning {
+  margin: 0 auto 1rem;
+  width: fit-content;
+  max-width: min(100%, 720px);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(241, 196, 15, 0.45);
+  background: rgba(241, 196, 15, 0.12);
+  color: #ffd76a;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .arb-nav-link {
   display: block;
   text-align: right;
@@ -465,6 +479,40 @@ a { color: inherit; text-decoration: none; }
 }
 
 .arb-filter-pill:hover:not(.active) {
+  border-color: var(--accent-cyan);
+  color: var(--text-primary);
+}
+
+.arb-input {
+  width: 96px;
+}
+
+.arb-presets {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-left: 0.3rem;
+}
+
+.arb-preset-btn {
+  border: 1px solid var(--stroke);
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 160ms ease;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.arb-preset-btn.active {
+  background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-brand) 100%);
+  color: #fff;
+  border-color: transparent;
+}
+
+.arb-preset-btn:hover:not(.active) {
   border-color: var(--accent-cyan);
   color: var(--text-primary);
 }
