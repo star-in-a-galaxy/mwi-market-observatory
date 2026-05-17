@@ -65,6 +65,41 @@ function percentile(sorted, p) {
   return sorted[Math.min(idx, sorted.length - 1)];
 }
 
+function computeTemporalMetrics(snaps) {
+  if (snaps.length < 8) return null;
+
+  const asks = snaps.map(s => snapAsk(s.ask));
+  const bids = snaps.map(s => snapBid(s.bid));
+
+  const meanAsk = asks.reduce((a, b) => a + b, 0) / asks.length;
+  const meanBid = bids.reduce((a, b) => a + b, 0) / bids.length;
+
+  const varAsk = asks.reduce((a, v) => a + (v - meanAsk) ** 2, 0) / asks.length;
+  const varBid = bids.reduce((a, v) => a + (v - meanBid) ** 2, 0) / bids.length;
+  const stdAsk = Math.sqrt(varAsk);
+  const stdBid = Math.sqrt(varBid);
+
+  const cur = snaps[snaps.length - 1];
+  const curAsk = snapAsk(cur.ask);
+  const curBid = snapBid(cur.bid);
+
+  const askZ = stdAsk > 0 ? (curAsk - meanAsk) / stdAsk : 0;
+  const bidZ = stdBid > 0 ? (curBid - meanBid) / stdBid : 0;
+  const spreadZ = askZ - bidZ;
+
+  let signal = '';
+  if (askZ < -1 && bidZ > 1) signal = 'flip';
+  else if (askZ < -1) signal = 'buy';
+  else if (bidZ > 1) signal = 'sell';
+
+  return {
+    askZ: Math.round(askZ * 100) / 100,
+    bidZ: Math.round(bidZ * 100) / 100,
+    spreadZ: Math.round(spreadZ * 100) / 100,
+    signal,
+  };
+}
+
 function loadCategories() {
   const slugToCat = {};
   for (let i = 0; i < CATEGORY_FILES.length; i++) {
@@ -103,10 +138,14 @@ function computeItemArbitrage(hourlySnapshots, dailyVolume, minVolume) {
   const p25EntryBid = entryBids[Math.floor(entryBids.length * 0.5)];
   const p25ExitAsk = exitAsks[Math.floor(exitAsks.length * 0.5)];
 
-  const meanProfit = profits.reduce((a, b) => a + b, 0) / profits.length;
-  const variance = profits.reduce((a, b) => a + (b - meanProfit) ** 2, 0) / profits.length;
-  const stddev = Math.sqrt(variance);
-  const reliability = meanProfit > 0 ? Math.max(0, Math.min(1, 1 - (stddev / meanProfit))) : 0;
+  const roiValues = validSnaps.map(s => {
+    const cost = snapBid(s.bid);
+    return cost > 0 ? flipProfit(s.ask, s.bid) / cost : 0;
+  });
+  const meanROI = roiValues.reduce((a, b) => a + b, 0) / roiValues.length;
+  const downsideVar = roiValues.reduce((a, r) => a + (r < meanROI ? (r - meanROI) ** 2 : 0), 0) / roiValues.length;
+  const downsideStddev = Math.sqrt(downsideVar);
+  const reliability = meanROI > 0 ? Math.max(0, Math.min(1, 1 - (downsideStddev / meanROI))) : 0;
 
   const fillable = p25Snaps.filter(s => s.vol >= minVolume);
   const fillConfidence = fillable.length / Math.max(validSnaps.length, 1);
@@ -140,6 +179,8 @@ function computeItemArbitrage(hourlySnapshots, dailyVolume, minVolume) {
 
   const p25ROI = (p25 / p25EntryBid || 1) * 100;
 
+  const temporal = computeTemporalMetrics(validSnaps);
+
   return {
     profit: {
       p25: Math.round(p25),
@@ -160,6 +201,7 @@ function computeItemArbitrage(hourlySnapshots, dailyVolume, minVolume) {
     vol24h: Math.round(est24hVol),
     bestHour: bestHour ? `${bestHour}:00` : null,
     snapCount: validSnaps.length,
+    temporal,
   };
 }
 
@@ -278,20 +320,11 @@ function computeArbitrage(windowDays) {
     return;
   }
 
-  const maxROI = Math.max(...allResults.map(r => r.roi.p25), 0.001);
-  const maxRel = Math.max(...allResults.map(r => r.reliability), 0.001);
-  const maxConf = Math.max(...allResults.map(r => r.fillConfidence), 0.001);
-  const maxVol = Math.max(...allResults.map(r => r.vol24h), 1);
-  const maxSnaps = Math.max(...allResults.map(r => r.snapCount), 1);
+  const rawScores = allResults.map(r => (r.roi.p25 / 100) * r.reliability * r.fillConfidence);
+  const maxRaw = Math.max(...rawScores, 0.001);
 
-  for (const r of allResults) {
-    r.score = Math.round(1000 * (
-      0.35 * (r.roi.p25 / maxROI) +
-      0.25 * (r.reliability / maxRel) +
-      0.20 * (r.fillConfidence / maxConf) +
-      0.10 * (r.vol24h / maxVol) +
-      0.10 * (r.snapCount / maxSnaps)
-    )) / 1000;
+  for (let i = 0; i < allResults.length; i++) {
+    allResults[i].score = Math.round(1000 * rawScores[i] / maxRaw) / 1000;
   }
 
   allResults.sort((a, b) => b.score - a.score);

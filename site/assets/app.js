@@ -232,7 +232,8 @@ function formatCompactNumber(value) {
   }
   if (value >= 1e9) return (value / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
   if (value >= 1e6) return (value / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (value >= 1e3) return (value / 1e3).toFixed(1).replace(/\.0$/, '') + 'k';
+  if (value >= 100e3) return (value / 1e3).toFixed(0) + 'k';
+  if (value >= 1e3) return value.toLocaleString('en-US');
   return value.toLocaleString('en-US');
 }
 
@@ -1486,7 +1487,7 @@ async function main() {
 function formatArbCoin(v) {
   if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
   if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
-  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  if (v >= 100e3) return (v / 1e3).toFixed(0) + 'K';
   return v.toLocaleString('en-US');
 }
 
@@ -1550,6 +1551,8 @@ async function renderArbitrage(root) {
   const getArbField = (item, field) => {
     if (field === 'roi') return item.roi?.p25 ?? 0;
     if (field === 'profit') return item.profit?.p25 ?? 0;
+    if (field === 'askZ') return item.temporal?.askZ ?? 0;
+    if (field === 'bidZ') return item.temporal?.bidZ ?? 0;
     return item[field] ?? 0;
   };
 
@@ -1615,6 +1618,12 @@ async function renderArbitrage(root) {
       const iconUrls = resolveIcon(item.slug);
       const thinClass = item.fillConfidence < 0.5 ? ' arb-thin' : '';
 
+      const temporal = item.temporal;
+      const askZStr = temporal ? temporal.askZ.toFixed(1) : '-';
+      const bidZStr = temporal ? temporal.bidZ.toFixed(1) : '-';
+      const askZClass = temporal && temporal.askZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.askZ > 0.5 ? ' arb-z-bear' : '');
+      const bidZClass = temporal && temporal.bidZ > 0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ < -0.5 ? ' arb-z-bear' : '');
+
       const cols = [
         `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" onerror="if(!this._t){this._t=1;this.src='${iconUrls.pngUrl}'}else{this.style.display='none'}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
         `<td class="arb-num">+${item.level}</td>`,
@@ -1625,11 +1634,13 @@ async function renderArbitrage(root) {
         `<td class="arb-num">${(item.fillConfidence * 100).toFixed(0)}%</td>`,
         `<td class="arb-num arb-score">${item.score.toFixed(3)}</td>`,
         `<td class="arb-num arb-muted">${item.bestHour || '-'}</td>`,
+        `<td class="arb-num${askZClass}">${askZStr}</td>`,
+        `<td class="arb-num${bidZClass}">${bidZStr}</td>`,
       ];
 
       const detailHtml = isExpanded ? renderArbDetail(item) : '';
 
-      return `<tr class="${isExpanded ? 'arb-expanded' : ''}${thinClass}" data-key="${item.slug}::${item.level}">${cols.join('')}</tr>${isExpanded ? `<tr class="arb-detail-row"><td colspan="9">${detailHtml}</td></tr>` : ''}`;
+      return `<tr class="${isExpanded ? 'arb-expanded' : ''}${thinClass}" data-key="${item.slug}::${item.level}">${cols.join('')}</tr>${isExpanded ? `<tr class="arb-detail-row"><td colspan="11">${detailHtml}</td></tr>` : ''}`;
     }).join('');
 
     return `
@@ -1644,8 +1655,10 @@ async function renderArbitrage(root) {
               <th class="arb-sort" data-sort="reliability" data-tip="1 - (stddev/mean). Higher = more consistent">Reliab.</th>
               <th class="arb-sort" data-sort="vol24h" data-tip="Estimated 24h trade volume">Vol 24h</th>
               <th class="arb-sort" data-sort="fillConfidence" data-tip="% of snapshots with sufficient volume">Fill</th>
-              <th class="arb-sort" data-sort="score" data-tip="Composite: 35% ROI + 25% Reliability + 20% Fill + 10% Vol + 10% Data">Score</th>
+              <th class="arb-sort" data-sort="score" data-tip="ROI × Reliability × Fill (normalized)">Score</th>
               <th data-tip="UTC hour with historically highest mean flip profit">Best</th>
+              <th class="arb-sort" data-sort="askZ" data-tip="Current ask vs window avg (σ). Negative = discount sellers">Ask Δ</th>
+              <th class="arb-sort" data-sort="bidZ" data-tip="Current bid vs window avg (σ). Positive = premium buyers">Bid Δ</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1681,6 +1694,7 @@ async function renderArbitrage(root) {
               <div class="arb-stat-row"><span>Reliability</span><span>${(item.reliability * 100).toFixed(0)}%</span></div>
               <div class="arb-stat-row"><span>Best time</span><span>${item.bestHour || '-'}</span></div>
               <div class="arb-stat-row"><span>Snapshots</span><span>${item.snapCount}</span></div>
+              ${renderTemporalDetail(item)}
             </div>
           </div>
           <div class="arb-detail-chart-area" id="arb-detail-chart">${cached.chartHtml}</div>
@@ -1719,6 +1733,20 @@ async function renderArbitrage(root) {
     `;
   }
 
+  function renderTemporalDetail(item) {
+    const t = item.temporal;
+    if (!t) return '';
+    const signalMap = { flip: '⇅ FLIP', buy: '↓ BUY', sell: '↑ SELL' };
+    const signalClass = t.signal ? ` arb-signal-${t.signal}` : '';
+    const signalLabel = t.signal ? (signalMap[t.signal] || t.signal) : '—';
+    return `
+      <div class="arb-stat-row"><span>Ask Δ (σ)</span><span class="${t.askZ < -0.5 ? 'arb-z-bull' : (t.askZ > 0.5 ? 'arb-z-bear' : '')}">${t.askZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Bid Δ (σ)</span><span class="${t.bidZ > 0.5 ? 'arb-z-bull' : (t.bidZ < -0.5 ? 'arb-z-bear' : '')}">${t.bidZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Spread Δ (σ)</span><span>${t.spreadZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Signal</span><span class="${signalClass}">${signalLabel}</span></div>
+    `;
+  }
+
   function renderArbPage() {
     applyFilters();
 
@@ -1728,7 +1756,7 @@ async function renderArbitrage(root) {
       root,
       'Arbitrage Scanner',
       `<a class="minimal-back-link outside-back" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Back to items</a>${renderArbHeader()}${renderArbTable()}`,
-      'Bid-ask flip opportunities ranked by reliability x profit x volume',
+      'Bid-ask flips ranked by ROI × reliability × fill confidence',
       '',
       logoHtml
     );
