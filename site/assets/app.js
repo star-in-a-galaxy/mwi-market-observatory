@@ -963,13 +963,12 @@ async function renderHome(root) {
       : '<div class="empty-state">No items matched that search.</div>';
   };
 
-  const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" />`;
+  const logoHtml = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" /></a>`;
 
   renderShell(
     root,
     'Market Observatory',
     `
-      <a class="arb-nav-link" href="${SITE_BASE_PATH}arbitrage">Arbitrage Scanner &rarr;</a>
       <section class="card">
         <div class="section-header">
           <h2>Pick an item</h2>
@@ -1443,7 +1442,7 @@ async function renderItem(root, slug) {
   const iconUrlSvg = resolveIconAssetPath(catalog.iconFiles, slug, 'svg');
   const iconUrlPng = resolveIconAssetPath(catalog.iconFiles, slug, 'png');
   const iconHtml = `<img class="dashboard-icon" src="${iconUrlSvg}" alt="${itemName}" onerror="if(!this._tried){this._tried=true;this.src='${iconUrlPng}'}else{this.style.display='none'}" />`;
-  const logoHtmlItem = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" onerror="this.style.display='none'" />`;
+  const logoHtmlItem = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" onerror="this.style.display='none'" /></a>`;
 
   root.innerHTML = `
     <div class="dashboard-layout">
@@ -1451,7 +1450,6 @@ async function renderItem(root, slug) {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
         Back to items
       </a>
-      <a class="arb-nav-link minimal-back-link" href="${SITE_BASE_PATH}arbitrage">Arbitrage Scanner &rarr;</a>
       
       <section class="dashboard-card">
         <div class="item-logo-container">${logoHtmlItem}</div>
