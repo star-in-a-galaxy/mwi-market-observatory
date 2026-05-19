@@ -4,7 +4,7 @@ function getSiteBasePath() {
   }
 
   const segments = window.location.pathname.split('/').filter(Boolean);
-  if (segments.length === 0 || segments[0] === 'items') {
+  if (segments.length === 0 || segments[0] === 'items' || segments[0] === 'arbitrage') {
     return '/';
   }
 
@@ -230,13 +230,40 @@ function formatCompactNumber(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '-';
   }
+  if (value >= 1e9) return (value / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (value >= 1e6) return (value / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (value >= 100e3) return (value / 1e3).toFixed(0) + 'k';
+  if (value >= 1e3) return value.toLocaleString('en-US');
+  return value.toLocaleString('en-US');
+}
 
-  // Uses Intl.NumberFormat for clean 'k', 'm', 'b' abbreviations
-  return new Intl.NumberFormat('en-US', {
-    notation: 'compact',
-    compactDisplay: 'short',
-    maximumFractionDigits: 1,
-  }).format(value).toLowerCase();
+function parseRoiInput(str) {
+  if (str == null || str === '') return 0;
+  const s = String(str).trim().replace(/,/g, '.');
+  const num = parseFloat(s);
+  return Number.isFinite(num) && num >= 0 ? num : 0;
+}
+
+function parseVolumeInput(str) {
+  if (str == null || str === '') return 0;
+  let s = String(str).trim().replace(/,/g, '');
+  if (!s) return 0;
+  const suffix = s.slice(-1).toUpperCase();
+  let mult = 1;
+  if (suffix === 'K') { mult = 1e3; s = s.slice(0, -1).trim(); }
+  else if (suffix === 'M') { mult = 1e6; s = s.slice(0, -1).trim(); }
+  else if (suffix === 'B') { mult = 1e9; s = s.slice(0, -1).trim(); }
+  const num = parseFloat(s);
+  return Number.isFinite(num) && num > 0 ? Math.round(num * mult) : 0;
+}
+
+function formatAbbrVolume(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '0';
+  if (value === 0) return '0';
+  if (value >= 1e9) return (value / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (value >= 1e6) return (value / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (value >= 1e3) return (value / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(value);
 }
 
 function formatPercent(value) {
@@ -289,6 +316,9 @@ function getRoute() {
 
   if (cleaned.startsWith('items/')) {
     return { type: 'item', slug: decodeURIComponent(cleaned.slice('items/'.length)) };
+  }
+  if (cleaned === 'arbitrage') {
+    return { type: 'arbitrage' };
   }
   return { type: 'home' };
 }
@@ -923,7 +953,9 @@ async function renderHome(root) {
 
   const sortedItems = sortedItemsArr;
   let filteredItems = [...sortedItems];
-  const filtersHtml = ['<button class="filter-pill active" data-index="all">All</button>', ...categories.map(c => `<button class="filter-pill" data-index="${c.id}">${escapeHtml(c.label)}</button>` )].join('');
+  const cachedFilters = loadFilters();
+  let selectedCategories = new Set(cachedFilters.category === 'all' ? [] : Array.isArray(cachedFilters.category) ? cachedFilters.category : [cachedFilters.category]);
+  const filtersHtml = [`<button class="filter-pill ${selectedCategories.size === 0 ? 'active' : ''}" data-index="all">All</button>`, ...categories.map(c => `<button class="filter-pill ${selectedCategories.has(c.id) ? 'active' : ''}" data-index="${c.id}">${escapeHtml(c.label)}</button>` )].join('');
 
   const renderFilteredItems = () => {
     list.innerHTML = filteredItems.length
@@ -931,7 +963,7 @@ async function renderHome(root) {
       : '<div class="empty-state">No items matched that search.</div>';
   };
 
-  const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" />`;
+  const logoHtml = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" /></a>`;
 
   renderShell(
     root,
@@ -960,9 +992,6 @@ async function renderHome(root) {
     return;
   }
 
-  // Load cached filters
-  const cachedFilters = loadFilters();
-  let selectedCategory = cachedFilters.category;
   search.value = cachedFilters.searchQuery;
 
   const filtersContainer = document.getElementById('category-filters');
@@ -986,31 +1015,37 @@ async function renderHome(root) {
       const btn = ev.target.closest('button');
       if (!btn) return;
       const idx = btn.dataset.index;
-      const newCategory = idx === 'all' ? 'all' : Number(idx);
-      
-      // If clicking the already selected button, toggle to 'all'
-      if (selectedCategory === newCategory && selectedCategory !== 'all') {
-        selectedCategory = 'all';
-      } else if (selectedCategory === 'all' && newCategory === 'all') {
-        // Already on 'all', clicking it again does nothing
-        return;
+
+      if (idx === 'all') {
+        selectedCategories.clear();
       } else {
-        selectedCategory = newCategory;
+        const catIdx = Number(idx);
+        if (selectedCategories.has(catIdx)) {
+          selectedCategories.delete(catIdx);
+        } else {
+          selectedCategories.add(catIdx);
+        }
       }
-      
-      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => b.classList.toggle('active', b.dataset.index === String(selectedCategory)));
+
+      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
+        if (b.dataset.index === 'all') {
+          b.classList.toggle('active', selectedCategories.size === 0);
+        } else {
+          b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
+        }
+      });
 
       const query = search.value.trim().toLowerCase();
       filteredItems = sortedItems.filter((item) => {
-        if (selectedCategory !== 'all') {
+        if (selectedCategories.size > 0) {
           const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
-          if (catIdx !== selectedCategory) return false;
+          if (!selectedCategories.has(catIdx)) return false;
         }
         const name = (item.name || slugToTitle(item.slug)).toLowerCase();
         return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
       });
 
-      saveFilters(selectedCategory, query);
+      saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], query);
       renderFilteredItems();
     });
   }
@@ -1018,31 +1053,34 @@ async function renderHome(root) {
   search.addEventListener('input', () => {
     const query = search.value.trim().toLowerCase();
     filteredItems = sortedItems.filter((item) => {
-      if (selectedCategory !== 'all') {
+      if (selectedCategories.size > 0) {
         const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
-        if (catIdx !== selectedCategory) return false;
+        if (!selectedCategories.has(catIdx)) return false;
       }
       const name = (item.name || slugToTitle(item.slug)).toLowerCase();
       return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
     });
 
-    saveFilters(selectedCategory, query);
+    saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], query);
     renderFilteredItems();
   });
 
   // Apply cached filters to button states and render
-  if (filtersContainer && selectedCategory !== 'all') {
-    const targetBtn = filtersContainer.querySelector(`button[data-index="${selectedCategory}"]`);
-    if (targetBtn) {
-      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => b.classList.toggle('active', b === targetBtn));
-    }
+  if (filtersContainer && selectedCategories.size > 0) {
+    Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
+      if (b.dataset.index === 'all') {
+        b.classList.toggle('active', selectedCategories.size === 0);
+      } else {
+        b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
+      }
+    });
   }
 
   // Filter items based on cached state
   filteredItems = sortedItems.filter((item) => {
-    if (selectedCategory !== 'all') {
+    if (selectedCategories.size > 0) {
       const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
-      if (catIdx !== selectedCategory) return false;
+      if (!selectedCategories.has(catIdx)) return false;
     }
     const query = search.value.trim().toLowerCase();
     const name = (item.name || slugToTitle(item.slug)).toLowerCase();
@@ -1404,7 +1442,7 @@ async function renderItem(root, slug) {
   const iconUrlSvg = resolveIconAssetPath(catalog.iconFiles, slug, 'svg');
   const iconUrlPng = resolveIconAssetPath(catalog.iconFiles, slug, 'png');
   const iconHtml = `<img class="dashboard-icon" src="${iconUrlSvg}" alt="${itemName}" onerror="if(!this._tried){this._tried=true;this.src='${iconUrlPng}'}else{this.style.display='none'}" />`;
-  const logoHtmlItem = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" onerror="this.style.display='none'" />`;
+  const logoHtmlItem = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" onerror="this.style.display='none'" /></a>`;
 
   root.innerHTML = `
     <div class="dashboard-layout">
@@ -1461,6 +1499,8 @@ async function main() {
   try {
     if (route.type === 'item' && route.slug) {
       await renderItem(root, route.slug);
+    } else if (route.type === 'arbitrage') {
+      await renderArbitrage(root);
     } else {
       await renderHome(root);
     }
@@ -1469,6 +1509,511 @@ async function main() {
   } catch (error) {
     renderShell(root, 'Market Observatory', `<section class="card"><div class="empty-state">Unable to load data: ${escapeHtml(error.message)}</div></section>`, '');
   }
+}
+
+function formatArbCoin(v) {
+  if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 100e3) return (v / 1e3).toFixed(0) + 'K';
+  return v.toLocaleString('en-US');
+}
+
+const ARB_WINDOW_PRESETS = [
+  { days: 1, label: '1 Day' },
+  { days: 3, label: '3 Days' },
+  { days: 5, label: '5 Days' },
+  { days: 7, label: '7 Days' },
+  { days: 14, label: '14 Days' },
+];
+
+async function renderArbitrage(root) {
+  const catalog = await loadCatalog();
+  const catFiles = [
+    { file: '01_resources.txt', label: 'Resources' },
+    { file: '02_consumables.txt', label: 'Consumables' },
+    { file: '03_books.txt', label: 'Books' },
+    { file: '04_labyrinth.txt', label: 'Labyrinth' },
+    { file: '05_keys.txt', label: 'Keys' },
+    { file: '06_equipment.txt', label: 'Equipment' },
+    { file: '07_accessories.txt', label: 'Accessories' },
+    { file: '08_tools.txt', label: 'Tools' },
+  ];
+
+  const slugToCat = {};
+  for (let i = 0; i < catFiles.length; i++) {
+    try {
+      const res = await fetch(assetPath(`assets/item_categories/${catFiles[i].file}`));
+      if (!res.ok) continue;
+      const text = await res.text();
+      for (const line of text.split('\n')) {
+        const name = line.trim().toLowerCase().replace(/\s+/g, '_');
+        if (name) slugToCat[name] = i;
+      }
+    } catch { /* ignore */ }
+  }
+
+  function resolveIcon(slug) {
+    const slugLower = slug.toLowerCase();
+    const iconFiles = catalog.iconFiles || {};
+    const entry = iconFiles[slugLower];
+    const svgName = entry?.svg || `${slugLower}.svg`;
+    const pngName = entry?.png || `${slugLower}.png`;
+    const svgUrl = assetPath(`assets/item_icons/${encodeURIComponent(svgName)}`);
+    const pngUrl = assetPath(`assets/item_icons/${encodeURIComponent(pngName)}`);
+    return { svgUrl, pngUrl };
+  }
+
+  let selectedWindow = 3;
+  let items = [];
+  let filteredItems = [];
+  let selectedCats = new Set();
+  let minRoiFilter = 0;
+  let minVolFilter = 0;
+  let arbFilterTimer;
+  let sortField = 'score';
+  let sortDir = -1;
+  let expandedRow = null;
+  let detailCache = {};
+  let isLoading = true;
+  const ROI_PRESETS = [{ value: 0, label: '0%' }, { value: 1, label: '1%' }, { value: 2, label: '2%' }, { value: 5, label: '5%' }, { value: 10, label: '10%' }, { value: 20, label: '20%' }, { value: 50, label: '50%' }];
+  const VOL_PRESETS = [{ value: 0, label: '0' }, { value: 1000, label: '1K' }, { value: 10000, label: '10K' }, { value: 100000, label: '100K' }, { value: 1000000, label: '1M' }];
+
+  const getArbField = (item, field) => {
+    if (field === 'roi') return item.roi?.p25 ?? 0;
+    if (field === 'profit') return item.profit?.p25 ?? 0;
+    if (field === 'askZ') return item.temporal?.askZ ?? 0;
+    if (field === 'bidZ') return item.temporal?.bidZ ?? 0;
+    return item[field] ?? 0;
+  };
+
+  const sortItems = () => {
+    filteredItems.sort((a, b) => {
+      const va = getArbField(a, sortField);
+      const vb = getArbField(b, sortField);
+      if (sortField === 'name' || sortField === 'slug') {
+        return sortDir * String(va).localeCompare(String(vb));
+      }
+      return sortDir * (va - vb);
+    });
+  };
+
+  function applyFilters() {
+    filteredItems = items.filter(item => {
+      if (selectedCats.size > 0) {
+        const itemCat = typeof slugToCat[item.slug] === 'number' ? slugToCat[item.slug] : (item.catIdx ?? -1);
+        if (!selectedCats.has(itemCat)) return false;
+      }
+      if (item.roi.p25 < minRoiFilter) return false;
+      if (item.vol24h < minVolFilter) return false;
+      return true;
+    });
+    sortItems();
+  }
+
+  function renderArbHeader() {
+    const windowButtons = ARB_WINDOW_PRESETS.map(o =>
+      `<button class="arb-window-pill ${o.days === selectedWindow ? 'active' : ''}" data-window="${o.days}">${o.label}</button>`
+    ).join('');
+
+    const catButtons = [
+      `<button class="arb-filter-pill ${selectedCats.size === 0 ? 'active' : ''}" data-cat="all">All</button>`,
+      ...catFiles.map((c, i) => `<button class="arb-filter-pill ${selectedCats.has(i) ? 'active' : ''}" data-cat="${i}">${escapeHtml(c.label)}</button>`)
+    ].join('');
+
+    const roiPresetBtns = ROI_PRESETS.map(p =>
+      `<button class="arb-preset-btn${minRoiFilter === p.value ? ' active' : ''}" data-target="roi" data-value="${p.value}">${p.label}</button>`
+    ).join('');
+    const volPresetBtns = VOL_PRESETS.map(p =>
+      `<button class="arb-preset-btn${minVolFilter === p.value ? ' active' : ''}" data-target="vol" data-value="${p.value}">${p.label}</button>`
+    ).join('');
+
+    return `
+      <div class="arb-controls">
+        <div class="arb-controls-row">
+          <label class="arb-label">Window</label>
+          <div class="button-row" id="arb-window-buttons">${windowButtons}</div>
+        </div>
+        <div class="arb-controls-row">
+          <label class="arb-label">Min ROI <input type="text" id="arb-min-roi" value="${minRoiFilter || ''}" class="arb-input" /><span class="arb-presets">${roiPresetBtns}</span></label>
+          <label class="arb-label">Min Vol <input type="text" id="arb-min-vol" value="${formatAbbrVolume(minVolFilter)}" class="arb-input" /><span class="arb-presets">${volPresetBtns}</span></label>
+          <span id="arb-count" class="arb-count">${filteredItems.length} / ${items.length} items</span>
+        </div>
+        <div class="arb-cat-filters" id="arb-cat-filters">${catButtons}</div>
+      </div>
+    `;
+  }
+
+  function renderArbTable() {
+    if (isLoading) {
+      return '<div class="arb-loading">Loading arbitrage data...</div>';
+    }
+    if (!filteredItems.length) {
+      return '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>';
+    }
+    const rows = renderArbTableRows();
+
+    return `
+      <div class="arb-table-wrap">
+        <table class="arb-table">
+          <thead>
+            <tr>
+              <th class="arb-sort" data-sort="name">Item</th>
+              <th class="arb-sort" data-sort="level">Lvl</th>
+              <th class="arb-sort" data-sort="spread" data-tip="Typical bid-ask gap (p25)">Spread</th>
+              <th class="arb-sort" data-sort="roi" data-tip="Conservative ROI: p25 flip profit / entry bid">p25 ROI</th>
+              <th class="arb-sort" data-sort="reliability" data-tip="1 - (stddev/mean). Higher = more consistent">Reliab.</th>
+              <th class="arb-sort" data-sort="vol24h" data-tip="Estimated 24h trade volume">Vol 24h</th>
+              <th class="arb-sort" data-sort="fillConfidence" data-tip="% of valid snapshots at or above the p25 profit level">p25+</th>
+              <th class="arb-sort" data-sort="score" data-tip="ROI × Reliability × p25+ (normalized)">Score</th>
+              <th data-tip="UTC hour with historically highest mean flip profit">Best</th>
+              <th class="arb-sort" data-sort="askZ" data-tip="Z-score: current ask vs its avg. Positive = premium sellers → good to sell">Ask Δ</th>
+              <th class="arb-sort" data-sort="bidZ" data-tip="Z-score: current bid vs its avg. Negative = discounted sellers → good to buy">Bid Δ</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function renderArbDetail(item) {
+    const linkHtml = `<a class="arb-item-link" href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">View full chart &rarr;</a>`;
+
+    const cached = detailCache[`${item.slug}::${item.level}`];
+    if (cached) {
+      return `
+        <div class="arb-detail">
+          <div class="arb-detail-grid">
+            <div class="arb-detail-card">
+              <h4>Profit Distribution</h4>
+              <div class="arb-stat-row"><span>p25 (conservative)</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
+              <div class="arb-stat-row"><span>p50 (median)</span><span>${formatArbCoin(item.profit.p50)}</span></div>
+              <div class="arb-stat-row"><span>p75 (optimistic)</span><span>${formatArbCoin(item.profit.p75)}</span></div>
+            </div>
+            <div class="arb-detail-card">
+              <h4>Step-Adjusted Prices</h4>
+              <div class="arb-stat-row"><span>Entry bid</span><span>${formatArbCoin(item.prices.entryBid)}</span></div>
+              <div class="arb-stat-row"><span>Exit ask</span><span>${formatArbCoin(item.prices.exitAsk)}</span></div>
+              <div class="arb-stat-row"><span>Market tax (2%)</span><span>${formatArbCoin(item.prices.tax)}</span></div>
+              <div class="arb-stat-row"><span>Net profit</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
+            </div>
+            <div class="arb-detail-card">
+              <h4>Market Health</h4>
+              <div class="arb-stat-row"><span>p25+ rate</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
+              <div class="arb-stat-row"><span>Reliability</span><span>${(item.reliability * 100).toFixed(0)}%</span></div>
+              <div class="arb-stat-row"><span>Best time</span><span>${item.bestHour || '-'}</span></div>
+              <div class="arb-stat-row"><span>Snapshots</span><span>${item.snapCount}</span></div>
+              ${renderTemporalDetail(item)}
+            </div>
+          </div>
+          <div class="arb-detail-chart-area" id="arb-detail-chart">${cached.chartHtml}</div>
+          ${linkHtml}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="arb-detail">
+        <div class="arb-detail-grid">
+          <div class="arb-detail-card">
+            <h4>Profit Distribution</h4>
+            <div class="arb-stat-row"><span>p25 (conservative)</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
+            <div class="arb-stat-row"><span>p50 (median)</span><span>${formatArbCoin(item.profit.p50)}</span></div>
+            <div class="arb-stat-row"><span>p75 (optimistic)</span><span>${formatArbCoin(item.profit.p75)}</span></div>
+          </div>
+          <div class="arb-detail-card">
+            <h4>Step-Adjusted Prices</h4>
+            <div class="arb-stat-row"><span>Entry bid</span><span>${formatArbCoin(item.prices.entryBid)}</span></div>
+            <div class="arb-stat-row"><span>Exit ask</span><span>${formatArbCoin(item.prices.exitAsk)}</span></div>
+            <div class="arb-stat-row"><span>Market tax (2%)</span><span>${formatArbCoin(item.prices.tax)}</span></div>
+            <div class="arb-stat-row"><span>Net profit</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
+          </div>
+          <div class="arb-detail-card">
+            <h4>Market Health</h4>
+            <div class="arb-stat-row"><span>p25+ rate</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
+            <div class="arb-stat-row"><span>Reliability</span><span>${(item.reliability * 100).toFixed(0)}%</span></div>
+            <div class="arb-stat-row"><span>Best time</span><span>${item.bestHour || '-'}</span></div>
+            <div class="arb-stat-row"><span>Snapshots</span><span>${item.snapCount}</span></div>
+          </div>
+        </div>
+        <div class="arb-detail-chart-area" id="arb-detail-chart">Loading chart...</div>
+        ${linkHtml}
+      </div>
+    `;
+  }
+
+  function renderTemporalDetail(item) {
+    const t = item.temporal;
+    if (!t) return '';
+    const signalMap = { flip: '⇅ FLIP', buy: '↓ BUY', sell: '↑ SELL' };
+    const signalClass = t.signal ? ` arb-signal-${t.signal}` : '';
+    const signalLabel = t.signal ? (signalMap[t.signal] || t.signal) : '—';
+    return `
+      <div class="arb-stat-row"><span>Ask Δ (σ)</span><span class="${t.askZ > 0.5 ? 'arb-z-bull' : (t.askZ < -0.5 ? 'arb-z-bear' : '')}">${t.askZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Bid Δ (σ)</span><span class="${t.bidZ < -0.5 ? 'arb-z-bull' : (t.bidZ > 0.5 ? 'arb-z-bear' : '')}">${t.bidZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Spread Δ (σ)</span><span>${t.spreadZ.toFixed(2)}</span></div>
+      <div class="arb-stat-row"><span>Signal</span><span class="${signalClass}">${signalLabel}</span></div>
+    `;
+  }
+
+  function renderArbPage() {
+    applyFilters();
+
+    const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" />`;
+
+    renderShell(
+      root,
+      'Arbitrage Scanner',
+      `<a class="minimal-back-link outside-back" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Back to items</a><div class="arb-warning">⚠️ Prototype — this data is for exploration only and should not be taken as financial truth.</div>${renderArbHeader()}${renderArbTable()}`,
+      'Bid-ask flips ranked by ROI × reliability × p25+',
+      '',
+      logoHtml
+    );
+
+    const countEl = document.getElementById('arb-count');
+    if (countEl) countEl.textContent = `${filteredItems.length} / ${items.length} items`;
+
+    if (expandedRow && !detailCache[expandedRow]) {
+      const expandedItem = filteredItems.find(i => `${i.slug}::${i.level}` === expandedRow);
+      if (expandedItem) {
+        loadDetailChart(expandedItem);
+      }
+    }
+  }
+
+  function updateArbResults() {
+    applyFilters();
+
+    if (expandedRow) {
+      const stillVisible = filteredItems.some(i => `${i.slug}::${i.level}` === expandedRow);
+      if (!stillVisible) expandedRow = null;
+    }
+
+    const wrap = document.querySelector('.arb-table-wrap');
+    if (!filteredItems.length) {
+      if (wrap) {
+        wrap.innerHTML = '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>';
+      }
+    } else {
+      const hadEmptyState = wrap && !wrap.querySelector('.arb-table');
+      if (hadEmptyState || !wrap) {
+        if (wrap) {
+          wrap.innerHTML = renderArbTable();
+        }
+      } else {
+        const tbody = wrap.querySelector('.arb-table tbody');
+        if (tbody) {
+          tbody.innerHTML = renderArbTableRows();
+        }
+      }
+    }
+
+    const countEl = document.getElementById('arb-count');
+    if (countEl) countEl.textContent = `${filteredItems.length} / ${items.length} items`;
+
+    if (expandedRow && !detailCache[expandedRow]) {
+      const expandedItem = filteredItems.find(i => `${i.slug}::${i.level}` === expandedRow);
+      if (expandedItem) {
+        loadDetailChart(expandedItem);
+      }
+    }
+  }
+
+  function renderArbTableRows() {
+    return filteredItems.map((item, idx) => {
+      const isExpanded = expandedRow === `${item.slug}::${item.level}`;
+      const iconUrls = resolveIcon(item.slug);
+      const thinClass = item.fillConfidence < 0.5 ? ' arb-thin' : '';
+
+      const temporal = item.temporal;
+      const askZStr = temporal ? temporal.askZ.toFixed(1) : '-';
+      const bidZStr = temporal ? temporal.bidZ.toFixed(1) : '-';
+      const askZClass = temporal && temporal.askZ > 0.5 ? ' arb-z-bull' : (temporal && temporal.askZ < -0.5 ? ' arb-z-bear' : '');
+      const bidZClass = temporal && temporal.bidZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ > 0.5 ? ' arb-z-bear' : '');
+
+      const cols = [
+        `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" onerror="if(!this._t){this._t=1;this.src='${iconUrls.pngUrl}'}else{this.style.display='none'}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
+        `<td class="arb-num">+${item.level}</td>`,
+        `<td class="arb-num">${formatArbCoin(item.spread)}</td>`,
+        `<td class="arb-num arb-profit">${item.roi.p25.toFixed(1)}%</td>`,
+        `<td class="arb-num">${(item.reliability * 100).toFixed(0)}%</td>`,
+        `<td class="arb-num">${formatArbCoin(item.vol24h)}</td>`,
+        `<td class="arb-num">${(item.fillConfidence * 100).toFixed(0)}%</td>`,
+        `<td class="arb-num arb-score">${item.score.toFixed(3)}</td>`,
+        `<td class="arb-num arb-muted">${item.bestHour || '-'}</td>`,
+        `<td class="arb-num${askZClass}">${askZStr}</td>`,
+        `<td class="arb-num${bidZClass}">${bidZStr}</td>`,
+      ];
+
+      const detailHtml = isExpanded ? renderArbDetail(item) : '';
+
+      return `<tr class="${isExpanded ? 'arb-expanded' : ''}${thinClass}" data-key="${item.slug}::${item.level}">${cols.join('')}</tr>${isExpanded ? `<tr class="arb-detail-row"><td colspan="11">${detailHtml}</td></tr>` : ''}`;
+    }).join('');
+  }
+
+  async function loadDetailChart(item) {
+    const key = `${item.slug}::${item.level}`;
+    if (detailCache[key]) return;
+
+    let itemData;
+    try {
+      itemData = normalizePublicItemData(await fetchJson(assetPath(`data/public/items/${encodeURIComponent(item.slug)}.json`)));
+    } catch {
+      const chartEl = document.getElementById('arb-detail-chart');
+      if (chartEl) chartEl.innerHTML = '<div class="empty-state">Could not load item data.</div>';
+      return;
+    }
+
+    const levelData = itemData?.data?.[String(item.level)] || {};
+    const hourlySeries = levelData.hourly || levelData.h || [];
+    const points = windowPoints(hourlySeries, '7d');
+    const yValues = points.flatMap(p => [p.ask, p.bid]).filter(v => typeof v === 'number' && v > 0);
+    if (!yValues.length) {
+      const chartEl = document.getElementById('arb-detail-chart');
+      if (chartEl) chartEl.innerHTML = '<div class="empty-state">No chart data available.</div>';
+      return;
+    }
+
+    const globalMin = Math.min(...yValues);
+    const globalMax = Math.max(...yValues);
+    const chart = buildChart(points, 960, 360, globalMin, globalMax, WINDOW_CONFIG['7d'], points);
+
+    detailCache[key] = { chartHtml: chart.html };
+
+    const chartEl = document.getElementById('arb-detail-chart');
+    if (chartEl) {
+      chartEl.innerHTML = chart.html;
+    }
+  }
+
+  async function loadPreset(days) {
+    isLoading = true;
+    detailCache = {};
+    expandedRow = null;
+    renderArbPage();
+
+    try {
+      const arbData = await fetchJson(assetPath(`data/public/arbitrage-${days}d.json`));
+      items = arbData.items || [];
+    } catch (error) {
+      items = [];
+    }
+
+    isLoading = false;
+    renderArbPage();
+  }
+
+  await loadPreset(selectedWindow);
+
+  root.addEventListener('click', (event) => {
+    const presetBtn = event.target.closest('.arb-preset-btn');
+    if (presetBtn) {
+      const target = presetBtn.dataset.target;
+      const value = parseInt(presetBtn.dataset.value, 10);
+      if (target === 'roi') {
+        minRoiFilter = value;
+        const input = document.getElementById('arb-min-roi');
+        if (input) input.value = value || '';
+      } else if (target === 'vol') {
+        minVolFilter = value;
+        const input = document.getElementById('arb-min-vol');
+        if (input) input.value = formatAbbrVolume(value);
+      }
+      document.querySelectorAll(`.arb-preset-btn[data-target="${target}"]`).forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === value);
+      });
+      clearTimeout(arbFilterTimer);
+      expandedRow = null;
+      updateArbResults();
+      return;
+    }
+
+    const sortTh = event.target.closest('th.arb-sort');
+    if (sortTh) {
+      const field = sortTh.dataset.sort;
+      const map = {
+        name: 'name', slug: 'name', level: 'level', spread: 'spread',
+        roi: 'roi', reliability: 'reliability', vol24h: 'vol24h',
+        fillConfidence: 'fillConfidence', score: 'score'
+      };
+      const mappedField = map[field] || field;
+      if (sortField === mappedField) {
+        sortDir *= -1;
+      } else {
+        sortField = mappedField;
+        sortDir = -1;
+      }
+      renderArbPage();
+      return;
+    }
+
+    const row = event.target.closest('tr[data-key]');
+    if (row && !event.target.closest('a')) {
+      const key = row.dataset.key;
+      expandedRow = expandedRow === key ? null : key;
+      renderArbPage();
+      return;
+    }
+
+    const pill = event.target.closest('.arb-filter-pill');
+    if (pill) {
+      const cat = pill.dataset.cat;
+      if (cat === 'all') {
+        selectedCats.clear();
+      } else {
+        const catIdx = Number(cat);
+        if (selectedCats.has(catIdx)) {
+          selectedCats.delete(catIdx);
+        } else {
+          selectedCats.add(catIdx);
+        }
+      }
+      expandedRow = null;
+      renderArbPage();
+      return;
+    }
+
+    const windowPill = event.target.closest('.arb-window-pill');
+    if (windowPill) {
+      const newWindow = parseInt(windowPill.dataset.window, 10);
+      if (newWindow !== selectedWindow) {
+        selectedWindow = newWindow;
+        loadPreset(selectedWindow);
+      }
+    }
+  });
+
+  root.addEventListener('input', (event) => {
+    if (event.target.id === 'arb-min-roi') {
+      minRoiFilter = parseRoiInput(event.target.value);
+      document.querySelectorAll('.arb-preset-btn[data-target="roi"]').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === minRoiFilter);
+      });
+      expandedRow = null;
+      clearTimeout(arbFilterTimer);
+      arbFilterTimer = setTimeout(() => updateArbResults(), 400);
+    } else if (event.target.id === 'arb-min-vol') {
+      minVolFilter = parseVolumeInput(event.target.value);
+      document.querySelectorAll('.arb-preset-btn[data-target="vol"]').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === minVolFilter);
+      });
+      expandedRow = null;
+      clearTimeout(arbFilterTimer);
+      arbFilterTimer = setTimeout(() => updateArbResults(), 400);
+    }
+  });
+
+  root.addEventListener('focusin', (event) => {
+    if (event.target.id === 'arb-min-vol') {
+      event.target.value = minVolFilter || '';
+    }
+  });
+
+  root.addEventListener('focusout', (event) => {
+    if (event.target.id === 'arb-min-vol') {
+      event.target.value = formatAbbrVolume(minVolFilter);
+    }
+  });
 }
 
 main();
