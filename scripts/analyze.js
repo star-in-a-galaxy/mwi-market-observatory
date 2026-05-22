@@ -49,7 +49,7 @@ function safeNumber(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null;
 }
 
-function buildPoint({ t, label, ask, bid, volume, previousAsk, previousBid }) {
+function buildPoint({ t, label, ask, bid, volume, price, previousAsk, previousBid }) {
   return {
     t,
     ask,
@@ -57,11 +57,12 @@ function buildPoint({ t, label, ask, bid, volume, previousAsk, previousBid }) {
     a: ask,
     b: bid,
     v: volume,
+    p: price,
   };
 }
 
 function serializeSeriesPoint(point) {
-  return [point.timestamp, point.ask, point.bid, point.v];
+  return [point.timestamp, point.ask, point.bid, point.v, point.p];
 }
 
 function getTrailingDailySeries(series, limit = 120) {
@@ -213,6 +214,7 @@ function analyze() {
           ask: safeNumber(levelData.ca),
           bid: safeNumber(levelData.cb),
           volume: safeNumber(levelData.v),
+          price: safeNumber(levelData.vp),
           previousAsk: previous?.ask,
           previousBid: previous?.bid,
         });
@@ -249,6 +251,7 @@ function analyze() {
           ask: safeNumber(levelData.a),
           bid: safeNumber(levelData.b),
           volume: safeNumber(levelData.v),
+          price: safeNumber(levelData.p),
           previousAsk: previous?.ask,
           previousBid: previous?.bid,
         });
@@ -263,6 +266,29 @@ function analyze() {
     for (const series of bundle.levels.values()) {
       series.daily.sort((left, right) => Date.parse(left.t) - Date.parse(right.t));
       series.hourly.sort((left, right) => Date.parse(left.t) - Date.parse(right.t));
+    }
+
+    for (const [level, series] of bundle.levels.entries()) {
+      const timedPoints = series.hourly
+        .filter(p => p.timestamp > 0 && typeof p.p === 'number' && p.p > 0 && typeof p.v === 'number' && p.v > 0)
+        .map(p => ({ ts: p.timestamp, p: p.p, v: p.v }));
+
+      series.vwap = { p1d: null, p3d: null, p7d: null };
+
+      if (timedPoints.length > 0) {
+        const latestTs = timedPoints[timedPoints.length - 1].ts;
+        const windows = { p1d: 24 * 3600 * 1000, p3d: 72 * 3600 * 1000, p7d: 7 * 24 * 3600 * 1000 };
+
+        for (const [key, windowMs] of Object.entries(windows)) {
+          const inWindow = timedPoints.filter(p => p.ts > latestTs - windowMs);
+          if (inWindow.length > 0) {
+            const totalVol = inWindow.reduce((sum, p) => sum + p.v, 0);
+            series.vwap[key] = totalVol > 0
+              ? Math.round(inWindow.reduce((sum, p) => sum + p.p * p.v, 0) / totalVol)
+              : null;
+          }
+        }
+      }
     }
 
     itemIndex.push({
@@ -298,6 +324,7 @@ function analyze() {
       data[level] = {
         d: getTrailingDailySeries(series.daily).map(serializeSeriesPoint),
         h: series.hourly.map(serializeSeriesPoint),
+        vwap: series.vwap,
       };
     }
 
