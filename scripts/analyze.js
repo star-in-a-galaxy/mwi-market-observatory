@@ -382,7 +382,6 @@ async function analyze() {
 
   const vwapMap = computeAllVwaps(allHourlySnapshots);
   writeVwapsToLatestHourly(vwapMap);
-  writeVwapsToLatestDaily(bundles);
 }
 
 function writeVwapsToLatestHourly(vwapMap) {
@@ -397,32 +396,6 @@ function writeVwapsToLatestHourly(vwapMap) {
   const data = JSON.parse(fs.readFileSync(latestFile, 'utf8'));
 
   data.vwap = vwapMap;
-
-  fs.writeFileSync(latestFile, JSON.stringify(data, null, 2));
-  console.log(`[analyze] Wrote VWAP to ${latestFile}`);
-}
-
-function writeVwapsToLatestDaily(bundles) {
-  const dailyDir = path.join('data', 'daily');
-  if (!fs.existsSync(dailyDir)) return;
-
-  const files = fs.readdirSync(dailyDir)
-    .filter(f => f.endsWith('.json') && f !== 'index.json')
-    .sort();
-  if (files.length === 0) return;
-
-  const latestFile = path.join(dailyDir, files[files.length - 1]);
-  const data = JSON.parse(fs.readFileSync(latestFile, 'utf8'));
-
-  for (const bundle of bundles.values()) {
-    const itemId = bundle.itemId;
-    if (!data.items[itemId]) continue;
-
-    for (const [level, series] of bundle.levels.entries()) {
-      if (!data.items[itemId][level]) continue;
-      data.items[itemId][level].vwap = series.vwap;
-    }
-  }
 
   fs.writeFileSync(latestFile, JSON.stringify(data, null, 2));
   console.log(`[analyze] Wrote VWAP to ${latestFile}`);
