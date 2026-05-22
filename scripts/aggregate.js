@@ -65,6 +65,15 @@ function aggregate(dateStr) {
       const asks = snapshots.map(s => s.a);
       const bids = snapshots.map(s => s.b);
       
+      const pricesWithVolume = snapshots
+        .filter(s => typeof s.p === 'number' && s.p > 0 && typeof s.v === 'number' && s.v > 0)
+        .map(s => ({ p: s.p, v: s.v }));
+
+      const vp = pricesWithVolume.length > 0
+        ? Math.round(pricesWithVolume.reduce((sum, s) => sum + s.p * s.v, 0)
+          / pricesWithVolume.reduce((sum, s) => sum + s.v, 0))
+        : null;
+
       result.items[itemId][level] = {
         oa: first.a,
         ob: first.b,
@@ -74,7 +83,8 @@ function aggregate(dateStr) {
         lb: Math.min(...bids.filter(b => b > 0)),
         ca: last.a,
         cb: last.b,
-        v: snapshots.reduce((sum, s) => sum + (s.v || 0), 0) // <-- We DO need to sum these!
+        v: snapshots.reduce((sum, s) => sum + (s.v || 0), 0),
+        vp
       };
     }
   }
