@@ -117,9 +117,34 @@ function loadDailyFiles() {
   return files.map((file) => path.join(dailyDir, file));
 }
 
-function loadHourlyFiles() {
+function loadHourlySnapshots() {
   const hourlyDir = path.join('data', 'hourly');
-  return listFilesRecursive(hourlyDir).sort();
+  const snapshots = [];
+
+  // Prefer new consolidated format: data/hourly/*.json (top-level daily files)
+  if (fs.existsSync(hourlyDir)) {
+    const entries = fs.readdirSync(hourlyDir).sort();
+    const consolidatedFiles = entries.filter(e => e.endsWith('.json') && fs.statSync(path.join(hourlyDir, e)).isFile());
+    
+    if (consolidatedFiles.length > 0) {
+      for (const file of consolidatedFiles) {
+        const dailyData = JSON.parse(fs.readFileSync(path.join(hourlyDir, file), 'utf8'));
+        const daySnapshots = dailyData.snapshots || {};
+        const keys = Object.keys(daySnapshots).sort();
+        for (const key of keys) {
+          snapshots.push(daySnapshots[key]);
+        }
+      }
+      return snapshots;
+    }
+  }
+
+  // Fallback to old format: recursive directory listing (transition period)
+  const oldFiles = listFilesRecursive(hourlyDir).sort();
+  for (const filePath of oldFiles) {
+    snapshots.push(JSON.parse(fs.readFileSync(filePath, 'utf8')));
+  }
+  return snapshots;
 }
 
 function loadItemIconFiles() {
@@ -225,8 +250,7 @@ function analyze() {
     }
   }
 
-  for (const filePath of loadHourlyFiles()) {
-    const hourly = readJson(filePath);
+  for (const hourly of loadHourlySnapshots()) {
     const fetchedAt = hourly.fetchedAt || new Date((hourly.timestamp || 0) * 1000).toISOString();
     const timestamp = Date.parse(fetchedAt) || (hourly.timestamp ? hourly.timestamp * 1000 : 0);
 

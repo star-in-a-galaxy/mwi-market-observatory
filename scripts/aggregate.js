@@ -9,26 +9,39 @@ function getYesterdayStr() {
   return today.toISOString().split('T')[0];
 }
 
-function aggregate(dateStr) {
-  const hourlyDir = path.join('data', 'hourly', dateStr);
-  const dailyFile = path.join('data', 'daily', `${dateStr}.json`);
-  
-  if (!fs.existsSync(hourlyDir)) {
-    console.log(`[aggregate] No hourly data for ${dateStr}, skipping`);
-    return;
+function loadHourlySnapshots(dateStr) {
+  // Prefer new consolidated format: data/hourly/YYYY-MM-DD.json
+  const consolidatedFile = path.join('data', 'hourly', `${dateStr}.json`);
+  if (fs.existsSync(consolidatedFile)) {
+    const data = JSON.parse(fs.readFileSync(consolidatedFile, 'utf8'));
+    const snapshots = data.snapshots || {};
+    const keys = Object.keys(snapshots).sort();
+    return keys.map(k => snapshots[k]);
   }
   
-  const files = fs.readdirSync(hourlyDir).sort();
-  if (files.length === 0) {
-    console.log(`[aggregate] No hourly files for ${dateStr}, skipping`);
+  // Fallback to old format: data/hourly/YYYY-MM-DD/*.json (transition period)
+  const hourlyDir = path.join('data', 'hourly', dateStr);
+  if (fs.existsSync(hourlyDir)) {
+    const files = fs.readdirSync(hourlyDir).sort();
+    return files.map(file => JSON.parse(fs.readFileSync(path.join(hourlyDir, file), 'utf8')));
+  }
+  
+  return null;
+}
+
+function aggregate(dateStr) {
+  const dailyFile = path.join('data', 'daily', `${dateStr}.json`);
+  
+  const snapshots = loadHourlySnapshots(dateStr);
+  if (!snapshots || snapshots.length === 0) {
+    console.log(`[aggregate] No hourly data for ${dateStr}, skipping`);
     return;
   }
   
   // Aggregate: For each item + enhancement level, compute OHLCV
   const items = {};
   
-  for (const file of files) {
-    const data = JSON.parse(fs.readFileSync(path.join(hourlyDir, file), 'utf8'));
+  for (const data of snapshots) {
     const marketData = data.data;
     
     for (const itemId in marketData) {
