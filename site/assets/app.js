@@ -66,7 +66,7 @@ function normalizePublicSeriesPoint(point, kind, previousAsk, previousBid) {
   let label = null;
 
   if (Array.isArray(point)) {
-    [timestamp, ask, bid, volume, price] = point;
+    [timestamp, ask, bid, volume] = point;
     if (typeof timestamp === 'number' && Number.isFinite(timestamp)) {
       const isoString = new Date(timestamp).toISOString();
       t = kind === 'daily' ? isoString.split('T')[0] : isoString;
@@ -90,7 +90,6 @@ function normalizePublicSeriesPoint(point, kind, previousAsk, previousBid) {
   ask = typeof ask === 'number' && Number.isFinite(ask) && ask > 0 ? ask : null;
   bid = typeof bid === 'number' && Number.isFinite(bid) && bid > 0 ? bid : null;
   volume = typeof volume === 'number' && Number.isFinite(volume) && volume > 0 ? volume : null;
-  price = typeof price === 'number' && Number.isFinite(price) && price > 0 ? price : null;
 
   if (!t) {
     const isoString = new Date(timestamp).toISOString();
@@ -117,7 +116,6 @@ function normalizePublicSeriesPoint(point, kind, previousAsk, previousBid) {
     a: ask,
     b: bid,
     v: volume,
-    p: price,
     sp,
     spPct,
     retA,
@@ -160,13 +158,11 @@ function normalizePublicItemData(rawItemData) {
       normalizedData[level] = {
         daily: normalizePublicSeries(levelData?.d || [], 'daily'),
         hourly: normalizePublicSeries(levelData?.h || [], 'hourly'),
-        vwap: levelData?.vwap || { p1d: null, p3d: null, p7d: null },
       };
     } else {
       normalizedData[level] = {
         daily: normalizePublicSeries(levelData?.daily || [], 'daily'),
         hourly: normalizePublicSeries(levelData?.hourly || [], 'hourly'),
-        vwap: levelData?.vwap || { p1d: null, p3d: null, p7d: null },
       };
     }
   }
@@ -380,7 +376,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     return errorReturn('No chart data is available for this selection yet.');
   }
 
-  const yValues = points.flatMap((point) => [point.ask, point.bid, point.p]).filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0);
+  const yValues = points.flatMap((point) => [point.ask, point.bid]).filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0);
   if (!yValues.length) {
     return errorReturn('No usable ask or bid values are available for this selection yet.');
   }
@@ -435,7 +431,6 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     x: typeof scaleX === 'function' && scaleX.length === 2 ? scaleX(point, index) : scaleX(index),
     askY: typeof point.ask === 'number' && point.ask > 0 ? scaleY(point.ask) : null,
     bidY: typeof point.bid === 'number' && point.bid > 0 ? scaleY(point.bid) : null,
-    pY: typeof point.p === 'number' && point.p > 0 ? scaleY(point.p) : null,
   }));
 
   const validPriceIndices = [];
@@ -687,46 +682,6 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   const askExtensions = toExtensionPaths((point) => getEffectivePrice(point.ask));
   const bidExtensions = toExtensionPaths((point) => getEffectivePrice(point.bid));
 
-  // ----------------------------------------------------------------------
-  // Volume Weighted Average Price (VP) Line
-  // ----------------------------------------------------------------------
-  const validVpIdxs = [];
-  for (let i = 0; i < points.length; i++) {
-    if (points[i]?.p > 0) validVpIdxs.push(i);
-  }
-
-  const vpSolidSegs = [];
-  const vpDottedSegs = [];
-
-  for (let vi = 0; vi < validVpIdxs.length; vi++) {
-    const i = validVpIdxs[vi];
-    const x = pointPositions[i].x;
-    const y = scaleY(points[i].p).toFixed(1);
-    const prevConsecutive = vi > 0 && validVpIdxs[vi - 1] === i - 1;
-    vpSolidSegs.push(`${prevConsecutive ? 'L' : 'M'} ${x.toFixed(1)} ${y}`);
-  }
-
-  for (let vi = 0; vi < validVpIdxs.length - 1; vi++) {
-    const leftIdx = validVpIdxs[vi];
-    const rightIdx = validVpIdxs[vi + 1];
-    if (rightIdx - leftIdx > 1) {
-      const leftX = pointPositions[leftIdx].x;
-      const leftY = scaleY(points[leftIdx].p).toFixed(1);
-      const lastNullIdx = rightIdx - 1;
-      const lastNullX = pointPositions[lastNullIdx].x;
-      vpDottedSegs.push(`M ${leftX.toFixed(1)} ${leftY} L ${lastNullX.toFixed(1)} ${leftY}`);
-    }
-  }
-
-  const vpExtensions = toExtensionPaths((point) => typeof point.p === 'number' && point.p > 0 ? point.p : null);
-
-  const vpLineSvg = vpSolidSegs.length
-    ? `<path d="${vpSolidSegs.join(' ')}" class="chart-line chart-line-vp" />`
-    : '';
-  const vpDottedSvg = vpDottedSegs.length
-    ? `<path d="${vpDottedSegs.join(' ')}" class="chart-line chart-line-vp" stroke-dasharray="4 4" stroke-width="2" opacity="0.5" fill="none" />`
-    : '';
-
   const markers = pointPositions.map((point) => {
     const askCircle = point?.askY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.askY.toFixed(1)}" r="2.8" class="chart-point chart-point-ask" />` : '';
     const bidCircle = point?.bidY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.bidY.toFixed(1)}" r="2.8" class="chart-point chart-point-bid" />` : '';
@@ -756,10 +711,6 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
         ${askExtensions.right ? `<path d="${askExtensions.right}" class="chart-line chart-line-ask" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
         ${bidExtensions.left ? `<path d="${bidExtensions.left}" class="chart-line chart-line-bid" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
         ${bidExtensions.right ? `<path d="${bidExtensions.right}" class="chart-line chart-line-bid" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
-        ${vpLineSvg}
-        ${vpDottedSvg}
-        ${vpExtensions.left ? `<path d="${vpExtensions.left}" class="chart-line chart-line-vp" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
-        ${vpExtensions.right ? `<path d="${vpExtensions.right}" class="chart-line chart-line-vp" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
         ${volumeBars}
         ${volumeTrendSvg}
         ${volumeAxis}
@@ -1267,11 +1218,7 @@ async function renderItem(root, slug) {
             ? formatDayLabel(startDate.toISOString().split('T')[0])
             : formatHourLabel(new Date(timestamp).toISOString()));
 
-      const totalPV = bucketPoints.reduce((sum, pt) => sum + (pt.p > 0 && pt.v > 0 ? pt.p * pt.v : 0), 0);
-      const totalV = bucketPoints.reduce((sum, pt) => sum + (pt.p > 0 && pt.v > 0 ? pt.v : 0), 0);
-      const vp = totalV > 0 ? Math.round(totalPV / totalV) : (representative.p > 0 ? representative.p : null);
-
-      return { ...representative, t: timestamp, timestamp, label, ask, bid, a: ask, b: bid, v: volume, p: vp, sp: spread, spPct: spreadPct };
+      return { ...representative, t: timestamp, timestamp, label, ask, bid, a: ask, b: bid, v: volume, sp: spread, spPct: spreadPct };
     });
   };
 
@@ -1410,12 +1357,11 @@ async function renderItem(root, slug) {
         chartHover.style.top = `20px`;
         chartHover.innerHTML = `
           <div class="chart-hover-date">${escapeHtml(point.label)}</div>
-          <div class="chart-hover-row"><span>Ask: </span><strong>${formatCurrency(point.a)}</strong></div>
-          <div class="chart-hover-row"><span>Bid: </span><strong>${formatCurrency(point.b)}</strong></div>
-          <div class="chart-hover-row"><span>Spread: </span><strong>${formatCurrency(point.sp)}</strong></div>
-          <div class="chart-hover-row"><span>Spread %: </span><strong>${formatPercent(point.spPct)}</strong></div>
-          <div class="chart-hover-row"><span>Volume: </span><strong>${formatNumber(point.v)}</strong></div>
-          <div class="chart-hover-row"><span>VWAP: </span><strong>${formatCurrency(point.p)}</strong></div>
+          <div class="chart-hover-row"><span>Ask</span><strong>${formatCurrency(point.a)}</strong></div>
+          <div class="chart-hover-row"><span>Bid</span><strong>${formatCurrency(point.b)}</strong></div>
+          <div class="chart-hover-row"><span>Spread</span><strong>${formatCurrency(point.sp)}</strong></div>
+          <div class="chart-hover-row"><span>Spread %</span><strong>${formatPercent(point.spPct)}</strong></div>
+          <div class="chart-hover-row"><span>Volume</span><strong>${formatNumber(point.v)}</strong></div>
         `;
       };
 
@@ -1519,7 +1465,6 @@ async function renderItem(root, slug) {
           <div class="chart-legend">
             <div class="legend-item"><span class="legend-dash ask"></span> Ask</div>
             <div class="legend-item"><span class="legend-dash bid"></span> Bid</div>
-            <div class="legend-item"><span class="legend-dash vp"></span> Volume Weighted Average Price (VWAP)</div>
           </div>
           <p id="chart-warning" class="chart-warning is-hidden"></p>
           <div id="price-chart"></div>
