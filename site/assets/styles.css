@@ -284,6 +284,7 @@ a { color: inherit; text-decoration: none; }
 .legend-dash { width: 24px; height: 4px; border-radius: 2px; }
 .legend-dash.ask { background: var(--line-ask); box-shadow: 0 0 8px var(--line-ask); }
 .legend-dash.bid { background: var(--line-bid); box-shadow: 0 0 8px var(--line-bid); }
+.legend-dash.vp { background: #e6c84d; opacity: 0.7; box-shadow: 0 0 6px rgba(230, 200, 77, 0.25); }
 
 .chart-warning {
   margin: 0 auto 0.65rem;
@@ -309,6 +310,7 @@ a { color: inherit; text-decoration: none; }
 .chart-line { fill: none; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .chart-line-ask { stroke: var(--line-ask); filter: drop-shadow(0 0 8px rgba(0, 217, 255, 0.4)); }
 .chart-line-bid { stroke: var(--line-bid); filter: drop-shadow(0 0 8px rgba(199, 125, 255, 0.4)); }
+.chart-line-vp { stroke: #e6c84d; opacity: 0.7; filter: drop-shadow(0 0 4px rgba(230, 200, 77, 0.15)); }
 
 .chart-area { mix-blend-mode: screen; }
 .chart-point { pointer-events: none; stroke: var(--bg-dark); stroke-width: 2; }
