@@ -1437,11 +1437,12 @@ async function renderItem(root, slug) {
     const dailyVolume7dAvg = getTrailingVolume(dailySeries, 7 * 24 * 60 * 60 * 1000, 'avg');
 
     if (stats) {
+      const vwap = currentLevel.vwap || { p1d: null, p7d: null };
       stats.innerHTML = latest ? `
         <div><span class="stat-label">Ask</span><strong>${formatNumber(latest.a)}</strong></div>
         <div><span class="stat-label">Bid</span><strong>${formatNumber(latest.b)}</strong></div>
-        <div><span class="stat-label">Spread</span><strong>${formatNumber(latest.sp)}</strong></div>
-        <div><span class="stat-label">Spread %</span><strong>${formatPercent(latest.spPct)}</strong></div>
+        <div><span class="stat-label">1d VWAP</span><strong>${formatNumber(vwap.p1d)}</strong></div>
+        <div><span class="stat-label">7d VWAP</span><strong>${formatNumber(vwap.p7d)}</strong></div>
         <div><span class="stat-label">Volume (24h)</span><strong>${formatNumber(hourlyVolume24h)}</strong></div>
         <div><span class="stat-label">Volume (7d avg)</span><strong>${formatNumber(dailyVolume7dAvg)}</strong></div>
       ` : '<div class="empty-state">No data available.</div>';

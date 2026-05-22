@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { computeAllVwaps } = require('./lib/vwap');
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -10,6 +11,13 @@ function readJson(filePath) {
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function writeJsonAsync(filePath, value) {
+  const dir = path.dirname(filePath);
+  return fs.promises.mkdir(dir, { recursive: true }).then(() =>
+    fs.promises.writeFile(filePath, JSON.stringify(value, null, 2))
+  );
 }
 
 function slugFromItemId(itemId) {
@@ -205,7 +213,7 @@ function ensureLevel(bundle, level) {
   return bundle.levels.get(level);
 }
 
-function analyze() {
+async function analyze() {
   const generatedAt = new Date().toISOString();
   const bundles = new Map();
   const itemIndex = [];
@@ -250,7 +258,9 @@ function analyze() {
     }
   }
 
-  for (const hourly of loadHourlySnapshots()) {
+  const allHourlySnapshots = loadHourlySnapshots();
+
+  for (const hourly of allHourlySnapshots) {
     const fetchedAt = hourly.fetchedAt || new Date((hourly.timestamp || 0) * 1000).toISOString();
     const timestamp = Date.parse(fetchedAt) || (hourly.timestamp ? hourly.timestamp * 1000 : 0);
 
@@ -293,24 +303,27 @@ function analyze() {
     }
 
     for (const [level, series] of bundle.levels.entries()) {
+      series.vwap = { p1d: null, p3d: null, p7d: null };
+
       const timedPoints = series.hourly
         .filter(p => p.timestamp > 0 && typeof p.p === 'number' && p.p > 0 && typeof p.v === 'number' && p.v > 0)
         .map(p => ({ ts: p.timestamp, p: p.p, v: p.v }));
-
-      series.vwap = { p1d: null, p3d: null, p7d: null };
 
       if (timedPoints.length > 0) {
         const latestTs = timedPoints[timedPoints.length - 1].ts;
         const windows = { p1d: 24 * 3600 * 1000, p3d: 72 * 3600 * 1000, p7d: 7 * 24 * 3600 * 1000 };
 
         for (const [key, windowMs] of Object.entries(windows)) {
-          const inWindow = timedPoints.filter(p => p.ts > latestTs - windowMs);
-          if (inWindow.length > 0) {
-            const totalVol = inWindow.reduce((sum, p) => sum + p.v, 0);
-            series.vwap[key] = totalVol > 0
-              ? Math.round(inWindow.reduce((sum, p) => sum + p.p * p.v, 0) / totalVol)
-              : null;
+          const cutoff = latestTs - windowMs;
+          let totalVol = 0;
+          let totalValue = 0;
+          for (let i = timedPoints.length - 1; i >= 0; i--) {
+            const p = timedPoints[i];
+            if (p.ts <= cutoff) break;
+            totalVol += p.v;
+            totalValue += p.p * p.v;
           }
+          series.vwap[key] = totalVol > 0 ? Math.round(totalValue / totalVol) : null;
         }
       }
     }
@@ -329,9 +342,10 @@ function analyze() {
   fs.mkdirSync(publicDir, { recursive: true });
 
   const iconFiles = loadItemIconFiles();
+  const writePromises = [];
 
   // Slim index: only slug and name for homepage search, no itemId or levels
-  writeJson(path.join(publicDir, 'index.json'), {
+  writePromises.push(writeJsonAsync(path.join(publicDir, 'index.json'), {
     generatedAt,
     source: {
       dailyRange: earliestDaily && latestDaily ? { start: earliestDaily, end: latestDaily } : null,
@@ -339,7 +353,7 @@ function analyze() {
     },
     iconFiles,
     items: itemIndex.map((item) => ({ slug: item.slug, name: item.name })),
-  });
+  }));
 
   for (const bundle of bundles.values()) {
     const data = {};
@@ -352,7 +366,7 @@ function analyze() {
       };
     }
 
-    writeJson(path.join(publicDir, 'items', `${bundle.slug}.json`), {
+    writePromises.push(writeJsonAsync(path.join(publicDir, 'items', `${bundle.slug}.json`), {
       generatedAt,
       v: 2,
       slug: bundle.slug,
@@ -360,10 +374,58 @@ function analyze() {
       name: bundle.name,
       levels: Array.from(bundle.levels.keys()).sort((left, right) => Number(left) - Number(right)),
       data,
-    });
+    }));
   }
 
+  await Promise.all(writePromises);
   console.log(`[analyze] Wrote ${itemIndex.length} item bundles to ${publicDir}`);
+
+  const vwapMap = computeAllVwaps(allHourlySnapshots);
+  writeVwapsToLatestHourly(vwapMap);
+  writeVwapsToLatestDaily(bundles);
 }
 
-analyze();
+function writeVwapsToLatestHourly(vwapMap) {
+  const hourlyDir = path.join('data', 'hourly');
+  if (!fs.existsSync(hourlyDir)) return;
+
+  const entries = fs.readdirSync(hourlyDir).sort();
+  const consolidatedFiles = entries.filter(e => e.endsWith('.json') && fs.statSync(path.join(hourlyDir, e)).isFile());
+  if (consolidatedFiles.length === 0) return;
+
+  const latestFile = path.join(hourlyDir, consolidatedFiles[consolidatedFiles.length - 1]);
+  const data = JSON.parse(fs.readFileSync(latestFile, 'utf8'));
+
+  data.vwap = vwapMap;
+
+  fs.writeFileSync(latestFile, JSON.stringify(data, null, 2));
+  console.log(`[analyze] Wrote VWAP to ${latestFile}`);
+}
+
+function writeVwapsToLatestDaily(bundles) {
+  const dailyDir = path.join('data', 'daily');
+  if (!fs.existsSync(dailyDir)) return;
+
+  const files = fs.readdirSync(dailyDir)
+    .filter(f => f.endsWith('.json') && f !== 'index.json')
+    .sort();
+  if (files.length === 0) return;
+
+  const latestFile = path.join(dailyDir, files[files.length - 1]);
+  const data = JSON.parse(fs.readFileSync(latestFile, 'utf8'));
+
+  for (const bundle of bundles.values()) {
+    const itemId = bundle.itemId;
+    if (!data.items[itemId]) continue;
+
+    for (const [level, series] of bundle.levels.entries()) {
+      if (!data.items[itemId][level]) continue;
+      data.items[itemId][level].vwap = series.vwap;
+    }
+  }
+
+  fs.writeFileSync(latestFile, JSON.stringify(data, null, 2));
+  console.log(`[analyze] Wrote VWAP to ${latestFile}`);
+}
+
+analyze().catch(console.error);
