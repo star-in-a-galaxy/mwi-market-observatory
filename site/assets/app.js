@@ -1224,6 +1224,13 @@ function windowPoints(points, windowKey) {
   return points.filter((point) => typeof point.timestamp === 'number' && point.timestamp >= windowStart);
 }
 
+const DATA_GAP_START = new Date('2026-06-07T01:00:00Z').getTime();
+const DATA_GAP_END = new Date('2026-06-10T16:22:00Z').getTime();
+
+function getDataGapWarningHtml() {
+  return `<div class="data-gap-warning">⚠️ Data was not collected between June 7 (03:00) and June 10 (18:22) GMT+2. Values during this period are missing from the chart.</div>`;
+}
+
 async function renderItem(root, slug) {
   const catalog = await loadCatalog();
   const itemMeta = (catalog.items || []).find((item) => item.slug === slug);
@@ -1535,6 +1542,19 @@ async function renderItem(root, slug) {
       }
     }
 
+    const gapWarning = document.getElementById('data-gap-warning');
+    if (gapWarning) {
+      const firstTs = points[0]?.timestamp;
+      const lastTs = points[points.length - 1]?.timestamp;
+      if (firstTs && lastTs && firstTs < DATA_GAP_END && lastTs > DATA_GAP_START) {
+        gapWarning.innerHTML = getDataGapWarningHtml();
+        gapWarning.classList.remove('is-hidden');
+      } else {
+        gapWarning.classList.add('is-hidden');
+        gapWarning.innerHTML = '';
+      }
+    }
+
     if (typeof requestIdleCallback !== 'undefined') {
       requestIdleCallback(() => renderChartInteractive(), { timeout: 2000 });
     } else {
@@ -1588,6 +1608,7 @@ async function renderItem(root, slug) {
             <div class="legend-item"><span class="legend-dash vp"></span> Volume Weighted Average Price (VWAP)</div>
           </div>
           <p id="chart-warning" class="chart-warning is-hidden"></p>
+          <div id="data-gap-warning" class="data-gap-warning is-hidden"></div>
           <div id="price-chart"></div>
           <p id="point-meta" class="chart-meta"></p>
         </div>

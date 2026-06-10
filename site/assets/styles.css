@@ -300,6 +300,20 @@ a { color: inherit; text-decoration: none; }
   text-align: center;
 }
 
+.data-gap-warning {
+  margin: 0 auto 0.65rem;
+  width: fit-content;
+  max-width: min(100%, 720px);
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(255, 107, 107, 0.45);
+  background: rgba(255, 107, 107, 0.12);
+  color: #ff8a8a;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
 .chart-meta { color: var(--text-muted); font-size: 0.85rem; text-align: right; margin-top: 0.4rem; }
 
 .chart-wrap { position: relative; width: 100%; }
