@@ -1228,7 +1228,7 @@ const DATA_GAP_START = new Date('2026-06-07T01:00:00Z').getTime();
 const DATA_GAP_END = new Date('2026-06-10T16:22:00Z').getTime();
 
 function getDataGapWarningHtml() {
-  return `<div class="data-gap-warning">⚠️ Data was not collected between June 7 (03:00) and June 10 (18:22) GMT+2. Values during this period are missing from the chart.</div>`;
+  return '⚠️ Data was not collected between June 7 (03:00) and June 10 (18:22) GMT+2. Values during this period are missing from the chart.';
 }
 
 async function renderItem(root, slug) {
@@ -1547,11 +1547,11 @@ async function renderItem(root, slug) {
       const firstTs = points[0]?.timestamp;
       const lastTs = points[points.length - 1]?.timestamp;
       if (firstTs && lastTs && firstTs < DATA_GAP_END && lastTs > DATA_GAP_START) {
-        gapWarning.innerHTML = getDataGapWarningHtml();
+        gapWarning.textContent = getDataGapWarningHtml();
         gapWarning.classList.remove('is-hidden');
       } else {
         gapWarning.classList.add('is-hidden');
-        gapWarning.innerHTML = '';
+        gapWarning.textContent = '';
       }
     }
 
