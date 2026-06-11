@@ -214,7 +214,6 @@ function ensureLevel(bundle, level) {
 }
 
 async function analyze() {
-  const generatedAt = new Date().toISOString();
   const bundles = new Map();
   const itemIndex = [];
   let earliestDaily = null;
@@ -295,6 +294,8 @@ async function analyze() {
       }
     }
   }
+
+  const generatedAt = latestHourly || new Date().toISOString();
 
   for (const bundle of bundles.values()) {
     for (const series of bundle.levels.values()) {
