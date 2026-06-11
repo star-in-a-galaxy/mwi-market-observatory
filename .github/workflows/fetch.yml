@@ -14,8 +14,13 @@ jobs:
         with:
           node-version: '20'
       - run: node scripts/fetch.js
-      - run: node scripts/analyze.js
-      - run: node scripts/compute-arbitrage.js
+      - name: Check for new hourly data
+        id: check_data
+        run: git status --porcelain data/hourly/ | grep -q . && echo "has_new_data=true" >> $GITHUB_OUTPUT || echo "has_new_data=false" >> $GITHUB_OUTPUT
+      - if: steps.check_data.outputs.has_new_data == 'true'
+        run: node scripts/analyze.js
+      - if: steps.check_data.outputs.has_new_data == 'true'
+        run: node scripts/compute-arbitrage.js
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"
