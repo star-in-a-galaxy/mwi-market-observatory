@@ -226,6 +226,7 @@ function computeArbitrage(windowDays) {
   const now = Date.now();
   const windowMs = windowDays * 24 * 60 * 60 * 1000;
   const cutoff = now - windowMs;
+  let latestDataTimestamp = 0;
 
   const allResults = [];
   let skipLowSnap = 0, skipNoProfit = 0, skipLowVol = 0, skipLowFill = 0, noLevelData = 0;
@@ -267,6 +268,7 @@ function computeArbitrage(windowDays) {
         if (typeof ts !== 'number' || ts <= cutoff) continue;
         if (typeof ask !== 'number' || ask <= 0) continue;
         if (typeof bid !== 'number' || bid <= 0) continue;
+        if (ts > latestDataTimestamp) latestDataTimestamp = ts;
         hourlySnaps.push({ timestamp: ts, ask, bid, vol: vol || 0 });
       }
 
@@ -309,7 +311,7 @@ function computeArbitrage(windowDays) {
 
   if (allResults.length === 0) {
     const output = {
-      generatedAt: new Date().toISOString(),
+      generatedAt: new Date(latestDataTimestamp || Date.now()).toISOString(),
       windowDays,
       itemCount: 0,
       items: [],
@@ -345,7 +347,7 @@ function computeArbitrage(windowDays) {
   console.log(`[arbitrage] By category: ${Object.entries(catCounts).map(([k, v]) => `${k}=${v}`).join(', ')}`);
 
   const output = {
-    generatedAt: new Date().toISOString(),
+    generatedAt: new Date(latestDataTimestamp || Date.now()).toISOString(),
     windowDays,
     itemCount: allResults.length,
     items: allResults,
