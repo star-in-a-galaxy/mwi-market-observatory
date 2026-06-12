@@ -29,6 +29,8 @@ jobs:
           git diff --cached --quiet || (git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z" && git push)
       - name: Trigger pages deploy
         if: steps.check_data.outputs.has_new_data == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh api /repos/${{ github.repository }}/dispatches \
             --method POST \
