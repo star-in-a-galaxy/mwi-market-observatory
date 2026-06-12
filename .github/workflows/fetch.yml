@@ -26,5 +26,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/hourly/ data/public/
-          git diff --cached --quiet || git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z"
-          git push
+          git diff --cached --quiet || (git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z" && git push)
+      - name: Trigger pages deploy
+        if: steps.check_data.outputs.has_new_data == 'true'
+        run: |
+          gh api /repos/${{ github.repository }}/dispatches \
+            --method POST \
+            --field event_type=deploy-pages
