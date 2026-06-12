@@ -1,15 +1,8 @@
 name: Build And Deploy Pages
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - site/**
-      - data/hourly/**
-      - data/public/**
-      - data/daily/**
-      - .github/workflows/pages.yml
+  repository_dispatch:
+    types: [deploy-pages]
   pull_request:
     branches:
       - main
@@ -68,8 +61,8 @@ jobs:
   deploy:
     if: >
       github.event_name != 'pull_request' && (
-        github.event_name == 'push' ||
-        github.event_name == 'workflow_dispatch'
+        github.event_name == 'workflow_dispatch' ||
+        github.event_name == 'repository_dispatch'
       )
     needs: build
     runs-on: ubuntu-latest
