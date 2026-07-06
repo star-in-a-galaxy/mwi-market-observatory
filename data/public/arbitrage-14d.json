@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-07-06T03:01:30.000Z",
+  "generatedAt": "2026-07-06T04:08:53.000Z",
   "windowDays": 14,
-  "itemCount": 636,
+  "itemCount": 637,
   "items": [
     {
       "slug": "vision_helmet",
@@ -69,7 +69,7 @@
       "level": 0,
       "profit": {
         "p25": 1696,
-        "p50": 1896,
+        "p50": 1892,
         "p75": 2192
       },
       "spread": 1800,
@@ -82,13 +82,13 @@
         "tax": 104
       },
       "reliability": 0.748,
-      "fillConfidence": 0.759,
+      "fillConfidence": 0.757,
       "vol24h": 28856,
       "bestHour": "4:00",
-      "snapCount": 112,
+      "snapCount": 111,
       "temporal": {
         "askZ": -0.34,
-        "bidZ": 2.4,
+        "bidZ": 2.39,
         "spreadZ": -2.73,
         "signal": ""
       },
@@ -204,15 +204,15 @@
         "exitAsk": 660,
         "tax": 13
       },
-      "reliability": 0.626,
-      "fillConfidence": 0.755,
+      "reliability": 0.627,
+      "fillConfidence": 0.756,
       "vol24h": 1758592,
       "bestHour": "10:00",
-      "snapCount": 290,
+      "snapCount": 291,
       "temporal": {
-        "askZ": 0.13,
-        "bidZ": 0.69,
-        "spreadZ": -0.56,
+        "askZ": 0.56,
+        "bidZ": 0.99,
+        "spreadZ": -0.43,
         "signal": ""
       },
       "score": 0.045
@@ -248,38 +248,6 @@
         "signal": ""
       },
       "score": 0.033
-    },
-    {
-      "slug": "birch_shield",
-      "name": "Birch Shield",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 3700,
-        "p50": 7090,
-        "p75": 8120
-      },
-      "spread": 4000,
-      "roi": {
-        "p25": 35.2
-      },
-      "prices": {
-        "entryBid": 10500,
-        "exitAsk": 19000,
-        "tax": 380
-      },
-      "reliability": 0.679,
-      "fillConfidence": 0.75,
-      "vol24h": 14160,
-      "bestHour": "11:00",
-      "snapCount": 36,
-      "temporal": {
-        "askZ": -1.38,
-        "bidZ": -0.08,
-        "spreadZ": -1.3,
-        "signal": ""
-      },
-      "score": 0.029
     },
     {
       "slug": "cheese_buckler",
@@ -378,38 +346,6 @@
       "score": 0.028
     },
     {
-      "slug": "linen_boots",
-      "name": "Linen Boots",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 3630,
-        "p50": 4410,
-        "p75": 6320
-      },
-      "spread": 3900,
-      "roi": {
-        "p25": 37.8
-      },
-      "prices": {
-        "entryBid": 9600,
-        "exitAsk": 14000,
-        "tax": 280
-      },
-      "reliability": 0.567,
-      "fillConfidence": 0.753,
-      "vol24h": 30324,
-      "bestHour": "10:00",
-      "snapCount": 178,
-      "temporal": {
-        "askZ": -0.1,
-        "bidZ": 0.6,
-        "spreadZ": -0.7,
-        "signal": ""
-      },
-      "score": 0.026
-    },
-    {
       "slug": "linen_gloves",
       "name": "Linen Gloves",
       "catIdx": 5,
@@ -442,6 +378,70 @@
       "score": 0.026
     },
     {
+      "slug": "birch_shield",
+      "name": "Birch Shield",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 3220,
+        "p50": 6100,
+        "p75": 8120
+      },
+      "spread": 3500,
+      "roi": {
+        "p25": 30.7
+      },
+      "prices": {
+        "entryBid": 10500,
+        "exitAsk": 19000,
+        "tax": 380
+      },
+      "reliability": 0.673,
+      "fillConfidence": 0.757,
+      "vol24h": 14160,
+      "bestHour": "11:00",
+      "snapCount": 37,
+      "temporal": {
+        "askZ": -1.33,
+        "bidZ": -0.5,
+        "spreadZ": -0.83,
+        "signal": ""
+      },
+      "score": 0.025
+    },
+    {
+      "slug": "linen_boots",
+      "name": "Linen Boots",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 3540,
+        "p50": 4410,
+        "p75": 6320
+      },
+      "spread": 3800,
+      "roi": {
+        "p25": 36.9
+      },
+      "prices": {
+        "entryBid": 9600,
+        "exitAsk": 14000,
+        "tax": 280
+      },
+      "reliability": 0.567,
+      "fillConfidence": 0.753,
+      "vol24h": 30324,
+      "bestHour": "10:00",
+      "snapCount": 178,
+      "temporal": {
+        "askZ": -0.12,
+        "bidZ": 0.6,
+        "spreadZ": -0.72,
+        "signal": ""
+      },
+      "score": 0.025
+    },
+    {
       "slug": "basic_beacon",
       "name": "Basic Beacon",
       "catIdx": 3,
@@ -449,7 +449,7 @@
       "profit": {
         "p25": 9000,
         "p50": 15920,
-        "p75": 20520
+        "p75": 20000
       },
       "spread": 10000,
       "roi": {
@@ -460,15 +460,15 @@
         "exitAsk": 50000,
         "tax": 1000
       },
-      "reliability": 0.656,
+      "reliability": 0.66,
       "fillConfidence": 0.773,
       "vol24h": 22107,
       "bestHour": "21:00",
       "snapCount": 88,
       "temporal": {
-        "askZ": -0.29,
-        "bidZ": 0.52,
-        "spreadZ": -0.8,
+        "askZ": 0.51,
+        "bidZ": 0.5,
+        "spreadZ": 0.01,
         "signal": ""
       },
       "score": 0.022
@@ -493,10 +493,10 @@
         "tax": 132
       },
       "reliability": 0.793,
-      "fillConfidence": 0.849,
+      "fillConfidence": 0.85,
       "vol24h": 41940,
       "bestHour": "3:00",
-      "snapCount": 159,
+      "snapCount": 160,
       "temporal": {
         "askZ": 0.26,
         "bidZ": -0.93,
@@ -588,14 +588,14 @@
         "exitAsk": 5200,
         "tax": 104
       },
-      "reliability": 0.775,
-      "fillConfidence": 0.862,
+      "reliability": 0.776,
+      "fillConfidence": 0.863,
       "vol24h": 34150,
       "bestHour": "18:00",
-      "snapCount": 196,
+      "snapCount": 197,
       "temporal": {
         "askZ": 0.2,
-        "bidZ": 0.28,
+        "bidZ": 0.27,
         "spreadZ": -0.08,
         "signal": ""
       },
@@ -620,15 +620,15 @@
         "exitAsk": 5200,
         "tax": 104
       },
-      "reliability": 0.674,
+      "reliability": 0.678,
       "fillConfidence": 0.763,
       "vol24h": 26685,
       "bestHour": "16:00",
       "snapCount": 135,
       "temporal": {
-        "askZ": 1.93,
-        "bidZ": 2.45,
-        "spreadZ": -0.51,
+        "askZ": 1.96,
+        "bidZ": 1.95,
+        "spreadZ": 0.01,
         "signal": "sell"
       },
       "score": 0.019
@@ -685,13 +685,13 @@
         "tax": 800
       },
       "reliability": 0.676,
-      "fillConfidence": 0.77,
+      "fillConfidence": 0.768,
       "vol24h": 16968,
       "bestHour": "23:00",
-      "snapCount": 100,
+      "snapCount": 99,
       "temporal": {
-        "askZ": 0.88,
-        "bidZ": 0.77,
+        "askZ": 0.87,
+        "bidZ": 0.76,
         "spreadZ": 0.11,
         "signal": ""
       },
@@ -705,7 +705,7 @@
       "profit": {
         "p25": 7060,
         "p50": 8060,
-        "p75": 12920
+        "p75": 12040
       },
       "spread": 8000,
       "roi": {
@@ -716,15 +716,15 @@
         "exitAsk": 48000,
         "tax": 960
       },
-      "reliability": 0.715,
+      "reliability": 0.718,
       "fillConfidence": 0.772,
       "vol24h": 30733,
       "bestHour": "20:00",
       "snapCount": 79,
       "temporal": {
-        "askZ": -1.07,
-        "bidZ": -0.55,
-        "spreadZ": -0.52,
+        "askZ": 0.69,
+        "bidZ": -0.2,
+        "spreadZ": 0.89,
         "signal": ""
       },
       "score": 0.017
@@ -735,28 +735,28 @@
       "catIdx": 5,
       "level": 0,
       "profit": {
-        "p25": 35200,
-        "p50": 40900,
+        "p25": 36200,
+        "p50": 50300,
         "p75": 65400
       },
       "spread": 40000,
       "roi": {
-        "p25": 22
+        "p25": 22.6
       },
       "prices": {
         "entryBid": 160000,
         "exitAsk": 230000,
         "tax": 4600
       },
-      "reliability": 0.643,
-      "fillConfidence": 0.769,
+      "reliability": 0.636,
+      "fillConfidence": 0.75,
       "vol24h": 3042,
       "bestHour": "5:00",
-      "snapCount": 13,
+      "snapCount": 12,
       "temporal": {
-        "askZ": 0.39,
-        "bidZ": -0.77,
-        "spreadZ": 1.16,
+        "askZ": 0.49,
+        "bidZ": -0.69,
+        "spreadZ": 1.17,
         "signal": ""
       },
       "score": 0.017
@@ -812,15 +812,15 @@
         "exitAsk": 30000,
         "tax": 600
       },
-      "reliability": 0.807,
-      "fillConfidence": 0.798,
+      "reliability": 0.808,
+      "fillConfidence": 0.8,
       "vol24h": 15750,
       "bestHour": "7:00",
-      "snapCount": 99,
+      "snapCount": 100,
       "temporal": {
         "askZ": -0.11,
-        "bidZ": 1.27,
-        "spreadZ": -1.38,
+        "bidZ": -0.18,
+        "spreadZ": 0.07,
         "signal": ""
       },
       "score": 0.016
@@ -858,6 +858,38 @@
       "score": 0.016
     },
     {
+      "slug": "verdant_hatchet",
+      "name": "Verdant Hatchet",
+      "catIdx": 7,
+      "level": 0,
+      "profit": {
+        "p25": 3970,
+        "p50": 3980,
+        "p75": 4980
+      },
+      "spread": 4500,
+      "roi": {
+        "p25": 18.5
+      },
+      "prices": {
+        "entryBid": 21500,
+        "exitAsk": 26500,
+        "tax": 530
+      },
+      "reliability": 0.724,
+      "fillConfidence": 0.75,
+      "vol24h": 21723,
+      "bestHour": "19:00",
+      "snapCount": 160,
+      "temporal": {
+        "askZ": 1.05,
+        "bidZ": 0.33,
+        "spreadZ": 0.73,
+        "signal": "sell"
+      },
+      "score": 0.016
+    },
+    {
       "slug": "wooden_crossbow",
       "name": "Wooden Crossbow",
       "catIdx": 5,
@@ -876,15 +908,15 @@
         "exitAsk": 5000,
         "tax": 100
       },
-      "reliability": 0.727,
-      "fillConfidence": 0.761,
+      "reliability": 0.729,
+      "fillConfidence": 0.766,
       "vol24h": 118742,
       "bestHour": "22:00",
-      "snapCount": 142,
+      "snapCount": 141,
       "temporal": {
-        "askZ": -1,
-        "bidZ": 0.55,
-        "spreadZ": -1.55,
+        "askZ": -0.99,
+        "bidZ": 0.56,
+        "spreadZ": -1.56,
         "signal": ""
       },
       "score": 0.016
@@ -908,11 +940,11 @@
         "exitAsk": 29500,
         "tax": 590
       },
-      "reliability": 0.755,
-      "fillConfidence": 0.762,
+      "reliability": 0.756,
+      "fillConfidence": 0.765,
       "vol24h": 19913,
       "bestHour": "23:00",
-      "snapCount": 101,
+      "snapCount": 102,
       "temporal": {
         "askZ": -0.17,
         "bidZ": 0.3,
@@ -993,7 +1025,7 @@
       "profit": {
         "p25": 700,
         "p50": 1596,
-        "p75": 2096
+        "p75": 1996
       },
       "spread": 800,
       "roi": {
@@ -1004,15 +1036,15 @@
         "exitAsk": 5000,
         "tax": 100
       },
-      "reliability": 0.578,
-      "fillConfidence": 0.803,
+      "reliability": 0.576,
+      "fillConfidence": 0.796,
       "vol24h": 48216,
       "bestHour": "23:00",
       "snapCount": 157,
       "temporal": {
-        "askZ": 1.12,
-        "bidZ": 1.3,
-        "spreadZ": -0.17,
+        "askZ": 1.11,
+        "bidZ": 1.44,
+        "spreadZ": -0.33,
         "signal": "sell"
       },
       "score": 0.015
@@ -1025,7 +1057,7 @@
       "profit": {
         "p25": 2680,
         "p50": 3650,
-        "p75": 4580
+        "p75": 4570
       },
       "spread": 3000,
       "roi": {
@@ -1043,8 +1075,8 @@
       "snapCount": 189,
       "temporal": {
         "askZ": -0.33,
-        "bidZ": 0.22,
-        "spreadZ": -0.55,
+        "bidZ": 0.21,
+        "spreadZ": -0.54,
         "signal": ""
       },
       "score": 0.015
@@ -1088,7 +1120,7 @@
       "level": 0,
       "profit": {
         "p25": 7000,
-        "p50": 8020,
+        "p50": 8040,
         "p75": 10000
       },
       "spread": 8000,
@@ -1100,15 +1132,47 @@
         "exitAsk": 50000,
         "tax": 1000
       },
-      "reliability": 0.674,
-      "fillConfidence": 0.781,
+      "reliability": 0.673,
+      "fillConfidence": 0.78,
       "vol24h": 23007,
       "bestHour": "1:00",
-      "snapCount": 187,
+      "snapCount": 186,
       "temporal": {
-        "askZ": 0.4,
+        "askZ": 0.39,
         "bidZ": 0.11,
         "spreadZ": 0.29,
+        "signal": ""
+      },
+      "score": 0.015
+    },
+    {
+      "slug": "rough_boots",
+      "name": "Rough Boots",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 1232,
+        "p50": 1636,
+        "p75": 2836
+      },
+      "spread": 1400,
+      "roi": {
+        "p25": 21.2
+      },
+      "prices": {
+        "entryBid": 5800,
+        "exitAsk": 8000,
+        "tax": 160
+      },
+      "reliability": 0.576,
+      "fillConfidence": 0.752,
+      "vol24h": 32220,
+      "bestHour": "12:00",
+      "snapCount": 121,
+      "temporal": {
+        "askZ": 0.65,
+        "bidZ": 0.67,
+        "spreadZ": -0.02,
         "signal": ""
       },
       "score": 0.015
@@ -1132,48 +1196,16 @@
         "exitAsk": 26000,
         "tax": 520
       },
-      "reliability": 0.626,
-      "fillConfidence": 0.755,
+      "reliability": 0.623,
+      "fillConfidence": 0.751,
       "vol24h": 29258,
       "bestHour": "23:00",
-      "snapCount": 200,
+      "snapCount": 201,
       "temporal": {
         "askZ": -0.01,
-        "bidZ": 1.84,
-        "spreadZ": -1.85,
+        "bidZ": 1.82,
+        "spreadZ": -1.84,
         "signal": ""
-      },
-      "score": 0.014
-    },
-    {
-      "slug": "verdant_hatchet",
-      "name": "Verdant Hatchet",
-      "catIdx": 7,
-      "level": 0,
-      "profit": {
-        "p25": 3490,
-        "p50": 3980,
-        "p75": 4980
-      },
-      "spread": 4000,
-      "roi": {
-        "p25": 16.2
-      },
-      "prices": {
-        "entryBid": 21500,
-        "exitAsk": 26000,
-        "tax": 520
-      },
-      "reliability": 0.723,
-      "fillConfidence": 0.761,
-      "vol24h": 21723,
-      "bestHour": "19:00",
-      "snapCount": 159,
-      "temporal": {
-        "askZ": 1.06,
-        "bidZ": -0.05,
-        "spreadZ": 1.11,
-        "signal": "sell"
       },
       "score": 0.014
     },
@@ -1184,7 +1216,7 @@
       "level": 0,
       "profit": {
         "p25": 8960,
-        "p50": 14840,
+        "p50": 14920,
         "p75": 36040
       },
       "spread": 10000,
@@ -1196,15 +1228,15 @@
         "exitAsk": 56000,
         "tax": 1120
       },
-      "reliability": 0.444,
-      "fillConfidence": 0.761,
+      "reliability": 0.449,
+      "fillConfidence": 0.771,
       "vol24h": 13239,
       "bestHour": "23:00",
-      "snapCount": 71,
+      "snapCount": 70,
       "temporal": {
         "askZ": -0.37,
-        "bidZ": -1.06,
-        "spreadZ": 0.69,
+        "bidZ": -1.04,
+        "spreadZ": 0.67,
         "signal": "buy"
       },
       "score": 0.013
@@ -1228,15 +1260,15 @@
         "exitAsk": 840,
         "tax": 16
       },
-      "reliability": 0.559,
+      "reliability": 0.56,
       "fillConfidence": 0.771,
       "vol24h": 1201453,
       "bestHour": "23:00",
       "snapCount": 279,
       "temporal": {
         "askZ": 0.11,
-        "bidZ": 0.39,
-        "spreadZ": -0.28,
+        "bidZ": -0.09,
+        "spreadZ": 0.2,
         "signal": ""
       },
       "score": 0.013
@@ -1279,7 +1311,7 @@
       "catIdx": 5,
       "level": 0,
       "profit": {
-        "p25": 1064,
+        "p25": 1060,
         "p50": 1428,
         "p75": 2820
       },
@@ -1292,15 +1324,15 @@
         "exitAsk": 8400,
         "tax": 168
       },
-      "reliability": 0.608,
-      "fillConfidence": 0.75,
+      "reliability": 0.607,
+      "fillConfidence": 0.757,
       "vol24h": 27847,
       "bestHour": "23:00",
-      "snapCount": 116,
+      "snapCount": 115,
       "temporal": {
         "askZ": 0.89,
-        "bidZ": -0.04,
-        "spreadZ": 0.93,
+        "bidZ": -0.03,
+        "spreadZ": 0.92,
         "signal": ""
       },
       "score": 0.013
@@ -1397,38 +1429,6 @@
       "score": 0.013
     },
     {
-      "slug": "verdant_shears",
-      "name": "Verdant Shears",
-      "catIdx": 7,
-      "level": 0,
-      "profit": {
-        "p25": 3470,
-        "p50": 4470,
-        "p75": 5970
-      },
-      "spread": 4000,
-      "roi": {
-        "p25": 16.9
-      },
-      "prices": {
-        "entryBid": 20500,
-        "exitAsk": 26000,
-        "tax": 520
-      },
-      "reliability": 0.623,
-      "fillConfidence": 0.751,
-      "vol24h": 17682,
-      "bestHour": "21:00",
-      "snapCount": 169,
-      "temporal": {
-        "askZ": 0.79,
-        "bidZ": -0.23,
-        "spreadZ": 1.01,
-        "signal": ""
-      },
-      "score": 0.013
-    },
-    {
       "slug": "yogurt",
       "name": "Yogurt",
       "catIdx": 1,
@@ -1453,8 +1453,8 @@
       "bestHour": "23:00",
       "snapCount": 280,
       "temporal": {
-        "askZ": 0.42,
-        "bidZ": 1.18,
+        "askZ": 0.41,
+        "bidZ": 1.17,
         "spreadZ": -0.76,
         "signal": ""
       },
@@ -1493,65 +1493,33 @@
       "score": 0.012
     },
     {
-      "slug": "rough_boots",
-      "name": "Rough Boots",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 1040,
-        "p50": 1636,
-        "p75": 2836
-      },
-      "spread": 1200,
-      "roi": {
-        "p25": 17.3
-      },
-      "prices": {
-        "entryBid": 6000,
-        "exitAsk": 8000,
-        "tax": 160
-      },
-      "reliability": 0.574,
-      "fillConfidence": 0.77,
-      "vol24h": 32220,
-      "bestHour": "12:00",
-      "snapCount": 122,
-      "temporal": {
-        "askZ": 0.64,
-        "bidZ": 0.65,
-        "spreadZ": -0.01,
-        "signal": ""
-      },
-      "score": 0.012
-    },
-    {
       "slug": "advanced_food_crate",
       "name": "Advanced Food Crate",
       "catIdx": 3,
       "level": 0,
       "profit": {
-        "p25": 8480,
+        "p25": 8440,
         "p50": 14640,
         "p75": 20600
       },
       "spread": 10000,
       "roi": {
-        "p25": 17
+        "p25": 16.9
       },
       "prices": {
         "entryBid": 50000,
-        "exitAsk": 74000,
-        "tax": 1480
+        "exitAsk": 76000,
+        "tax": 1520
       },
-      "reliability": 0.551,
+      "reliability": 0.545,
       "fillConfidence": 0.756,
       "vol24h": 24868,
       "bestHour": "14:00",
       "snapCount": 82,
       "temporal": {
-        "askZ": -1.24,
-        "bidZ": 0.5,
-        "spreadZ": -1.74,
+        "askZ": -1.68,
+        "bidZ": 0.48,
+        "spreadZ": -2.16,
         "signal": ""
       },
       "score": 0.011
@@ -1576,14 +1544,14 @@
         "tax": 104
       },
       "reliability": 0.558,
-      "fillConfidence": 0.852,
+      "fillConfidence": 0.851,
       "vol24h": 20595,
       "bestHour": "23:00",
-      "snapCount": 122,
+      "snapCount": 121,
       "temporal": {
         "askZ": 0.3,
         "bidZ": 0.24,
-        "spreadZ": 0.07,
+        "spreadZ": 0.06,
         "signal": ""
       },
       "score": 0.011
@@ -1607,15 +1575,15 @@
         "exitAsk": 5200,
         "tax": 104
       },
-      "reliability": 0.825,
-      "fillConfidence": 0.774,
+      "reliability": 0.822,
+      "fillConfidence": 0.766,
       "vol24h": 24263,
       "bestHour": "23:00",
       "snapCount": 137,
       "temporal": {
         "askZ": 0.12,
-        "bidZ": 1.34,
-        "spreadZ": -1.22,
+        "bidZ": 1.32,
+        "spreadZ": -1.2,
         "signal": ""
       },
       "score": 0.011
@@ -1639,17 +1607,44 @@
         "exitAsk": 6600,
         "tax": 132
       },
-      "reliability": 0.43,
-      "fillConfidence": 0.75,
+      "reliability": 0.433,
+      "fillConfidence": 0.756,
       "vol24h": 33332,
       "bestHour": "5:00",
-      "snapCount": 124,
+      "snapCount": 123,
       "temporal": {
-        "askZ": -0.04,
-        "bidZ": 0.47,
-        "spreadZ": -0.52,
+        "askZ": -0.05,
+        "bidZ": 0.49,
+        "spreadZ": -0.53,
         "signal": ""
       },
+      "score": 0.011
+    },
+    {
+      "slug": "icy_robe_bottoms",
+      "name": "Icy Robe Bottoms",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 21200,
+        "p50": 60500,
+        "p75": 60600
+      },
+      "spread": 25000,
+      "roi": {
+        "p25": 13.7
+      },
+      "prices": {
+        "entryBid": 155000,
+        "exitAsk": 220000,
+        "tax": 4400
+      },
+      "reliability": 0.585,
+      "fillConfidence": 0.833,
+      "vol24h": 1894,
+      "bestHour": "4:00",
+      "snapCount": 6,
+      "temporal": null,
       "score": 0.011
     },
     {
@@ -1704,14 +1699,14 @@
         "tax": 470
       },
       "reliability": 0.715,
-      "fillConfidence": 0.77,
+      "fillConfidence": 0.771,
       "vol24h": 22740,
-      "bestHour": "4:00",
-      "snapCount": 174,
+      "bestHour": "15:00",
+      "snapCount": 175,
       "temporal": {
-        "askZ": -0.49,
-        "bidZ": 1.45,
-        "spreadZ": -1.94,
+        "askZ": -0.48,
+        "bidZ": 0.5,
+        "spreadZ": -0.98,
         "signal": ""
       },
       "score": 0.011
@@ -1744,6 +1739,38 @@
         "askZ": 0.27,
         "bidZ": 1.66,
         "spreadZ": -1.38,
+        "signal": ""
+      },
+      "score": 0.011
+    },
+    {
+      "slug": "verdant_shears",
+      "name": "Verdant Shears",
+      "catIdx": 7,
+      "level": 0,
+      "profit": {
+        "p25": 3060,
+        "p50": 4470,
+        "p75": 5970
+      },
+      "spread": 3500,
+      "roi": {
+        "p25": 14.9
+      },
+      "prices": {
+        "entryBid": 20500,
+        "exitAsk": 26000,
+        "tax": 520
+      },
+      "reliability": 0.623,
+      "fillConfidence": 0.753,
+      "vol24h": 17682,
+      "bestHour": "21:00",
+      "snapCount": 170,
+      "temporal": {
+        "askZ": 0.78,
+        "bidZ": 1.01,
+        "spreadZ": -0.23,
         "signal": ""
       },
       "score": 0.011
@@ -1826,15 +1853,15 @@
         "exitAsk": 52000,
         "tax": 1040
       },
-      "reliability": 0.696,
-      "fillConfidence": 0.756,
+      "reliability": 0.695,
+      "fillConfidence": 0.75,
       "vol24h": 8892,
       "bestHour": "11:00",
-      "snapCount": 45,
+      "snapCount": 44,
       "temporal": {
-        "askZ": 0.68,
-        "bidZ": -0.31,
-        "spreadZ": 0.99,
+        "askZ": 0.8,
+        "bidZ": -0.27,
+        "spreadZ": 1.07,
         "signal": ""
       },
       "score": 0.01
@@ -1858,15 +1885,15 @@
         "exitAsk": 8600,
         "tax": 172
       },
-      "reliability": 0.462,
+      "reliability": 0.463,
       "fillConfidence": 0.91,
       "vol24h": 36192,
       "bestHour": "21:00",
       "snapCount": 166,
       "temporal": {
         "askZ": -0.29,
-        "bidZ": 0.31,
-        "spreadZ": -0.6,
+        "bidZ": -0.71,
+        "spreadZ": 0.42,
         "signal": ""
       },
       "score": 0.01
@@ -1954,15 +1981,15 @@
         "exitAsk": 400,
         "tax": 8
       },
-      "reliability": 0.673,
+      "reliability": 0.674,
       "fillConfidence": 0.851,
       "vol24h": 1652038,
       "bestHour": "4:00",
       "snapCount": 282,
       "temporal": {
-        "askZ": 0.02,
+        "askZ": 0.37,
         "bidZ": 0.3,
-        "spreadZ": -0.28,
+        "spreadZ": 0.07,
         "signal": ""
       },
       "score": 0.009
@@ -1986,15 +2013,15 @@
         "exitAsk": 225000,
         "tax": 4500
       },
-      "reliability": 0.689,
-      "fillConfidence": 0.755,
+      "reliability": 0.69,
+      "fillConfidence": 0.757,
       "vol24h": 12940,
       "bestHour": "23:00",
-      "snapCount": 139,
+      "snapCount": 140,
       "temporal": {
-        "askZ": -1.24,
-        "bidZ": -0.3,
-        "spreadZ": -0.95,
+        "askZ": -1.8,
+        "bidZ": -0.72,
+        "spreadZ": -1.08,
         "signal": ""
       },
       "score": 0.009
@@ -2050,15 +2077,15 @@
         "exitAsk": 5200,
         "tax": 104
       },
-      "reliability": 0.519,
-      "fillConfidence": 0.838,
+      "reliability": 0.517,
+      "fillConfidence": 0.831,
       "vol24h": 19048,
       "bestHour": "22:00",
-      "snapCount": 117,
+      "snapCount": 118,
       "temporal": {
-        "askZ": 0.18,
-        "bidZ": 0.97,
-        "spreadZ": -0.79,
+        "askZ": -4.23,
+        "bidZ": 0.96,
+        "spreadZ": -5.19,
         "signal": ""
       },
       "score": 0.009
@@ -2306,15 +2333,15 @@
         "exitAsk": 215000,
         "tax": 4300
       },
-      "reliability": 0.433,
-      "fillConfidence": 0.76,
+      "reliability": 0.432,
+      "fillConfidence": 0.758,
       "vol24h": 15092,
       "bestHour": "15:00",
-      "snapCount": 121,
+      "snapCount": 120,
       "temporal": {
         "askZ": 0.9,
-        "bidZ": 0.84,
-        "spreadZ": 0.06,
+        "bidZ": 0.83,
+        "spreadZ": 0.07,
         "signal": ""
       },
       "score": 0.007
@@ -2402,15 +2429,15 @@
         "exitAsk": 90000,
         "tax": 1800
       },
-      "reliability": 0.677,
-      "fillConfidence": 0.803,
+      "reliability": 0.685,
+      "fillConfidence": 0.809,
       "vol24h": 15405,
       "bestHour": "20:00",
-      "snapCount": 132,
+      "snapCount": 131,
       "temporal": {
-        "askZ": 2.17,
+        "askZ": 2.16,
         "bidZ": -1.09,
-        "spreadZ": 3.26,
+        "spreadZ": 3.25,
         "signal": "flip"
       },
       "score": 0.007
@@ -2434,15 +2461,15 @@
         "exitAsk": 110,
         "tax": 2
       },
-      "reliability": 0.373,
-      "fillConfidence": 0.767,
+      "reliability": 0.372,
+      "fillConfidence": 0.764,
       "vol24h": 34629345,
       "bestHour": "23:00",
       "snapCount": 330,
       "temporal": {
-        "askZ": -0.81,
-        "bidZ": 0.54,
-        "spreadZ": -1.35,
+        "askZ": -0.96,
+        "bidZ": 0.55,
+        "spreadZ": -1.51,
         "signal": ""
       },
       "score": 0.007
@@ -2486,8 +2513,8 @@
       "level": 0,
       "profit": {
         "p25": 8900,
-        "p50": 13800,
-        "p75": 25800
+        "p50": 14000,
+        "p75": 26000
       },
       "spread": 11000,
       "roi": {
@@ -2498,13 +2525,13 @@
         "exitAsk": 110000,
         "tax": 2200
       },
-      "reliability": 0.554,
-      "fillConfidence": 0.8,
+      "reliability": 0.556,
+      "fillConfidence": 0.805,
       "vol24h": 19743,
       "bestHour": "22:00",
-      "snapCount": 165,
+      "snapCount": 164,
       "temporal": {
-        "askZ": 1.12,
+        "askZ": 1.11,
         "bidZ": 0.54,
         "spreadZ": 0.58,
         "signal": "sell"
@@ -2615,7 +2642,7 @@
       "profit": {
         "p25": 8440,
         "p50": 12480,
-        "p75": 24040
+        "p75": 24440
       },
       "spread": 10000,
       "roi": {
@@ -2626,11 +2653,11 @@
         "exitAsk": 80000,
         "tax": 1600
       },
-      "reliability": 0.45,
-      "fillConfidence": 0.751,
+      "reliability": 0.448,
+      "fillConfidence": 0.75,
       "vol24h": 29629,
       "bestHour": "10:00",
-      "snapCount": 185,
+      "snapCount": 184,
       "temporal": {
         "askZ": -0.33,
         "bidZ": 0.1,
@@ -2690,15 +2717,15 @@
         "exitAsk": 26000,
         "tax": 520
       },
-      "reliability": 0.601,
-      "fillConfidence": 0.756,
+      "reliability": 0.6,
+      "fillConfidence": 0.755,
       "vol24h": 18069,
       "bestHour": "18:00",
-      "snapCount": 160,
+      "snapCount": 159,
       "temporal": {
-        "askZ": 0.92,
+        "askZ": 0.93,
         "bidZ": 1.26,
-        "spreadZ": -0.34,
+        "spreadZ": -0.33,
         "signal": ""
       },
       "score": 0.007
@@ -2743,7 +2770,7 @@
       "profit": {
         "p25": 4600,
         "p50": 6640,
-        "p75": 10600
+        "p75": 10640
       },
       "spread": 6000,
       "roi": {
@@ -2754,15 +2781,15 @@
         "exitAsk": 70000,
         "tax": 1400
       },
-      "reliability": 0.594,
-      "fillConfidence": 0.777,
+      "reliability": 0.595,
+      "fillConfidence": 0.783,
       "vol24h": 16633,
       "bestHour": "20:00",
       "snapCount": 157,
       "temporal": {
         "askZ": -1.31,
-        "bidZ": -1.52,
-        "spreadZ": 0.21,
+        "bidZ": -1.49,
+        "spreadZ": 0.19,
         "signal": "buy"
       },
       "score": 0.006
@@ -2786,11 +2813,11 @@
         "exitAsk": 46000,
         "tax": 920
       },
-      "reliability": 0.565,
-      "fillConfidence": 0.765,
+      "reliability": 0.566,
+      "fillConfidence": 0.766,
       "vol24h": 25476,
       "bestHour": "2:00",
-      "snapCount": 170,
+      "snapCount": 171,
       "temporal": {
         "askZ": 0.16,
         "bidZ": 0.76,
@@ -2818,15 +2845,15 @@
         "exitAsk": 70000,
         "tax": 1400
       },
-      "reliability": 0.681,
-      "fillConfidence": 0.772,
+      "reliability": 0.68,
+      "fillConfidence": 0.767,
       "vol24h": 19618,
       "bestHour": "20:00",
-      "snapCount": 162,
+      "snapCount": 163,
       "temporal": {
-        "askZ": -2.85,
-        "bidZ": -0.11,
-        "spreadZ": -2.75,
+        "askZ": -2.77,
+        "bidZ": -0.1,
+        "spreadZ": -2.67,
         "signal": ""
       },
       "score": 0.006
@@ -2914,11 +2941,11 @@
         "exitAsk": 5200,
         "tax": 104
       },
-      "reliability": 0.638,
-      "fillConfidence": 0.837,
+      "reliability": 0.639,
+      "fillConfidence": 0.838,
       "vol24h": 85798,
       "bestHour": "20:00",
-      "snapCount": 135,
+      "snapCount": 136,
       "temporal": {
         "askZ": 0.9,
         "bidZ": 0.16,
@@ -2947,12 +2974,12 @@
         "tax": 104
       },
       "reliability": 0.337,
-      "fillConfidence": 0.802,
+      "fillConfidence": 0.798,
       "vol24h": 122500,
       "bestHour": "2:00",
-      "snapCount": 187,
+      "snapCount": 188,
       "temporal": {
-        "askZ": -0.31,
+        "askZ": -0.3,
         "bidZ": 0.49,
         "spreadZ": -0.8,
         "signal": ""
@@ -3056,6 +3083,38 @@
       "score": 0.006
     },
     {
+      "slug": "frost_staff",
+      "name": "Frost Staff",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 604000,
+        "p50": 1090000,
+        "p75": 1290000
+      },
+      "spread": 800000,
+      "roi": {
+        "p25": 6.7
+      },
+      "prices": {
+        "entryBid": 9000000,
+        "exitAsk": 10500000,
+        "tax": 210000
+      },
+      "reliability": 0.7,
+      "fillConfidence": 0.75,
+      "vol24h": 3767,
+      "bestHour": "0:00",
+      "snapCount": 16,
+      "temporal": {
+        "askZ": 0.85,
+        "bidZ": -0.11,
+        "spreadZ": 0.96,
+        "signal": ""
+      },
+      "score": 0.006
+    },
+    {
       "slug": "purpleheart_shield",
       "name": "Purpleheart Shield",
       "catIdx": 5,
@@ -3063,7 +3122,7 @@
       "profit": {
         "p25": 7600,
         "p50": 12600,
-        "p75": 22200
+        "p75": 22300
       },
       "spread": 10000,
       "roi": {
@@ -3074,15 +3133,15 @@
         "exitAsk": 135000,
         "tax": 2700
       },
-      "reliability": 0.6,
-      "fillConfidence": 0.844,
+      "reliability": 0.598,
+      "fillConfidence": 0.842,
       "vol24h": 12228,
       "bestHour": "20:00",
-      "snapCount": 77,
+      "snapCount": 76,
       "temporal": {
-        "askZ": 1.32,
+        "askZ": 1.31,
         "bidZ": -0.35,
-        "spreadZ": 1.67,
+        "spreadZ": 1.66,
         "signal": "sell"
       },
       "score": 0.006
@@ -3138,14 +3197,14 @@
         "exitAsk": 86000,
         "tax": 1720
       },
-      "reliability": 0.454,
-      "fillConfidence": 0.762,
+      "reliability": 0.456,
+      "fillConfidence": 0.767,
       "vol24h": 52458,
       "bestHour": "10:00",
       "snapCount": 172,
       "temporal": {
-        "askZ": 0.69,
-        "bidZ": 1.08,
+        "askZ": 0.68,
+        "bidZ": 1.07,
         "spreadZ": -0.4,
         "signal": ""
       },
@@ -3170,15 +3229,15 @@
         "exitAsk": 33,
         "tax": 1
       },
-      "reliability": 0.577,
+      "reliability": 0.578,
       "fillConfidence": 0.79,
       "vol24h": 57373525,
       "bestHour": "9:00",
       "snapCount": 324,
       "temporal": {
-        "askZ": -0.83,
+        "askZ": -0.34,
         "bidZ": -0.57,
-        "spreadZ": -0.26,
+        "spreadZ": 0.23,
         "signal": ""
       },
       "score": 0.005
@@ -3202,15 +3261,15 @@
         "exitAsk": 640,
         "tax": 12
       },
-      "reliability": 0.454,
-      "fillConfidence": 0.76,
+      "reliability": 0.453,
+      "fillConfidence": 0.759,
       "vol24h": 1350530,
       "bestHour": "7:00",
-      "snapCount": 279,
+      "snapCount": 278,
       "temporal": {
-        "askZ": 2.4,
+        "askZ": 2.39,
         "bidZ": -0.12,
-        "spreadZ": 2.52,
+        "spreadZ": 2.51,
         "signal": "sell"
       },
       "score": 0.005
@@ -3234,15 +3293,15 @@
         "exitAsk": 44000,
         "tax": 880
       },
-      "reliability": 0.498,
-      "fillConfidence": 0.77,
+      "reliability": 0.497,
+      "fillConfidence": 0.765,
       "vol24h": 24582,
       "bestHour": "18:00",
-      "snapCount": 135,
+      "snapCount": 136,
       "temporal": {
         "askZ": -0.13,
-        "bidZ": 1.17,
-        "spreadZ": -1.3,
+        "bidZ": 0.76,
+        "spreadZ": -0.89,
         "signal": ""
       },
       "score": 0.005
@@ -3266,15 +3325,15 @@
         "exitAsk": 56000,
         "tax": 1120
       },
-      "reliability": 0.44,
+      "reliability": 0.441,
       "fillConfidence": 0.754,
       "vol24h": 64164,
       "bestHour": "14:00",
       "snapCount": 179,
       "temporal": {
         "askZ": 0.06,
-        "bidZ": 0.36,
-        "spreadZ": -0.29,
+        "bidZ": -0.05,
+        "spreadZ": 0.11,
         "signal": ""
       },
       "score": 0.005
@@ -3287,7 +3346,7 @@
       "profit": {
         "p25": 6160,
         "p50": 10160,
-        "p75": 24160
+        "p75": 24120
       },
       "spread": 8000,
       "roi": {
@@ -3298,15 +3357,15 @@
         "exitAsk": 94000,
         "tax": 1880
       },
-      "reliability": 0.538,
+      "reliability": 0.54,
       "fillConfidence": 0.753,
       "vol24h": 19290,
       "bestHour": "13:00",
       "snapCount": 73,
       "temporal": {
-        "askZ": -0.34,
-        "bidZ": -1.54,
-        "spreadZ": 1.2,
+        "askZ": -0.32,
+        "bidZ": -1.53,
+        "spreadZ": 1.21,
         "signal": "buy"
       },
       "score": 0.005
@@ -3362,14 +3421,14 @@
         "exitAsk": 1150,
         "tax": 23
       },
-      "reliability": 0.507,
-      "fillConfidence": 0.758,
+      "reliability": 0.506,
+      "fillConfidence": 0.754,
       "vol24h": 1965155,
-      "bestHour": "7:00",
+      "bestHour": "3:00",
       "snapCount": 248,
       "temporal": {
-        "askZ": -1.12,
-        "bidZ": -0.09,
+        "askZ": -1.11,
+        "bidZ": -0.08,
         "spreadZ": -1.03,
         "signal": ""
       },
@@ -3381,28 +3440,28 @@
       "catIdx": 5,
       "level": 0,
       "profit": {
-        "p25": 828,
-        "p50": 1416,
+        "p25": 836,
+        "p50": 1420,
         "p75": 2228
       },
       "spread": 1000,
       "roi": {
-        "p25": 11.2
+        "p25": 11.3
       },
       "prices": {
         "entryBid": 7400,
         "exitAsk": 9400,
         "tax": 188
       },
-      "reliability": 0.333,
-      "fillConfidence": 0.756,
+      "reliability": 0.334,
+      "fillConfidence": 0.75,
       "vol24h": 43375,
       "bestHour": "9:00",
-      "snapCount": 119,
+      "snapCount": 120,
       "temporal": {
-        "askZ": -0.18,
-        "bidZ": 1,
-        "spreadZ": -1.18,
+        "askZ": -0.17,
+        "bidZ": 0.99,
+        "spreadZ": -1.16,
         "signal": ""
       },
       "score": 0.005
@@ -3454,14 +3513,14 @@
         "tax": 2
       },
       "reliability": 0.487,
-      "fillConfidence": 0.841,
+      "fillConfidence": 0.838,
       "vol24h": 69976506,
       "bestHour": "23:00",
       "snapCount": 328,
       "temporal": {
         "askZ": -0.65,
         "bidZ": -0.27,
-        "spreadZ": -0.38,
+        "spreadZ": -0.37,
         "signal": ""
       },
       "score": 0.005
@@ -3549,15 +3608,15 @@
         "exitAsk": 5400,
         "tax": 108
       },
-      "reliability": 0.493,
+      "reliability": 0.494,
       "fillConfidence": 0.751,
       "vol24h": 289915,
       "bestHour": "20:00",
       "snapCount": 273,
       "temporal": {
-        "askZ": 0.27,
-        "bidZ": 1.2,
-        "spreadZ": -0.93,
+        "askZ": 0.06,
+        "bidZ": 0.83,
+        "spreadZ": -0.77,
         "signal": ""
       },
       "score": 0.005
@@ -3581,15 +3640,15 @@
         "exitAsk": 5200,
         "tax": 104
       },
-      "reliability": 0.571,
-      "fillConfidence": 0.823,
+      "reliability": 0.57,
+      "fillConfidence": 0.817,
       "vol24h": 24580,
       "bestHour": "23:00",
-      "snapCount": 130,
+      "snapCount": 131,
       "temporal": {
         "askZ": 0.2,
-        "bidZ": 1.07,
-        "spreadZ": -0.87,
+        "bidZ": 1.06,
+        "spreadZ": -0.86,
         "signal": ""
       },
       "score": 0.005
@@ -3613,15 +3672,15 @@
         "exitAsk": 72000,
         "tax": 1440
       },
-      "reliability": 0.661,
-      "fillConfidence": 0.872,
+      "reliability": 0.662,
+      "fillConfidence": 0.873,
       "vol24h": 20566,
       "bestHour": "3:00",
-      "snapCount": 172,
+      "snapCount": 173,
       "temporal": {
-        "askZ": 0.55,
-        "bidZ": 0.88,
-        "spreadZ": -0.33,
+        "askZ": -1.4,
+        "bidZ": -0.44,
+        "spreadZ": -0.96,
         "signal": ""
       },
       "score": 0.004
@@ -3665,7 +3724,7 @@
       "level": 0,
       "profit": {
         "p25": 4320,
-        "p50": 10280,
+        "p50": 8400,
         "p75": 10320
       },
       "spread": 6000,
@@ -3677,15 +3736,15 @@
         "exitAsk": 84000,
         "tax": 1680
       },
-      "reliability": 0.577,
-      "fillConfidence": 0.788,
+      "reliability": 0.579,
+      "fillConfidence": 0.79,
       "vol24h": 37391,
       "bestHour": "23:00",
-      "snapCount": 156,
+      "snapCount": 157,
       "temporal": {
-        "askZ": -1.45,
-        "bidZ": -0.65,
-        "spreadZ": -0.8,
+        "askZ": -1.44,
+        "bidZ": -0.13,
+        "spreadZ": -1.31,
         "signal": ""
       },
       "score": 0.004
@@ -3697,8 +3756,8 @@
       "level": 0,
       "profit": {
         "p25": 4360,
-        "p50": 14200,
-        "p75": 18900
+        "p50": 14120,
+        "p75": 18280
       },
       "spread": 6000,
       "roi": {
@@ -3715,9 +3774,9 @@
       "bestHour": "7:00",
       "snapCount": 82,
       "temporal": {
-        "askZ": 0.04,
-        "bidZ": 0.4,
-        "spreadZ": -0.36,
+        "askZ": 0.33,
+        "bidZ": 0.41,
+        "spreadZ": -0.08,
         "signal": ""
       },
       "score": 0.004
@@ -3741,15 +3800,15 @@
         "exitAsk": 1150,
         "tax": 23
       },
-      "reliability": 0.543,
-      "fillConfidence": 0.804,
+      "reliability": 0.544,
+      "fillConfidence": 0.807,
       "vol24h": 2119267,
       "bestHour": "15:00",
       "snapCount": 296,
       "temporal": {
         "askZ": 1.06,
-        "bidZ": 5.11,
-        "spreadZ": -4.05,
+        "bidZ": 0.34,
+        "spreadZ": 0.71,
         "signal": "sell"
       },
       "score": 0.004
@@ -3805,15 +3864,15 @@
         "exitAsk": 160000,
         "tax": 3200
       },
-      "reliability": 0.574,
-      "fillConfidence": 0.884,
+      "reliability": 0.573,
+      "fillConfidence": 0.883,
       "vol24h": 12896,
       "bestHour": "16:00",
-      "snapCount": 112,
+      "snapCount": 111,
       "temporal": {
-        "askZ": 0.63,
+        "askZ": 0.64,
         "bidZ": 0.22,
-        "spreadZ": 0.41,
+        "spreadZ": 0.42,
         "signal": ""
       },
       "score": 0.004
@@ -3869,15 +3928,15 @@
         "exitAsk": 165000,
         "tax": 3300
       },
-      "reliability": 0.587,
-      "fillConfidence": 0.792,
+      "reliability": 0.586,
+      "fillConfidence": 0.79,
       "vol24h": 12651,
       "bestHour": "22:00",
-      "snapCount": 106,
+      "snapCount": 105,
       "temporal": {
-        "askZ": -4.67,
-        "bidZ": -1.11,
-        "spreadZ": -3.56,
+        "askZ": -4.68,
+        "bidZ": -1.1,
+        "spreadZ": -3.58,
         "signal": "buy"
       },
       "score": 0.004
@@ -3901,15 +3960,15 @@
         "exitAsk": 160000,
         "tax": 3200
       },
-      "reliability": 0.569,
-      "fillConfidence": 0.824,
+      "reliability": 0.57,
+      "fillConfidence": 0.825,
       "vol24h": 12863,
       "bestHour": "21:00",
-      "snapCount": 119,
+      "snapCount": 120,
       "temporal": {
-        "askZ": -1.33,
+        "askZ": -0.26,
         "bidZ": 0.35,
-        "spreadZ": -1.68,
+        "spreadZ": -0.61,
         "signal": ""
       },
       "score": 0.004
@@ -3940,7 +3999,7 @@
       "snapCount": 279,
       "temporal": {
         "askZ": -0.98,
-        "bidZ": -0.97,
+        "bidZ": -0.96,
         "spreadZ": -0.01,
         "signal": ""
       },
@@ -4029,16 +4088,16 @@
         "exitAsk": 10500000,
         "tax": 210000
       },
-      "reliability": 0.816,
-      "fillConfidence": 0.966,
+      "reliability": 0.817,
+      "fillConfidence": 0.967,
       "vol24h": 7831,
       "bestHour": "15:00",
-      "snapCount": 59,
+      "snapCount": 60,
       "temporal": {
-        "askZ": -5.34,
-        "bidZ": -4.32,
-        "spreadZ": -1.02,
-        "signal": "buy"
+        "askZ": 0.19,
+        "bidZ": 0.23,
+        "spreadZ": -0.04,
+        "signal": ""
       },
       "score": 0.004
     },
@@ -4061,16 +4120,16 @@
         "exitAsk": 5200,
         "tax": 104
       },
-      "reliability": 0.57,
+      "reliability": 0.571,
       "fillConfidence": 0.892,
       "vol24h": 14705,
       "bestHour": "21:00",
       "snapCount": 120,
       "temporal": {
-        "askZ": 0.22,
-        "bidZ": -1.03,
-        "spreadZ": 1.26,
-        "signal": "buy"
+        "askZ": -3.2,
+        "bidZ": -0.74,
+        "spreadZ": -2.46,
+        "signal": ""
       },
       "score": 0.004
     },
@@ -4093,15 +4152,15 @@
         "exitAsk": 5000,
         "tax": 100
       },
-      "reliability": 0.649,
-      "fillConfidence": 0.795,
+      "reliability": 0.65,
+      "fillConfidence": 0.796,
       "vol24h": 689742,
       "bestHour": "20:00",
-      "snapCount": 161,
+      "snapCount": 162,
       "temporal": {
-        "askZ": -1.1,
+        "askZ": 0.8,
         "bidZ": 0.05,
-        "spreadZ": -1.15,
+        "spreadZ": 0.76,
         "signal": ""
       },
       "score": 0.004
@@ -4294,38 +4353,6 @@
       "score": 0.004
     },
     {
-      "slug": "frost_staff",
-      "name": "Frost Staff",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 412000,
-        "p50": 1090000,
-        "p75": 1290000
-      },
-      "spread": 600000,
-      "roi": {
-        "p25": 4.6
-      },
-      "prices": {
-        "entryBid": 9000000,
-        "exitAsk": 10500000,
-        "tax": 210000
-      },
-      "reliability": 0.69,
-      "fillConfidence": 0.765,
-      "vol24h": 3767,
-      "bestHour": "0:00",
-      "snapCount": 17,
-      "temporal": {
-        "askZ": 0.91,
-        "bidZ": -0.11,
-        "spreadZ": 1.02,
-        "signal": ""
-      },
-      "score": 0.004
-    },
-    {
       "slug": "holy_spatula",
       "name": "Holy Spatula",
       "catIdx": 7,
@@ -4412,11 +4439,11 @@
       "fillConfidence": 0.832,
       "vol24h": 4742245,
       "bestHour": "20:00",
-      "snapCount": 297,
+      "snapCount": 298,
       "temporal": {
         "askZ": 0,
-        "bidZ": 0.03,
-        "spreadZ": -0.03,
+        "bidZ": 1.74,
+        "spreadZ": -1.74,
         "signal": ""
       },
       "score": 0.004
@@ -4472,14 +4499,14 @@
         "exitAsk": 620000,
         "tax": 12400
       },
-      "reliability": 0.539,
+      "reliability": 0.541,
       "fillConfidence": 0.818,
       "vol24h": 9886,
       "bestHour": "3:00",
       "snapCount": 55,
       "temporal": {
-        "askZ": -0.63,
-        "bidZ": -0.27,
+        "askZ": -0.61,
+        "bidZ": -0.26,
         "spreadZ": -0.36,
         "signal": ""
       },
@@ -4555,28 +4582,28 @@
       "catIdx": 7,
       "level": 0,
       "profit": {
-        "p25": 28800,
-        "p50": 48000,
+        "p25": 27600,
+        "p50": 47600,
         "p75": 67600
       },
       "spread": 40000,
       "roi": {
-        "p25": 5.1
+        "p25": 4.9
       },
       "prices": {
         "entryBid": 560000,
         "exitAsk": 640000,
         "tax": 12800
       },
-      "reliability": 0.699,
-      "fillConfidence": 0.763,
+      "reliability": 0.679,
+      "fillConfidence": 0.769,
       "vol24h": 6383,
       "bestHour": "0:00",
-      "snapCount": 38,
+      "snapCount": 39,
       "temporal": {
-        "askZ": -0.58,
-        "bidZ": -0.14,
-        "spreadZ": -0.44,
+        "askZ": -1.6,
+        "bidZ": 0.61,
+        "spreadZ": -2.21,
         "signal": ""
       },
       "score": 0.004
@@ -4614,65 +4641,33 @@
       "score": 0.004
     },
     {
-      "slug": "rainbow_spatula",
-      "name": "Rainbow Spatula",
-      "catIdx": 7,
-      "level": 0,
-      "profit": {
-        "p25": 28000,
-        "p50": 67200,
-        "p75": 107200
-      },
-      "spread": 40000,
-      "roi": {
-        "p25": 5.2
-      },
-      "prices": {
-        "entryBid": 540000,
-        "exitAsk": 640000,
-        "tax": 12800
-      },
-      "reliability": 0.54,
-      "fillConfidence": 0.781,
-      "vol24h": 6537,
-      "bestHour": "3:00",
-      "snapCount": 32,
-      "temporal": {
-        "askZ": -1.32,
-        "bidZ": 0.81,
-        "spreadZ": -2.14,
-        "signal": ""
-      },
-      "score": 0.004
-    },
-    {
       "slug": "redwood_bow",
       "name": "Redwood Bow",
       "catIdx": 5,
       "level": 0,
       "profit": {
-        "p25": 40800,
-        "p50": 80000,
+        "p25": 40400,
+        "p50": 60800,
         "p75": 100400
       },
       "spread": 60000,
       "roi": {
-        "p25": 4.7
+        "p25": 4.6
       },
       "prices": {
-        "entryBid": 860000,
+        "entryBid": 880000,
         "exitAsk": 980000,
         "tax": 19600
       },
-      "reliability": 0.639,
-      "fillConfidence": 0.75,
+      "reliability": 0.641,
+      "fillConfidence": 0.825,
       "vol24h": 7451,
       "bestHour": "2:00",
-      "snapCount": 64,
+      "snapCount": 63,
       "temporal": {
-        "askZ": 0.37,
-        "bidZ": 1.28,
-        "spreadZ": -0.9,
+        "askZ": 0.45,
+        "bidZ": 1.27,
+        "spreadZ": -0.81,
         "signal": ""
       },
       "score": 0.004
@@ -4684,8 +4679,8 @@
       "level": 0,
       "profit": {
         "p25": 428,
-        "p50": 632,
-        "p75": 844
+        "p50": 628,
+        "p75": 840
       },
       "spread": 600,
       "roi": {
@@ -4696,15 +4691,15 @@
         "exitAsk": 8400,
         "tax": 168
       },
-      "reliability": 0.578,
-      "fillConfidence": 0.781,
+      "reliability": 0.576,
+      "fillConfidence": 0.775,
       "vol24h": 106176,
       "bestHour": "21:00",
-      "snapCount": 128,
+      "snapCount": 129,
       "temporal": {
-        "askZ": 1.18,
-        "bidZ": 1.42,
-        "spreadZ": -0.24,
+        "askZ": 1.17,
+        "bidZ": 1.91,
+        "spreadZ": -0.74,
         "signal": "sell"
       },
       "score": 0.004
@@ -4728,15 +4723,15 @@
         "exitAsk": 16000,
         "tax": 320
       },
-      "reliability": 0.596,
+      "reliability": 0.592,
       "fillConfidence": 0.828,
       "vol24h": 47836,
       "bestHour": "3:00",
       "snapCount": 145,
       "temporal": {
-        "askZ": 9.37,
-        "bidZ": 2.59,
-        "spreadZ": 6.78,
+        "askZ": 7.05,
+        "bidZ": 2.52,
+        "spreadZ": 4.53,
         "signal": "sell"
       },
       "score": 0.004
@@ -4798,7 +4793,7 @@
       "bestHour": "16:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.45,
+        "askZ": 0.44,
         "bidZ": 0.45,
         "spreadZ": -0.01,
         "signal": ""
@@ -4888,15 +4883,15 @@
         "exitAsk": 10500,
         "tax": 210
       },
-      "reliability": 0.877,
+      "reliability": 0.881,
       "fillConfidence": 0.947,
       "vol24h": 1907204,
       "bestHour": "12:00",
-      "snapCount": 245,
+      "snapCount": 244,
       "temporal": {
-        "askZ": -0.11,
+        "askZ": -0.1,
         "bidZ": 0.09,
-        "spreadZ": -0.2,
+        "spreadZ": -0.18,
         "signal": ""
       },
       "score": 0.004
@@ -4953,14 +4948,14 @@
         "tax": 2200
       },
       "reliability": 0.948,
-      "fillConfidence": 0.976,
+      "fillConfidence": 0.972,
       "vol24h": 188030,
       "bestHour": "5:00",
       "snapCount": 288,
       "temporal": {
-        "askZ": 3.57,
-        "bidZ": 5.92,
-        "spreadZ": -2.35,
+        "askZ": 3.48,
+        "bidZ": 5.57,
+        "spreadZ": -2.09,
         "signal": "sell"
       },
       "score": 0.004
@@ -5048,15 +5043,15 @@
         "exitAsk": 28000,
         "tax": 560
       },
-      "reliability": 0.512,
-      "fillConfidence": 0.795,
+      "reliability": 0.508,
+      "fillConfidence": 0.789,
       "vol24h": 17002,
       "bestHour": "1:00",
-      "snapCount": 151,
+      "snapCount": 152,
       "temporal": {
         "askZ": -0.53,
-        "bidZ": 0.96,
-        "spreadZ": -1.49,
+        "bidZ": 1.34,
+        "spreadZ": -1.86,
         "signal": ""
       },
       "score": 0.004
@@ -5083,12 +5078,12 @@
       "reliability": 0.543,
       "fillConfidence": 0.755,
       "vol24h": 15595154,
-      "bestHour": "4:00",
+      "bestHour": "1:00",
       "snapCount": 319,
       "temporal": {
-        "askZ": 0.36,
-        "bidZ": 0.74,
-        "spreadZ": -0.39,
+        "askZ": 0.35,
+        "bidZ": 1.22,
+        "spreadZ": -0.87,
         "signal": ""
       },
       "score": 0.003
@@ -5112,15 +5107,15 @@
         "exitAsk": 72000,
         "tax": 1440
       },
-      "reliability": 0.565,
-      "fillConfidence": 0.764,
+      "reliability": 0.564,
+      "fillConfidence": 0.763,
       "vol24h": 18987,
       "bestHour": "7:00",
-      "snapCount": 174,
+      "snapCount": 173,
       "temporal": {
-        "askZ": 0.95,
+        "askZ": 0.94,
         "bidZ": -1.12,
-        "spreadZ": 2.07,
+        "spreadZ": 2.06,
         "signal": "buy"
       },
       "score": 0.003
@@ -5144,15 +5139,15 @@
         "exitAsk": 68000,
         "tax": 1360
       },
-      "reliability": 0.467,
-      "fillConfidence": 0.829,
+      "reliability": 0.469,
+      "fillConfidence": 0.834,
       "vol24h": 17355,
       "bestHour": "7:00",
-      "snapCount": 152,
+      "snapCount": 151,
       "temporal": {
         "askZ": -0.71,
         "bidZ": 0.12,
-        "spreadZ": -0.83,
+        "spreadZ": -0.84,
         "signal": ""
       },
       "score": 0.003
@@ -5176,15 +5171,15 @@
         "exitAsk": 56000,
         "tax": 1120
       },
-      "reliability": 0.623,
-      "fillConfidence": 0.758,
+      "reliability": 0.621,
+      "fillConfidence": 0.754,
       "vol24h": 70156,
       "bestHour": "5:00",
-      "snapCount": 178,
+      "snapCount": 179,
       "temporal": {
-        "askZ": -1.61,
+        "askZ": -1.6,
         "bidZ": -0.16,
-        "spreadZ": -1.45,
+        "spreadZ": -1.43,
         "signal": ""
       },
       "score": 0.003
@@ -5208,15 +5203,15 @@
         "exitAsk": 76000,
         "tax": 1520
       },
-      "reliability": 0.664,
-      "fillConfidence": 0.904,
+      "reliability": 0.665,
+      "fillConfidence": 0.905,
       "vol24h": 26622,
       "bestHour": "21:00",
-      "snapCount": 157,
+      "snapCount": 158,
       "temporal": {
-        "askZ": -1.08,
-        "bidZ": 1.27,
-        "spreadZ": -2.34,
+        "askZ": -1.07,
+        "bidZ": 0.08,
+        "spreadZ": -1.15,
         "signal": ""
       },
       "score": 0.003
@@ -5272,15 +5267,47 @@
         "exitAsk": 70000,
         "tax": 1400
       },
-      "reliability": 0.574,
-      "fillConfidence": 0.776,
+      "reliability": 0.571,
+      "fillConfidence": 0.772,
       "vol24h": 18765,
       "bestHour": "22:00",
-      "snapCount": 170,
+      "snapCount": 171,
       "temporal": {
-        "askZ": -1.15,
+        "askZ": -2.09,
         "bidZ": -0.17,
-        "spreadZ": -0.98,
+        "spreadZ": -1.92,
+        "signal": ""
+      },
+      "score": 0.003
+    },
+    {
+      "slug": "azure_spear",
+      "name": "Azure Spear",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 2320,
+        "p50": 4320,
+        "p75": 4320
+      },
+      "spread": 4000,
+      "roi": {
+        "p25": 3
+      },
+      "prices": {
+        "entryBid": 78000,
+        "exitAsk": 84000,
+        "tax": 1680
+      },
+      "reliability": 0.595,
+      "fillConfidence": 0.873,
+      "vol24h": 41215,
+      "bestHour": "17:00",
+      "snapCount": 158,
+      "temporal": {
+        "askZ": -1.31,
+        "bidZ": 0.04,
+        "spreadZ": -1.35,
         "signal": ""
       },
       "score": 0.003
@@ -5304,15 +5331,15 @@
         "exitAsk": 32,
         "tax": 1
       },
-      "reliability": 0.522,
-      "fillConfidence": 0.89,
+      "reliability": 0.521,
+      "fillConfidence": 0.887,
       "vol24h": 188621778,
       "bestHour": "20:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": 0.15,
-        "bidZ": 0.84,
-        "spreadZ": -0.68,
+        "askZ": -0.49,
+        "bidZ": 0.83,
+        "spreadZ": -1.32,
         "signal": ""
       },
       "score": 0.003
@@ -5374,9 +5401,9 @@
       "bestHour": "22:00",
       "snapCount": 335,
       "temporal": {
-        "askZ": -2.31,
-        "bidZ": -1.09,
-        "spreadZ": -1.22,
+        "askZ": -1.42,
+        "bidZ": -1.08,
+        "spreadZ": -0.34,
         "signal": "buy"
       },
       "score": 0.003
@@ -5400,15 +5427,15 @@
         "exitAsk": 98000,
         "tax": 1960
       },
-      "reliability": 0.559,
-      "fillConfidence": 0.779,
+      "reliability": 0.56,
+      "fillConfidence": 0.78,
       "vol24h": 20713,
       "bestHour": "19:00",
-      "snapCount": 149,
+      "snapCount": 150,
       "temporal": {
-        "askZ": -1.34,
-        "bidZ": 1.15,
-        "spreadZ": -2.49,
+        "askZ": -1.33,
+        "bidZ": 0.32,
+        "spreadZ": -1.65,
         "signal": ""
       },
       "score": 0.003
@@ -5432,15 +5459,15 @@
         "exitAsk": 165000,
         "tax": 3300
       },
-      "reliability": 0.575,
-      "fillConfidence": 0.784,
+      "reliability": 0.576,
+      "fillConfidence": 0.786,
       "vol24h": 18690,
       "bestHour": "0:00",
-      "snapCount": 116,
+      "snapCount": 117,
       "temporal": {
         "askZ": -0.34,
-        "bidZ": 1.12,
-        "spreadZ": -1.46,
+        "bidZ": 0.45,
+        "spreadZ": -0.78,
         "signal": ""
       },
       "score": 0.003
@@ -5453,7 +5480,7 @@
       "profit": {
         "p25": 4000,
         "p50": 8000,
-        "p75": 12040
+        "p75": 14000
       },
       "spread": 6000,
       "roi": {
@@ -5464,16 +5491,16 @@
         "exitAsk": 100000,
         "tax": 2000
       },
-      "reliability": 0.515,
-      "fillConfidence": 0.752,
+      "reliability": 0.516,
+      "fillConfidence": 0.753,
       "vol24h": 19740,
       "bestHour": "21:00",
-      "snapCount": 145,
+      "snapCount": 146,
       "temporal": {
-        "askZ": -0.5,
-        "bidZ": -0.65,
-        "spreadZ": 0.14,
-        "signal": ""
+        "askZ": 0.63,
+        "bidZ": -1.07,
+        "spreadZ": 1.7,
+        "signal": "buy"
       },
       "score": 0.003
     },
@@ -5505,38 +5532,6 @@
         "askZ": -2.88,
         "bidZ": 0.13,
         "spreadZ": -3.01,
-        "signal": ""
-      },
-      "score": 0.003
-    },
-    {
-      "slug": "burble_plate_body",
-      "name": "Burble Plate Body",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 6200,
-        "p50": 11200,
-        "p75": 21200
-      },
-      "spread": 10000,
-      "roi": {
-        "p25": 3.5
-      },
-      "prices": {
-        "entryBid": 175000,
-        "exitAsk": 190000,
-        "tax": 3800
-      },
-      "reliability": 0.536,
-      "fillConfidence": 0.939,
-      "vol24h": 19528,
-      "bestHour": "23:00",
-      "snapCount": 131,
-      "temporal": {
-        "askZ": -2.37,
-        "bidZ": -0.56,
-        "spreadZ": -1.81,
         "signal": ""
       },
       "score": 0.003
@@ -5596,7 +5591,7 @@
       "fillConfidence": 1,
       "vol24h": 2088764,
       "bestHour": "18:00",
-      "snapCount": 240,
+      "snapCount": 241,
       "temporal": {
         "askZ": 0,
         "bidZ": 0.23,
@@ -5624,15 +5619,15 @@
         "exitAsk": 5000,
         "tax": 100
       },
-      "reliability": 0.444,
-      "fillConfidence": 0.75,
+      "reliability": 0.445,
+      "fillConfidence": 0.752,
       "vol24h": 617793,
       "bestHour": "21:00",
-      "snapCount": 112,
+      "snapCount": 113,
       "temporal": {
-        "askZ": 1.15,
+        "askZ": 1.14,
         "bidZ": -0.74,
-        "spreadZ": 1.89,
+        "spreadZ": 1.87,
         "signal": "sell"
       },
       "score": 0.003
@@ -5688,15 +5683,15 @@
         "exitAsk": 340000,
         "tax": 6800
       },
-      "reliability": 0.527,
-      "fillConfidence": 0.833,
+      "reliability": 0.525,
+      "fillConfidence": 0.831,
       "vol24h": 12006,
       "bestHour": "23:00",
-      "snapCount": 90,
+      "snapCount": 89,
       "temporal": {
-        "askZ": 0.46,
-        "bidZ": 1,
-        "spreadZ": -0.53,
+        "askZ": 0.47,
+        "bidZ": 0.99,
+        "spreadZ": -0.52,
         "signal": ""
       },
       "score": 0.003
@@ -5772,7 +5767,7 @@
       "level": 0,
       "profit": {
         "p25": 408000,
-        "p50": 780000,
+        "p50": 800000,
         "p75": 1780000
       },
       "spread": 600000,
@@ -5784,15 +5779,15 @@
         "exitAsk": 11000000,
         "tax": 220000
       },
-      "reliability": 0.504,
-      "fillConfidence": 0.8,
+      "reliability": 0.505,
+      "fillConfidence": 0.786,
       "vol24h": 4651,
       "bestHour": "22:00",
-      "snapCount": 15,
+      "snapCount": 14,
       "temporal": {
-        "askZ": 0.07,
-        "bidZ": 2.21,
-        "spreadZ": -2.13,
+        "askZ": 0.01,
+        "bidZ": 2.12,
+        "spreadZ": -2.11,
         "signal": ""
       },
       "score": 0.003
@@ -5926,6 +5921,38 @@
       "score": 0.003
     },
     {
+      "slug": "holy_hatchet",
+      "name": "Holy Hatchet",
+      "catIdx": 7,
+      "level": 5,
+      "profit": {
+        "p25": 116000,
+        "p50": 118000,
+        "p75": 120000
+      },
+      "spread": 200000,
+      "roi": {
+        "p25": 3
+      },
+      "prices": {
+        "entryBid": 3900000,
+        "exitAsk": 4200000,
+        "tax": 84000
+      },
+      "reliability": 0.651,
+      "fillConfidence": 0.875,
+      "vol24h": 3138,
+      "bestHour": "9:00",
+      "snapCount": 8,
+      "temporal": {
+        "askZ": 1.64,
+        "bidZ": -1.21,
+        "spreadZ": 2.85,
+        "signal": "flip"
+      },
+      "score": 0.003
+    },
+    {
       "slug": "maim",
       "name": "Maim",
       "catIdx": 2,
@@ -5950,8 +5977,8 @@
       "bestHour": "11:00",
       "snapCount": 318,
       "temporal": {
-        "askZ": 0.72,
-        "bidZ": 1.42,
+        "askZ": 0.71,
+        "bidZ": 1.41,
         "spreadZ": -0.7,
         "signal": ""
       },
@@ -6008,15 +6035,15 @@
         "exitAsk": 10500000,
         "tax": 210000
       },
-      "reliability": 0.726,
+      "reliability": 0.718,
       "fillConfidence": 0.894,
       "vol24h": 21994,
       "bestHour": "11:00",
       "snapCount": 226,
       "temporal": {
-        "askZ": -2.91,
-        "bidZ": -1.93,
-        "spreadZ": -0.97,
+        "askZ": -2.89,
+        "bidZ": -1.99,
+        "spreadZ": -0.9,
         "signal": "buy"
       },
       "score": 0.003
@@ -6072,11 +6099,11 @@
         "exitAsk": 540000000,
         "tax": 10800000
       },
-      "reliability": 0.97,
+      "reliability": 0.969,
       "fillConfidence": 1,
       "vol24h": 8861,
       "bestHour": "2:00",
-      "snapCount": 84,
+      "snapCount": 83,
       "temporal": {
         "askZ": 0.25,
         "bidZ": 0.28,
@@ -6214,6 +6241,38 @@
       "score": 0.003
     },
     {
+      "slug": "rainbow_spatula",
+      "name": "Rainbow Spatula",
+      "catIdx": 7,
+      "level": 0,
+      "profit": {
+        "p25": 28000,
+        "p50": 67200,
+        "p75": 106800
+      },
+      "spread": 40000,
+      "roi": {
+        "p25": 5.2
+      },
+      "prices": {
+        "entryBid": 540000,
+        "exitAsk": 640000,
+        "tax": 12800
+      },
+      "reliability": 0.526,
+      "fillConfidence": 0.758,
+      "vol24h": 6537,
+      "bestHour": "3:00",
+      "snapCount": 33,
+      "temporal": {
+        "askZ": -1.27,
+        "bidZ": 0.79,
+        "spreadZ": -2.06,
+        "signal": ""
+      },
+      "score": 0.003
+    },
+    {
       "slug": "revenant_tunic",
       "name": "Revenant Tunic",
       "catIdx": 5,
@@ -6264,14 +6323,14 @@
         "exitAsk": 76000,
         "tax": 1520
       },
-      "reliability": 0.479,
-      "fillConfidence": 0.772,
+      "reliability": 0.482,
+      "fillConfidence": 0.778,
       "vol24h": 32294,
       "bestHour": "22:00",
-      "snapCount": 136,
+      "snapCount": 135,
       "temporal": {
         "askZ": 0.94,
-        "bidZ": 1.26,
+        "bidZ": 1.25,
         "spreadZ": -0.31,
         "signal": ""
       },
@@ -6296,14 +6355,14 @@
         "exitAsk": 110000,
         "tax": 2200
       },
-      "reliability": 0.958,
-      "fillConfidence": 0.778,
+      "reliability": 0.957,
+      "fillConfidence": 0.775,
       "vol24h": 247833,
       "bestHour": "8:00",
       "snapCount": 320,
       "temporal": {
-        "askZ": 1.79,
-        "bidZ": 1.87,
+        "askZ": 1.78,
+        "bidZ": 1.86,
         "spreadZ": -0.08,
         "signal": "sell"
       },
@@ -6366,7 +6425,7 @@
       "bestHour": "13:00",
       "snapCount": 316,
       "temporal": {
-        "askZ": -0.07,
+        "askZ": -0.08,
         "bidZ": 0.16,
         "spreadZ": -0.23,
         "signal": ""
@@ -6425,14 +6484,14 @@
         "tax": 2200
       },
       "reliability": 0.82,
-      "fillConfidence": 0.776,
+      "fillConfidence": 0.773,
       "vol24h": 155246,
       "bestHour": "17:00",
       "snapCount": 313,
       "temporal": {
-        "askZ": 1.14,
-        "bidZ": 1.86,
-        "spreadZ": -0.72,
+        "askZ": 1.13,
+        "bidZ": 1.85,
+        "spreadZ": -0.71,
         "signal": "sell"
       },
       "score": 0.003
@@ -6456,15 +6515,15 @@
         "exitAsk": 110000,
         "tax": 2200
       },
-      "reliability": 0.914,
-      "fillConfidence": 0.792,
+      "reliability": 0.913,
+      "fillConfidence": 0.789,
       "vol24h": 267771,
       "bestHour": "8:00",
       "snapCount": 317,
       "temporal": {
-        "askZ": 1.69,
-        "bidZ": 1.95,
-        "spreadZ": -0.26,
+        "askZ": 1.68,
+        "bidZ": 1.93,
+        "spreadZ": -0.25,
         "signal": "sell"
       },
       "score": 0.003
@@ -6489,14 +6548,14 @@
         "tax": 230
       },
       "reliability": 0.746,
-      "fillConfidence": 0.98,
+      "fillConfidence": 0.983,
       "vol24h": 3857409,
       "bestHour": "21:00",
       "snapCount": 302,
       "temporal": {
-        "askZ": 0.98,
-        "bidZ": 0.89,
-        "spreadZ": 0.09,
+        "askZ": 0.99,
+        "bidZ": 0.9,
+        "spreadZ": 0.1,
         "signal": ""
       },
       "score": 0.003
@@ -6513,10 +6572,10 @@
       },
       "spread": 500,
       "roi": {
-        "p25": 1.8
+        "p25": 1.9
       },
       "prices": {
-        "entryBid": 12500,
+        "entryBid": 12000,
         "exitAsk": 13000,
         "tax": 260
       },
@@ -6527,7 +6586,7 @@
       "snapCount": 338,
       "temporal": {
         "askZ": -0.98,
-        "bidZ": -0.97,
+        "bidZ": -0.96,
         "spreadZ": -0.01,
         "signal": ""
       },
@@ -6584,15 +6643,15 @@
         "exitAsk": 28000,
         "tax": 560
       },
-      "reliability": 0.538,
-      "fillConfidence": 0.838,
+      "reliability": 0.537,
+      "fillConfidence": 0.831,
       "vol24h": 17902,
       "bestHour": "22:00",
       "snapCount": 160,
       "temporal": {
-        "askZ": -0.15,
-        "bidZ": 0.67,
-        "spreadZ": -0.82,
+        "askZ": -0.17,
+        "bidZ": 1.14,
+        "spreadZ": -1.3,
         "signal": ""
       },
       "score": 0.003
@@ -6616,15 +6675,15 @@
         "exitAsk": 2300000,
         "tax": 46000
       },
-      "reliability": 0.496,
-      "fillConfidence": 0.813,
+      "reliability": 0.486,
+      "fillConfidence": 0.8,
       "vol24h": 2083,
       "bestHour": "21:00",
-      "snapCount": 16,
+      "snapCount": 15,
       "temporal": {
-        "askZ": -0.71,
-        "bidZ": 0.57,
-        "spreadZ": -1.28,
+        "askZ": -0.68,
+        "bidZ": 0.59,
+        "spreadZ": -1.27,
         "signal": ""
       },
       "score": 0.003
@@ -6712,14 +6771,14 @@
         "exitAsk": 5600000,
         "tax": 112000
       },
-      "reliability": 0.877,
-      "fillConfidence": 0.983,
+      "reliability": 0.876,
+      "fillConfidence": 0.982,
       "vol24h": 12586,
       "bestHour": "13:00",
-      "snapCount": 115,
+      "snapCount": 114,
       "temporal": {
         "askZ": 0.88,
-        "bidZ": 1.09,
+        "bidZ": 1.08,
         "spreadZ": -0.2,
         "signal": ""
       },
@@ -6782,42 +6841,10 @@
       "bestHour": "5:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.15,
+        "askZ": -0.16,
         "bidZ": -0.08,
         "spreadZ": -0.08,
         "signal": ""
-      },
-      "score": 0.002
-    },
-    {
-      "slug": "arcane_nature_staff",
-      "name": "Arcane Nature Staff",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 23000,
-        "p50": 23000,
-        "p75": 72000
-      },
-      "spread": 50000,
-      "roi": {
-        "p25": 1.8
-      },
-      "prices": {
-        "entryBid": 1300000,
-        "exitAsk": 1350000,
-        "tax": 27000
-      },
-      "reliability": 0.632,
-      "fillConfidence": 0.825,
-      "vol24h": 16978,
-      "bestHour": "22:00",
-      "snapCount": 120,
-      "temporal": {
-        "askZ": 2.22,
-        "bidZ": 0.2,
-        "spreadZ": 2.01,
-        "signal": "sell"
       },
       "score": 0.002
     },
@@ -6846,9 +6873,9 @@
       "bestHour": "5:00",
       "snapCount": 135,
       "temporal": {
-        "askZ": 0.55,
-        "bidZ": 0.87,
-        "spreadZ": -0.33,
+        "askZ": 0.54,
+        "bidZ": 0.86,
+        "spreadZ": -0.32,
         "signal": ""
       },
       "score": 0.002
@@ -6872,15 +6899,15 @@
         "exitAsk": 68000,
         "tax": 1360
       },
-      "reliability": 0.447,
-      "fillConfidence": 0.791,
+      "reliability": 0.443,
+      "fillConfidence": 0.793,
       "vol24h": 23395,
       "bestHour": "20:00",
-      "snapCount": 187,
+      "snapCount": 188,
       "temporal": {
-        "askZ": -2.09,
-        "bidZ": -3.29,
-        "spreadZ": 1.2,
+        "askZ": -2.06,
+        "bidZ": -2.93,
+        "spreadZ": 0.88,
         "signal": "buy"
       },
       "score": 0.002
@@ -6910,41 +6937,9 @@
       "bestHour": "7:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.86,
-        "bidZ": -0.62,
+        "askZ": -0.85,
+        "bidZ": -0.61,
         "spreadZ": -0.24,
-        "signal": ""
-      },
-      "score": 0.002
-    },
-    {
-      "slug": "azure_spear",
-      "name": "Azure Spear",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 2320,
-        "p50": 4320,
-        "p75": 4320
-      },
-      "spread": 4000,
-      "roi": {
-        "p25": 3
-      },
-      "prices": {
-        "entryBid": 78000,
-        "exitAsk": 84000,
-        "tax": 1680
-      },
-      "reliability": 0.594,
-      "fillConfidence": 0.873,
-      "vol24h": 41215,
-      "bestHour": "17:00",
-      "snapCount": 157,
-      "temporal": {
-        "askZ": -1.32,
-        "bidZ": 0.04,
-        "spreadZ": -1.36,
         "signal": ""
       },
       "score": 0.002
@@ -6969,14 +6964,14 @@
         "tax": 620
       },
       "reliability": 0.516,
-      "fillConfidence": 0.758,
+      "fillConfidence": 0.756,
       "vol24h": 49677,
       "bestHour": "20:00",
-      "snapCount": 198,
+      "snapCount": 197,
       "temporal": {
         "askZ": 0.18,
         "bidZ": -0.83,
-        "spreadZ": 1.01,
+        "spreadZ": 1,
         "signal": ""
       },
       "score": 0.002
@@ -7032,7 +7027,7 @@
         "exitAsk": 66,
         "tax": 1
       },
-      "reliability": 0.711,
+      "reliability": 0.713,
       "fillConfidence": 1,
       "vol24h": 801660339,
       "bestHour": "14:00",
@@ -7040,7 +7035,7 @@
       "temporal": {
         "askZ": 0.55,
         "bidZ": 1.02,
-        "spreadZ": -0.48,
+        "spreadZ": -0.47,
         "signal": ""
       },
       "score": 0.002
@@ -7064,14 +7059,14 @@
         "exitAsk": 6600000,
         "tax": 132000
       },
-      "reliability": 0.972,
-      "fillConfidence": 0.902,
+      "reliability": 0.973,
+      "fillConfidence": 0.905,
       "vol24h": 62198,
       "bestHour": "12:00",
       "snapCount": 296,
       "temporal": {
-        "askZ": -0.34,
-        "bidZ": -0.33,
+        "askZ": -0.33,
+        "bidZ": -0.32,
         "spreadZ": -0.01,
         "signal": ""
       },
@@ -7096,15 +7091,15 @@
         "exitAsk": 120,
         "tax": 2
       },
-      "reliability": 0.565,
+      "reliability": 0.564,
       "fillConfidence": 1,
       "vol24h": 107822290,
       "bestHour": "2:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": -2.67,
-        "bidZ": -5.08,
-        "spreadZ": 2.4,
+        "askZ": -5.17,
+        "bidZ": -4.62,
+        "spreadZ": -0.55,
         "signal": "buy"
       },
       "score": 0.002
@@ -7128,16 +7123,48 @@
         "exitAsk": 120000,
         "tax": 2400
       },
-      "reliability": 0.611,
-      "fillConfidence": 0.961,
+      "reliability": 0.613,
+      "fillConfidence": 0.962,
       "vol24h": 21125,
       "bestHour": "21:00",
-      "snapCount": 155,
+      "snapCount": 156,
       "temporal": {
         "askZ": -0.6,
-        "bidZ": -1.4,
-        "spreadZ": 0.8,
-        "signal": "buy"
+        "bidZ": -0.29,
+        "spreadZ": -0.31,
+        "signal": ""
+      },
+      "score": 0.002
+    },
+    {
+      "slug": "burble_plate_body",
+      "name": "Burble Plate Body",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 6300,
+        "p50": 11200,
+        "p75": 21200
+      },
+      "spread": 10000,
+      "roi": {
+        "p25": 3.7
+      },
+      "prices": {
+        "entryBid": 170000,
+        "exitAsk": 190000,
+        "tax": 3800
+      },
+      "reliability": 0.538,
+      "fillConfidence": 0.75,
+      "vol24h": 19528,
+      "bestHour": "23:00",
+      "snapCount": 132,
+      "temporal": {
+        "askZ": -2.31,
+        "bidZ": -0.23,
+        "spreadZ": -2.08,
+        "signal": ""
       },
       "score": 0.002
     },
@@ -7163,11 +7190,11 @@
       "reliability": 0.893,
       "fillConfidence": 1,
       "vol24h": 2380516,
-      "bestHour": "4:00",
+      "bestHour": "9:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.89,
-        "bidZ": 0.89,
+        "askZ": 0.88,
+        "bidZ": 0.88,
         "spreadZ": 0,
         "signal": ""
       },
@@ -7294,8 +7321,8 @@
       "bestHour": "22:00",
       "snapCount": 336,
       "temporal": {
-        "askZ": 0.19,
-        "bidZ": 0.32,
+        "askZ": 0.2,
+        "bidZ": 0.33,
         "spreadZ": -0.13,
         "signal": ""
       },
@@ -7320,13 +7347,13 @@
         "exitAsk": 660000,
         "tax": 13200
       },
-      "reliability": 0.961,
+      "reliability": 0.96,
       "fillConfidence": 1,
       "vol24h": 217719,
       "bestHour": "5:00",
       "snapCount": 333,
       "temporal": {
-        "askZ": -0.87,
+        "askZ": -0.86,
         "bidZ": -0.86,
         "spreadZ": -0.01,
         "signal": ""
@@ -7390,8 +7417,8 @@
       "bestHour": "0:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.97,
-        "bidZ": 1.02,
+        "askZ": 0.96,
+        "bidZ": 1.01,
         "spreadZ": -0.05,
         "signal": ""
       },
@@ -7417,14 +7444,14 @@
         "tax": 26
       },
       "reliability": 0.606,
-      "fillConfidence": 0.909,
+      "fillConfidence": 0.906,
       "vol24h": 5239518,
       "bestHour": "17:00",
       "snapCount": 287,
       "temporal": {
-        "askZ": 3.54,
-        "bidZ": 4.76,
-        "spreadZ": -1.22,
+        "askZ": 3.46,
+        "bidZ": 5.57,
+        "spreadZ": -2.12,
         "signal": "sell"
       },
       "score": 0.002
@@ -7486,8 +7513,8 @@
       "bestHour": "0:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.26,
-        "bidZ": 0.03,
+        "askZ": -0.25,
+        "bidZ": 0.04,
         "spreadZ": -0.29,
         "signal": ""
       },
@@ -7512,7 +7539,7 @@
         "exitAsk": 6400,
         "tax": 128
       },
-      "reliability": 0.837,
+      "reliability": 0.842,
       "fillConfidence": 1,
       "vol24h": 44143480,
       "bestHour": "12:00",
@@ -7582,7 +7609,7 @@
       "bestHour": "7:00",
       "snapCount": 330,
       "temporal": {
-        "askZ": -0.91,
+        "askZ": -0.9,
         "bidZ": -0.9,
         "spreadZ": -0.01,
         "signal": ""
@@ -7641,12 +7668,12 @@
         "tax": 116000
       },
       "reliability": 0.89,
-      "fillConfidence": 0.848,
+      "fillConfidence": 0.852,
       "vol24h": 46422,
       "bestHour": "19:00",
       "snapCount": 270,
       "temporal": {
-        "askZ": -0.51,
+        "askZ": -0.5,
         "bidZ": -0.42,
         "spreadZ": -0.08,
         "signal": ""
@@ -7678,10 +7705,10 @@
       "bestHour": "18:00",
       "snapCount": 326,
       "temporal": {
-        "askZ": -1.23,
-        "bidZ": -1.19,
-        "spreadZ": -0.04,
-        "signal": "buy"
+        "askZ": 0.81,
+        "bidZ": 0.84,
+        "spreadZ": -0.03,
+        "signal": ""
       },
       "score": 0.002
     },
@@ -7704,16 +7731,16 @@
         "exitAsk": 580,
         "tax": 11
       },
-      "reliability": 0.851,
+      "reliability": 0.855,
       "fillConfidence": 0.932,
       "vol24h": 213365289,
       "bestHour": "18:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.12,
-        "bidZ": 0.28,
-        "spreadZ": -0.16,
-        "signal": ""
+        "askZ": -1.75,
+        "bidZ": -1.68,
+        "spreadZ": -0.08,
+        "signal": "buy"
       },
       "score": 0.002
     },
@@ -7992,15 +8019,15 @@
         "exitAsk": 86000,
         "tax": 1720
       },
-      "reliability": 0.475,
-      "fillConfidence": 0.751,
+      "reliability": 0.474,
+      "fillConfidence": 0.757,
       "vol24h": 58308,
       "bestHour": "1:00",
       "snapCount": 181,
       "temporal": {
-        "askZ": -0.49,
-        "bidZ": -3.75,
-        "spreadZ": 3.26,
+        "askZ": -0.5,
+        "bidZ": -3.59,
+        "spreadZ": 3.09,
         "signal": "buy"
       },
       "score": 0.002
@@ -8062,9 +8089,9 @@
       "bestHour": "1:00",
       "snapCount": 333,
       "temporal": {
-        "askZ": 1.36,
-        "bidZ": 1.37,
-        "spreadZ": -0.01,
+        "askZ": 1,
+        "bidZ": 0.81,
+        "spreadZ": 0.2,
         "signal": "sell"
       },
       "score": 0.002
@@ -8088,14 +8115,14 @@
         "exitAsk": 1550,
         "tax": 31
       },
-      "reliability": 0.841,
+      "reliability": 0.846,
       "fillConfidence": 1,
       "vol24h": 69585108,
       "bestHour": "6:00",
       "snapCount": 336,
       "temporal": {
-        "askZ": 1.26,
-        "bidZ": 1.34,
+        "askZ": 1.25,
+        "bidZ": 1.33,
         "spreadZ": -0.08,
         "signal": "sell"
       },
@@ -8185,7 +8212,7 @@
         "tax": 26
       },
       "reliability": 0.665,
-      "fillConfidence": 0.843,
+      "fillConfidence": 0.846,
       "vol24h": 12392805,
       "bestHour": "23:00",
       "snapCount": 319,
@@ -8216,16 +8243,16 @@
         "exitAsk": 1200000,
         "tax": 24000
       },
-      "reliability": 0.597,
+      "reliability": 0.598,
       "fillConfidence": 0.959,
       "vol24h": 17595,
       "bestHour": "21:00",
       "snapCount": 74,
       "temporal": {
-        "askZ": -2.53,
-        "bidZ": -1.24,
-        "spreadZ": -1.29,
-        "signal": "buy"
+        "askZ": -1.02,
+        "bidZ": -0.17,
+        "spreadZ": -0.85,
+        "signal": ""
       },
       "score": 0.002
     },
@@ -8312,48 +8339,16 @@
         "exitAsk": 1100000,
         "tax": 22000
       },
-      "reliability": 0.566,
-      "fillConfidence": 0.933,
+      "reliability": 0.568,
+      "fillConfidence": 0.934,
       "vol24h": 16998,
       "bestHour": "1:00",
-      "snapCount": 75,
+      "snapCount": 76,
       "temporal": {
-        "askZ": -1.74,
+        "askZ": -1.7,
         "bidZ": -0.39,
-        "spreadZ": -1.35,
+        "spreadZ": -1.31,
         "signal": ""
-      },
-      "score": 0.002
-    },
-    {
-      "slug": "holy_hatchet",
-      "name": "Holy Hatchet",
-      "catIdx": 7,
-      "level": 5,
-      "profit": {
-        "p25": 116000,
-        "p50": 118000,
-        "p75": 120000
-      },
-      "spread": 200000,
-      "roi": {
-        "p25": 3
-      },
-      "prices": {
-        "entryBid": 3900000,
-        "exitAsk": 4200000,
-        "tax": 84000
-      },
-      "reliability": 0.538,
-      "fillConfidence": 0.889,
-      "vol24h": 3138,
-      "bestHour": "3:00",
-      "snapCount": 9,
-      "temporal": {
-        "askZ": 1.63,
-        "bidZ": -0.43,
-        "spreadZ": 2.05,
-        "signal": "sell"
       },
       "score": 0.002
     },
@@ -8376,15 +8371,15 @@
         "exitAsk": 1100000,
         "tax": 22000
       },
-      "reliability": 0.553,
-      "fillConfidence": 0.897,
+      "reliability": 0.555,
+      "fillConfidence": 0.914,
       "vol24h": 13237,
       "bestHour": "0:00",
       "snapCount": 58,
       "temporal": {
-        "askZ": -0.47,
-        "bidZ": 0.06,
-        "spreadZ": -0.53,
+        "askZ": -0.45,
+        "bidZ": 0.1,
+        "spreadZ": -0.54,
         "signal": ""
       },
       "score": 0.002
@@ -8409,13 +8404,13 @@
         "tax": 27000
       },
       "reliability": 0.862,
-      "fillConfidence": 0.76,
+      "fillConfidence": 0.767,
       "vol24h": 68676,
       "bestHour": "17:00",
       "snapCount": 150,
       "temporal": {
-        "askZ": -0.49,
-        "bidZ": -0.39,
+        "askZ": -0.48,
+        "bidZ": -0.38,
         "spreadZ": -0.1,
         "signal": ""
       },
@@ -8440,11 +8435,11 @@
         "exitAsk": 1200000,
         "tax": 24000
       },
-      "reliability": 0.565,
+      "reliability": 0.567,
       "fillConfidence": 0.953,
       "vol24h": 16816,
       "bestHour": "11:00",
-      "snapCount": 85,
+      "snapCount": 86,
       "temporal": {
         "askZ": 0.11,
         "bidZ": 0.36,
@@ -8472,15 +8467,15 @@
         "exitAsk": 1150000,
         "tax": 23000
       },
-      "reliability": 0.624,
-      "fillConfidence": 0.882,
+      "reliability": 0.648,
+      "fillConfidence": 0.881,
       "vol24h": 12727,
       "bestHour": "18:00",
-      "snapCount": 68,
+      "snapCount": 67,
       "temporal": {
-        "askZ": -1.18,
-        "bidZ": -0.68,
-        "spreadZ": -0.5,
+        "askZ": -1.19,
+        "bidZ": -0.73,
+        "spreadZ": -0.46,
         "signal": ""
       },
       "score": 0.002
@@ -8504,15 +8499,15 @@
         "exitAsk": 1100000,
         "tax": 22000
       },
-      "reliability": 0.646,
-      "fillConfidence": 0.783,
+      "reliability": 0.647,
+      "fillConfidence": 0.786,
       "vol24h": 17885,
       "bestHour": "22:00",
-      "snapCount": 83,
+      "snapCount": 84,
       "temporal": {
         "askZ": 0.3,
-        "bidZ": 0.62,
-        "spreadZ": -0.32,
+        "bidZ": 0.61,
+        "spreadZ": -0.31,
         "signal": ""
       },
       "score": 0.002
@@ -8536,15 +8531,15 @@
         "exitAsk": 1150000,
         "tax": 23000
       },
-      "reliability": 0.622,
-      "fillConfidence": 0.807,
+      "reliability": 0.626,
+      "fillConfidence": 0.821,
       "vol24h": 12673,
       "bestHour": "19:00",
-      "snapCount": 57,
+      "snapCount": 56,
       "temporal": {
-        "askZ": 0.38,
-        "bidZ": 0.03,
-        "spreadZ": 0.34,
+        "askZ": 0.47,
+        "bidZ": 0.1,
+        "spreadZ": 0.37,
         "signal": ""
       },
       "score": 0.002
@@ -8633,7 +8628,7 @@
         "tax": 120000
       },
       "reliability": 0.973,
-      "fillConfidence": 0.853,
+      "fillConfidence": 0.856,
       "vol24h": 154120,
       "bestHour": "0:00",
       "snapCount": 327,
@@ -8710,38 +8705,6 @@
       "score": 0.002
     },
     {
-      "slug": "luna_robe_top",
-      "name": "Luna Robe Top",
-      "catIdx": 5,
-      "level": 0,
-      "profit": {
-        "p25": 55000,
-        "p50": 104000,
-        "p75": 155000
-      },
-      "spread": 100000,
-      "roi": {
-        "p25": 2.7
-      },
-      "prices": {
-        "entryBid": 2050000,
-        "exitAsk": 2250000,
-        "tax": 45000
-      },
-      "reliability": 0.52,
-      "fillConfidence": 0.778,
-      "vol24h": 2079,
-      "bestHour": "4:00",
-      "snapCount": 18,
-      "temporal": {
-        "askZ": 1.73,
-        "bidZ": 1.44,
-        "spreadZ": 0.29,
-        "signal": "sell"
-      },
-      "score": 0.002
-    },
-    {
       "slug": "maelstrom_plating",
       "name": "Maelstrom Plating",
       "catIdx": 0,
@@ -8764,7 +8727,7 @@
       "fillConfidence": 1,
       "vol24h": 47873,
       "bestHour": "4:00",
-      "snapCount": 276,
+      "snapCount": 275,
       "temporal": {
         "askZ": 0.61,
         "bidZ": 0.63,
@@ -8793,7 +8756,7 @@
         "tax": 120000
       },
       "reliability": 0.971,
-      "fillConfidence": 0.819,
+      "fillConfidence": 0.822,
       "vol24h": 201552,
       "bestHour": "17:00",
       "snapCount": 326,
@@ -8824,14 +8787,14 @@
         "exitAsk": 10500000,
         "tax": 210000
       },
-      "reliability": 0.6,
-      "fillConfidence": 0.84,
+      "reliability": 0.596,
+      "fillConfidence": 0.836,
       "vol24h": 169780,
       "bestHour": "12:00",
       "snapCount": 318,
       "temporal": {
-        "askZ": -2.29,
-        "bidZ": -2.29,
+        "askZ": -2.26,
+        "bidZ": -2.26,
         "spreadZ": 0,
         "signal": "buy"
       },
@@ -8857,7 +8820,7 @@
         "tax": 13200
       },
       "reliability": 0.944,
-      "fillConfidence": 0.925,
+      "fillConfidence": 0.928,
       "vol24h": 193818,
       "bestHour": "4:00",
       "snapCount": 319,
@@ -8894,8 +8857,8 @@
       "bestHour": "12:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 2.3,
-        "bidZ": 2.25,
+        "askZ": 2.28,
+        "bidZ": 2.23,
         "spreadZ": 0.05,
         "signal": "sell"
       },
@@ -8920,11 +8883,11 @@
         "exitAsk": 940,
         "tax": 18
       },
-      "reliability": 0.503,
+      "reliability": 0.502,
       "fillConfidence": 0.838,
       "vol24h": 3547496,
       "bestHour": "13:00",
-      "snapCount": 272,
+      "snapCount": 271,
       "temporal": {
         "askZ": -1.09,
         "bidZ": 0.06,
@@ -8952,15 +8915,15 @@
         "exitAsk": 145,
         "tax": 2
       },
-      "reliability": 0.681,
-      "fillConfidence": 0.917,
+      "reliability": 0.68,
+      "fillConfidence": 0.914,
       "vol24h": 218887628,
       "bestHour": "14:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 1.06,
-        "bidZ": 0.41,
-        "spreadZ": 0.65,
+        "askZ": 1.05,
+        "bidZ": 1.89,
+        "spreadZ": -0.84,
         "signal": "sell"
       },
       "score": 0.002
@@ -8985,13 +8948,13 @@
         "tax": 31
       },
       "reliability": 0.824,
-      "fillConfidence": 0.885,
+      "fillConfidence": 0.888,
       "vol24h": 69169883,
       "bestHour": "7:00",
       "snapCount": 338,
       "temporal": {
         "askZ": -0.07,
-        "bidZ": 0.08,
+        "bidZ": 0.09,
         "spreadZ": -0.16,
         "signal": ""
       },
@@ -9016,13 +8979,13 @@
         "exitAsk": 135000,
         "tax": 2700
       },
-      "reliability": 0.642,
+      "reliability": 0.651,
       "fillConfidence": 0.972,
       "vol24h": 253366,
       "bestHour": "4:00",
-      "snapCount": 214,
+      "snapCount": 213,
       "temporal": {
-        "askZ": 1.24,
+        "askZ": 1.25,
         "bidZ": 2.15,
         "spreadZ": -0.91,
         "signal": "sell"
@@ -9048,15 +9011,15 @@
         "exitAsk": 39,
         "tax": 1
       },
-      "reliability": 0.403,
-      "fillConfidence": 0.815,
+      "reliability": 0.402,
+      "fillConfidence": 0.813,
       "vol24h": 157184065,
       "bestHour": "0:00",
       "snapCount": 336,
       "temporal": {
-        "askZ": -1.16,
-        "bidZ": -1.23,
-        "spreadZ": 0.07,
+        "askZ": -1.17,
+        "bidZ": -1.24,
+        "spreadZ": 0.08,
         "signal": "buy"
       },
       "score": 0.002
@@ -9118,9 +9081,9 @@
       "bestHour": "21:00",
       "snapCount": 329,
       "temporal": {
-        "askZ": 1.65,
-        "bidZ": 2.83,
-        "spreadZ": -1.18,
+        "askZ": 1.64,
+        "bidZ": 2.8,
+        "spreadZ": -1.15,
         "signal": "sell"
       },
       "score": 0.002
@@ -9176,7 +9139,7 @@
         "exitAsk": 115000,
         "tax": 2300
       },
-      "reliability": 0.448,
+      "reliability": 0.447,
       "fillConfidence": 0.921,
       "vol24h": 247954,
       "bestHour": "8:00",
@@ -9184,7 +9147,7 @@
       "temporal": {
         "askZ": -0.13,
         "bidZ": 0.43,
-        "spreadZ": -0.57,
+        "spreadZ": -0.56,
         "signal": ""
       },
       "score": 0.002
@@ -9208,15 +9171,15 @@
         "exitAsk": 1050,
         "tax": 21
       },
-      "reliability": 0.618,
-      "fillConfidence": 0.796,
+      "reliability": 0.614,
+      "fillConfidence": 0.793,
       "vol24h": 544481006,
       "bestHour": "5:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -1.38,
+        "askZ": -1.37,
         "bidZ": -0.87,
-        "spreadZ": -0.51,
+        "spreadZ": -0.5,
         "signal": ""
       },
       "score": 0.002
@@ -9272,15 +9235,15 @@
         "exitAsk": 780000,
         "tax": 15600
       },
-      "reliability": 0.519,
-      "fillConfidence": 0.766,
+      "reliability": 0.517,
+      "fillConfidence": 0.763,
       "vol24h": 14050,
       "bestHour": "4:00",
-      "snapCount": 77,
+      "snapCount": 76,
       "temporal": {
-        "askZ": 1.04,
-        "bidZ": 2.48,
-        "spreadZ": -1.44,
+        "askZ": 1.03,
+        "bidZ": 2.46,
+        "spreadZ": -1.43,
         "signal": "sell"
       },
       "score": 0.002
@@ -9304,15 +9267,15 @@
         "exitAsk": 110000,
         "tax": 2200
       },
-      "reliability": 0.469,
-      "fillConfidence": 0.758,
+      "reliability": 0.49,
+      "fillConfidence": 0.756,
       "vol24h": 51594,
       "bestHour": "6:00",
-      "snapCount": 157,
+      "snapCount": 156,
       "temporal": {
-        "askZ": -0.18,
+        "askZ": -0.16,
         "bidZ": 0.7,
-        "spreadZ": -0.88,
+        "spreadZ": -0.86,
         "signal": ""
       },
       "score": 0.002
@@ -9336,14 +9299,14 @@
         "exitAsk": 6600000,
         "tax": 132000
       },
-      "reliability": 0.966,
-      "fillConfidence": 0.916,
+      "reliability": 0.967,
+      "fillConfidence": 0.919,
       "vol24h": 100484,
       "bestHour": "1:00",
       "snapCount": 298,
       "temporal": {
         "askZ": -0.12,
-        "bidZ": -0.1,
+        "bidZ": -0.09,
         "spreadZ": -0.02,
         "signal": ""
       },
@@ -9374,10 +9337,10 @@
       "bestHour": "15:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.95,
-        "bidZ": -0.95,
+        "askZ": -2.91,
+        "bidZ": -2.91,
         "spreadZ": 0,
-        "signal": ""
+        "signal": "buy"
       },
       "score": 0.002
     },
@@ -9389,7 +9352,7 @@
       "profit": {
         "p25": 6400,
         "p50": 16100,
-        "p75": 26100
+        "p75": 26000
       },
       "spread": 10000,
       "roi": {
@@ -9400,15 +9363,15 @@
         "exitAsk": 190000,
         "tax": 3800
       },
-      "reliability": 0.513,
+      "reliability": 0.512,
       "fillConfidence": 0.759,
       "vol24h": 26331,
       "bestHour": "21:00",
       "snapCount": 166,
       "temporal": {
-        "askZ": -1.4,
+        "askZ": -1.38,
         "bidZ": 0.13,
-        "spreadZ": -1.54,
+        "spreadZ": -1.51,
         "signal": ""
       },
       "score": 0.002
@@ -9432,7 +9395,7 @@
         "exitAsk": 3700,
         "tax": 74
       },
-      "reliability": 0.416,
+      "reliability": 0.415,
       "fillConfidence": 0.753,
       "vol24h": 661517,
       "bestHour": "5:00",
@@ -9464,15 +9427,15 @@
         "exitAsk": 1150,
         "tax": 23
       },
-      "reliability": 0.543,
+      "reliability": 0.545,
       "fillConfidence": 0.993,
       "vol24h": 5667941,
       "bestHour": "12:00",
       "snapCount": 273,
       "temporal": {
-        "askZ": 1.63,
-        "bidZ": 1.62,
-        "spreadZ": 0.01,
+        "askZ": 1.62,
+        "bidZ": 1.61,
+        "spreadZ": 0,
         "signal": "sell"
       },
       "score": 0.002
@@ -9502,10 +9465,10 @@
       "bestHour": "21:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.31,
-        "bidZ": -1.21,
-        "spreadZ": 0.9,
-        "signal": "buy"
+        "askZ": 0.54,
+        "bidZ": -0.3,
+        "spreadZ": 0.84,
+        "signal": ""
       },
       "score": 0.002
     },
@@ -9534,9 +9497,9 @@
       "bestHour": "22:00",
       "snapCount": 277,
       "temporal": {
-        "askZ": 0.19,
-        "bidZ": 1.01,
-        "spreadZ": -0.82,
+        "askZ": -0.62,
+        "bidZ": -0.18,
+        "spreadZ": -0.44,
         "signal": ""
       },
       "score": 0.002
@@ -9581,7 +9544,7 @@
       "profit": {
         "p25": 112,
         "p50": 116,
-        "p75": 316
+        "p75": 314
       },
       "spread": 200,
       "roi": {
@@ -9592,15 +9555,15 @@
         "exitAsk": 4400,
         "tax": 88
       },
-      "reliability": 0.469,
-      "fillConfidence": 0.826,
+      "reliability": 0.471,
+      "fillConfidence": 0.825,
       "vol24h": 691154,
       "bestHour": "12:00",
-      "snapCount": 144,
+      "snapCount": 143,
       "temporal": {
-        "askZ": 2.99,
+        "askZ": 2.98,
         "bidZ": 0.78,
-        "spreadZ": 2.21,
+        "spreadZ": 2.2,
         "signal": "sell"
       },
       "score": 0.002
@@ -9625,10 +9588,10 @@
         "tax": 104
       },
       "reliability": 0.889,
-      "fillConfidence": 0.856,
+      "fillConfidence": 0.855,
       "vol24h": 3796019,
       "bestHour": "5:00",
-      "snapCount": 270,
+      "snapCount": 269,
       "temporal": {
         "askZ": -0.35,
         "bidZ": -0.33,
@@ -9662,8 +9625,8 @@
       "bestHour": "22:00",
       "snapCount": 315,
       "temporal": {
-        "askZ": 0.92,
-        "bidZ": 0.92,
+        "askZ": 0.91,
+        "bidZ": 0.91,
         "spreadZ": 0,
         "signal": ""
       },
@@ -9694,8 +9657,8 @@
       "bestHour": "12:00",
       "snapCount": 234,
       "temporal": {
-        "askZ": 0.92,
-        "bidZ": 1.06,
+        "askZ": 0.91,
+        "bidZ": 1.05,
         "spreadZ": -0.14,
         "signal": ""
       },
@@ -9720,15 +9683,15 @@
         "exitAsk": 52,
         "tax": 1
       },
-      "reliability": 0.566,
+      "reliability": 0.565,
       "fillConfidence": 0.924,
       "vol24h": 127651984,
       "bestHour": "20:00",
       "snapCount": 328,
       "temporal": {
-        "askZ": -1.07,
+        "askZ": -0.68,
         "bidZ": 0.28,
-        "spreadZ": -1.35,
+        "spreadZ": -0.96,
         "signal": ""
       },
       "score": 0.002
@@ -9752,14 +9715,14 @@
         "exitAsk": 1250,
         "tax": 25
       },
-      "reliability": 0.486,
+      "reliability": 0.485,
       "fillConfidence": 1,
       "vol24h": 8970380,
       "bestHour": "22:00",
       "snapCount": 307,
       "temporal": {
-        "askZ": 0.91,
-        "bidZ": 1.02,
+        "askZ": 0.9,
+        "bidZ": 1.01,
         "spreadZ": -0.11,
         "signal": ""
       },
@@ -9816,15 +9779,15 @@
         "exitAsk": 190,
         "tax": 3
       },
-      "reliability": 0.963,
+      "reliability": 0.956,
       "fillConfidence": 1,
       "vol24h": 904093128,
       "bestHour": "15:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -3.99,
-        "bidZ": -3.54,
-        "spreadZ": -0.45,
+        "askZ": 0.25,
+        "bidZ": -3.46,
+        "spreadZ": 3.71,
         "signal": "buy"
       },
       "score": 0.002
@@ -9848,11 +9811,11 @@
         "exitAsk": 10500,
         "tax": 210
       },
-      "reliability": 0.486,
-      "fillConfidence": 0.754,
+      "reliability": 0.488,
+      "fillConfidence": 0.757,
       "vol24h": 2449901,
       "bestHour": "22:00",
-      "snapCount": 256,
+      "snapCount": 255,
       "temporal": {
         "askZ": -0.17,
         "bidZ": -1.25,
@@ -9880,13 +9843,13 @@
         "exitAsk": 11000,
         "tax": 220
       },
-      "reliability": 0.522,
+      "reliability": 0.521,
       "fillConfidence": 0.937,
       "vol24h": 2430130,
       "bestHour": "4:00",
       "snapCount": 253,
       "temporal": {
-        "askZ": 0.3,
+        "askZ": 0.29,
         "bidZ": 0.58,
         "spreadZ": -0.29,
         "signal": ""
@@ -10044,11 +10007,11 @@
       "fillConfidence": 0.914,
       "vol24h": 39807,
       "bestHour": "22:00",
-      "snapCount": 162,
+      "snapCount": 163,
       "temporal": {
         "askZ": 0.32,
-        "bidZ": 0.83,
-        "spreadZ": -0.51,
+        "bidZ": 0.58,
+        "spreadZ": -0.26,
         "signal": ""
       },
       "score": 0.002
@@ -10078,9 +10041,9 @@
       "bestHour": "2:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.73,
+        "askZ": -1.27,
         "bidZ": -1.25,
-        "spreadZ": 1.98,
+        "spreadZ": -0.02,
         "signal": "buy"
       },
       "score": 0.002
@@ -10104,11 +10067,11 @@
         "exitAsk": 980,
         "tax": 19
       },
-      "reliability": 0.481,
-      "fillConfidence": 0.851,
+      "reliability": 0.48,
+      "fillConfidence": 0.852,
       "vol24h": 3904298,
       "bestHour": "6:00",
-      "snapCount": 269,
+      "snapCount": 270,
       "temporal": {
         "askZ": 0.48,
         "bidZ": 0.72,
@@ -10361,14 +10324,14 @@
         "tax": 128
       },
       "reliability": 0.607,
-      "fillConfidence": 0.798,
+      "fillConfidence": 0.794,
       "vol24h": 806419,
       "bestHour": "5:00",
       "snapCount": 238,
       "temporal": {
-        "askZ": 1.07,
-        "bidZ": 1.5,
-        "spreadZ": -0.43,
+        "askZ": 1.06,
+        "bidZ": 1.48,
+        "spreadZ": -0.42,
         "signal": "sell"
       },
       "score": 0.001
@@ -10392,14 +10355,14 @@
         "exitAsk": 1300,
         "tax": 26
       },
-      "reliability": 0.399,
+      "reliability": 0.4,
       "fillConfidence": 0.887,
       "vol24h": 5965310,
       "bestHour": "6:00",
       "snapCount": 283,
       "temporal": {
         "askZ": 0.06,
-        "bidZ": 1.12,
+        "bidZ": 1.11,
         "spreadZ": -1.05,
         "signal": ""
       },
@@ -10425,14 +10388,14 @@
         "tax": 800
       },
       "reliability": 0.714,
-      "fillConfidence": 0.977,
+      "fillConfidence": 0.973,
       "vol24h": 140037,
       "bestHour": "18:00",
       "snapCount": 300,
       "temporal": {
-        "askZ": 2.16,
-        "bidZ": 2.54,
-        "spreadZ": -0.38,
+        "askZ": 2.14,
+        "bidZ": 2.51,
+        "spreadZ": -0.37,
         "signal": "sell"
       },
       "score": 0.001
@@ -10456,13 +10419,13 @@
         "exitAsk": 100,
         "tax": 2
       },
-      "reliability": 0.433,
+      "reliability": 0.434,
       "fillConfidence": 0.924,
       "vol24h": 265265825,
       "bestHour": "17:00",
       "snapCount": 329,
       "temporal": {
-        "askZ": 0.16,
+        "askZ": 0.15,
         "bidZ": 0.64,
         "spreadZ": -0.48,
         "signal": ""
@@ -10475,29 +10438,29 @@
       "catIdx": 5,
       "level": 0,
       "profit": {
-        "p25": 17000,
+        "p25": 16000,
         "p50": 18000,
         "p75": 19000
       },
       "spread": 50000,
       "roi": {
-        "p25": 1.1
+        "p25": 1
       },
       "prices": {
         "entryBid": 1550000,
-        "exitAsk": 1600000,
-        "tax": 32000
+        "exitAsk": 1650000,
+        "tax": 33000
       },
       "reliability": 0.588,
-      "fillConfidence": 0.752,
+      "fillConfidence": 0.942,
       "vol24h": 23246,
       "bestHour": "8:00",
       "snapCount": 121,
       "temporal": {
-        "askZ": 1,
-        "bidZ": 1.09,
+        "askZ": 0.99,
+        "bidZ": 1.08,
         "spreadZ": -0.08,
-        "signal": "sell"
+        "signal": ""
       },
       "score": 0.001
     },
@@ -10520,14 +10483,14 @@
         "exitAsk": 1400000,
         "tax": 28000
       },
-      "reliability": 0.557,
-      "fillConfidence": 0.942,
+      "reliability": 0.555,
+      "fillConfidence": 0.941,
       "vol24h": 27890,
       "bestHour": "12:00",
-      "snapCount": 103,
+      "snapCount": 102,
       "temporal": {
-        "askZ": 0.03,
-        "bidZ": 0.53,
+        "askZ": 0.02,
+        "bidZ": 0.52,
         "spreadZ": -0.5,
         "signal": ""
       },
@@ -10558,8 +10521,8 @@
       "bestHour": "7:00",
       "snapCount": 125,
       "temporal": {
-        "askZ": 0.53,
-        "bidZ": 0.26,
+        "askZ": 0.52,
+        "bidZ": 0.25,
         "spreadZ": 0.27,
         "signal": ""
       },
@@ -10585,15 +10548,47 @@
         "tax": 15
       },
       "reliability": 0.683,
-      "fillConfidence": 0.831,
+      "fillConfidence": 0.828,
       "vol24h": 625163039,
       "bestHour": "14:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 2.57,
-        "bidZ": 2.8,
+        "askZ": 2.54,
+        "bidZ": 2.76,
         "spreadZ": -0.23,
         "signal": "sell"
+      },
+      "score": 0.001
+    },
+    {
+      "slug": "arcane_nature_staff",
+      "name": "Arcane Nature Staff",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 23000,
+        "p50": 23000,
+        "p75": 72000
+      },
+      "spread": 50000,
+      "roi": {
+        "p25": 1.8
+      },
+      "prices": {
+        "entryBid": 1300000,
+        "exitAsk": 1350000,
+        "tax": 27000
+      },
+      "reliability": 0.631,
+      "fillConfidence": 0.817,
+      "vol24h": 16978,
+      "bestHour": "22:00",
+      "snapCount": 120,
+      "temporal": {
+        "askZ": 0.99,
+        "bidZ": 1.34,
+        "spreadZ": -0.35,
+        "signal": ""
       },
       "score": 0.001
     },
@@ -10616,15 +10611,15 @@
         "exitAsk": 700000,
         "tax": 14000
       },
-      "reliability": 0.534,
-      "fillConfidence": 0.871,
+      "reliability": 0.531,
+      "fillConfidence": 0.87,
       "vol24h": 12655,
       "bestHour": "18:00",
-      "snapCount": 101,
+      "snapCount": 100,
       "temporal": {
         "askZ": 0.54,
-        "bidZ": 1.17,
-        "spreadZ": -0.64,
+        "bidZ": 1.19,
+        "spreadZ": -0.65,
         "signal": ""
       },
       "score": 0.001
@@ -10648,15 +10643,15 @@
         "exitAsk": 1550,
         "tax": 31
       },
-      "reliability": 0.634,
+      "reliability": 0.632,
       "fillConfidence": 0.861,
       "vol24h": 25845040,
       "bestHour": "3:00",
       "snapCount": 323,
       "temporal": {
-        "askZ": -1.48,
+        "askZ": -0.63,
         "bidZ": -1.57,
-        "spreadZ": 0.09,
+        "spreadZ": 0.94,
         "signal": "buy"
       },
       "score": 0.001
@@ -10719,8 +10714,8 @@
       "snapCount": 334,
       "temporal": {
         "askZ": 0.05,
-        "bidZ": -0.3,
-        "spreadZ": 0.35,
+        "bidZ": 0.28,
+        "spreadZ": -0.23,
         "signal": ""
       },
       "score": 0.001
@@ -10744,13 +10739,13 @@
         "exitAsk": 72000,
         "tax": 1440
       },
-      "reliability": 0.598,
-      "fillConfidence": 0.793,
+      "reliability": 0.597,
+      "fillConfidence": 0.792,
       "vol24h": 15671,
       "bestHour": "12:00",
-      "snapCount": 145,
+      "snapCount": 144,
       "temporal": {
-        "askZ": -2.25,
+        "askZ": -2.24,
         "bidZ": -1.37,
         "spreadZ": -0.88,
         "signal": "buy"
@@ -10776,13 +10771,13 @@
         "exitAsk": 520,
         "tax": 10
       },
-      "reliability": 0.496,
-      "fillConfidence": 0.796,
+      "reliability": 0.494,
+      "fillConfidence": 0.793,
       "vol24h": 44334960,
       "bestHour": "13:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.66,
+        "askZ": -0.65,
         "bidZ": 0.25,
         "spreadZ": -0.9,
         "signal": ""
@@ -11001,13 +10996,13 @@
         "tax": 3400
       },
       "reliability": 0.786,
-      "fillConfidence": 0.793,
+      "fillConfidence": 0.789,
       "vol24h": 236941,
       "bestHour": "23:00",
       "snapCount": 237,
       "temporal": {
-        "askZ": 1.37,
-        "bidZ": 1.33,
+        "askZ": 1.36,
+        "bidZ": 1.32,
         "spreadZ": 0.03,
         "signal": "sell"
       },
@@ -11071,7 +11066,7 @@
       "snapCount": 338,
       "temporal": {
         "askZ": 0.79,
-        "bidZ": 0.5,
+        "bidZ": 0.49,
         "spreadZ": 0.3,
         "signal": ""
       },
@@ -11096,15 +11091,15 @@
         "exitAsk": 330000,
         "tax": 6600
       },
-      "reliability": 0.504,
+      "reliability": 0.502,
       "fillConfidence": 0.857,
       "vol24h": 46754,
       "bestHour": "7:00",
       "snapCount": 147,
       "temporal": {
-        "askZ": -0.37,
+        "askZ": -0.36,
         "bidZ": 0.38,
-        "spreadZ": -0.75,
+        "spreadZ": -0.74,
         "signal": ""
       },
       "score": 0.001
@@ -11128,15 +11123,15 @@
         "exitAsk": 185,
         "tax": 3
       },
-      "reliability": 0.491,
+      "reliability": 0.494,
       "fillConfidence": 0.988,
       "vol24h": 101529908,
       "bestHour": "18:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": -0.44,
+        "askZ": -0.43,
         "bidZ": 0.25,
-        "spreadZ": -0.69,
+        "spreadZ": -0.68,
         "signal": ""
       },
       "score": 0.001
@@ -11166,10 +11161,10 @@
       "bestHour": "9:00",
       "snapCount": 292,
       "temporal": {
-        "askZ": 1.05,
+        "askZ": -0.01,
         "bidZ": 0.49,
-        "spreadZ": 0.56,
-        "signal": "sell"
+        "spreadZ": -0.5,
+        "signal": ""
       },
       "score": 0.001
     },
@@ -11193,13 +11188,13 @@
         "tax": 12800
       },
       "reliability": 0.835,
-      "fillConfidence": 0.78,
+      "fillConfidence": 0.777,
       "vol24h": 155100,
       "bestHour": "20:00",
-      "snapCount": 250,
+      "snapCount": 251,
       "temporal": {
-        "askZ": 2.41,
-        "bidZ": 2.42,
+        "askZ": 2.38,
+        "bidZ": 2.39,
         "spreadZ": -0.01,
         "signal": "sell"
       },
@@ -11230,9 +11225,9 @@
       "bestHour": "22:00",
       "snapCount": 279,
       "temporal": {
-        "askZ": -1.21,
-        "bidZ": -1.74,
-        "spreadZ": 0.53,
+        "askZ": -1.45,
+        "bidZ": -1.73,
+        "spreadZ": 0.28,
         "signal": "buy"
       },
       "score": 0.001
@@ -11256,15 +11251,15 @@
         "exitAsk": 165000,
         "tax": 3300
       },
-      "reliability": 0.608,
+      "reliability": 0.605,
       "fillConfidence": 0.871,
       "vol24h": 18906,
       "bestHour": "12:00",
       "snapCount": 139,
       "temporal": {
-        "askZ": -1.72,
-        "bidZ": 0.01,
-        "spreadZ": -1.74,
+        "askZ": -1.7,
+        "bidZ": 0,
+        "spreadZ": -1.7,
         "signal": ""
       },
       "score": 0.001
@@ -11320,7 +11315,7 @@
         "exitAsk": 310,
         "tax": 6
       },
-      "reliability": 0.473,
+      "reliability": 0.474,
       "fillConfidence": 0.895,
       "vol24h": 64875271,
       "bestHour": "18:00",
@@ -11358,9 +11353,9 @@
       "bestHour": "7:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": -1.26,
-        "bidZ": -0.25,
-        "spreadZ": -1.01,
+        "askZ": 0.31,
+        "bidZ": 0.72,
+        "spreadZ": -0.42,
         "signal": ""
       },
       "score": 0.001
@@ -11384,14 +11379,14 @@
         "exitAsk": 1300,
         "tax": 26
       },
-      "reliability": 0.401,
+      "reliability": 0.4,
       "fillConfidence": 0.889,
       "vol24h": 5757933,
       "bestHour": "21:00",
       "snapCount": 297,
       "temporal": {
         "askZ": -0.61,
-        "bidZ": 0.17,
+        "bidZ": 0.18,
         "spreadZ": -0.79,
         "signal": ""
       },
@@ -11416,15 +11411,15 @@
         "exitAsk": 700,
         "tax": 14
       },
-      "reliability": 0.447,
-      "fillConfidence": 0.974,
+      "reliability": 0.448,
+      "fillConfidence": 0.977,
       "vol24h": 111782300,
       "bestHour": "15:00",
       "snapCount": 305,
       "temporal": {
-        "askZ": 0.25,
-        "bidZ": 0.27,
-        "spreadZ": -0.02,
+        "askZ": 0,
+        "bidZ": 0.26,
+        "spreadZ": -0.26,
         "signal": ""
       },
       "score": 0.001
@@ -11448,11 +11443,11 @@
         "exitAsk": 1600000,
         "tax": 32000
       },
-      "reliability": 0.468,
-      "fillConfidence": 0.763,
+      "reliability": 0.467,
+      "fillConfidence": 0.757,
       "vol24h": 73768,
       "bestHour": "22:00",
-      "snapCount": 139,
+      "snapCount": 140,
       "temporal": {
         "askZ": -0.63,
         "bidZ": 0.06,
@@ -11480,15 +11475,15 @@
         "exitAsk": 18500000,
         "tax": 370000
       },
-      "reliability": 0.665,
+      "reliability": 0.679,
       "fillConfidence": 1,
       "vol24h": 3272,
       "bestHour": "15:00",
-      "snapCount": 13,
+      "snapCount": 14,
       "temporal": {
-        "askZ": 0.93,
-        "bidZ": -0.79,
-        "spreadZ": 1.72,
+        "askZ": -1,
+        "bidZ": -0.75,
+        "spreadZ": -0.25,
         "signal": ""
       },
       "score": 0.001
@@ -11539,7 +11534,7 @@
         "exitAsk": 620,
         "tax": 12
       },
-      "reliability": 0.631,
+      "reliability": 0.633,
       "fillConfidence": 0.985,
       "vol24h": 154801302,
       "bestHour": "23:00",
@@ -11571,15 +11566,15 @@
         "exitAsk": 6600000,
         "tax": 132000
       },
-      "reliability": 0.549,
+      "reliability": 0.552,
       "fillConfidence": 1,
       "vol24h": 2829,
       "bestHour": "15:00",
-      "snapCount": 34,
+      "snapCount": 35,
       "temporal": {
-        "askZ": 0.31,
-        "bidZ": 0.68,
-        "spreadZ": -0.37,
+        "askZ": 0.3,
+        "bidZ": 0.67,
+        "spreadZ": -0.36,
         "signal": ""
       },
       "score": 0.001
@@ -11673,9 +11668,9 @@
       "bestHour": "16:00",
       "snapCount": 334,
       "temporal": {
-        "askZ": 1.54,
-        "bidZ": 1.91,
-        "spreadZ": -0.37,
+        "askZ": 1.53,
+        "bidZ": 1.31,
+        "spreadZ": 0.22,
         "signal": "sell"
       },
       "score": 0.001
@@ -11699,11 +11694,11 @@
         "exitAsk": 17500,
         "tax": 350
       },
-      "reliability": 0.435,
-      "fillConfidence": 0.809,
+      "reliability": 0.434,
+      "fillConfidence": 0.808,
       "vol24h": 108293,
       "bestHour": "4:00",
-      "snapCount": 199,
+      "snapCount": 198,
       "temporal": {
         "askZ": 0.91,
         "bidZ": 0.75,
@@ -11727,7 +11722,7 @@
         "p25": 1
       },
       "prices": {
-        "entryBid": 330000,
+        "entryBid": 320000,
         "exitAsk": 340000,
         "tax": 6800
       },
@@ -11735,11 +11730,11 @@
       "fillConfidence": 1,
       "vol24h": 16576,
       "bestHour": "23:00",
-      "snapCount": 126,
+      "snapCount": 125,
       "temporal": {
-        "askZ": -3.84,
-        "bidZ": -1,
-        "spreadZ": -2.84,
+        "askZ": -3.82,
+        "bidZ": -0.99,
+        "spreadZ": -2.83,
         "signal": ""
       },
       "score": 0.001
@@ -11769,9 +11764,9 @@
       "bestHour": "19:00",
       "snapCount": 324,
       "temporal": {
-        "askZ": 0.12,
+        "askZ": -0.82,
         "bidZ": -0.65,
-        "spreadZ": 0.77,
+        "spreadZ": -0.17,
         "signal": ""
       },
       "score": 0.001
@@ -11795,14 +11790,14 @@
         "exitAsk": 1700000,
         "tax": 34000
       },
-      "reliability": 0.663,
-      "fillConfidence": 0.903,
+      "reliability": 0.664,
+      "fillConfidence": 0.907,
       "vol24h": 59692,
       "bestHour": "16:00",
       "snapCount": 259,
       "temporal": {
-        "askZ": -0.32,
-        "bidZ": -0.1,
+        "askZ": -0.31,
+        "bidZ": -0.09,
         "spreadZ": -0.22,
         "signal": ""
       },
@@ -11834,7 +11829,7 @@
       "snapCount": 326,
       "temporal": {
         "askZ": -0.44,
-        "bidZ": -0.36,
+        "bidZ": -0.35,
         "spreadZ": -0.09,
         "signal": ""
       },
@@ -11892,13 +11887,13 @@
         "tax": 35
       },
       "reliability": 0.965,
-      "fillConfidence": 0.782,
+      "fillConfidence": 0.785,
       "vol24h": 18406200,
       "bestHour": "13:00",
       "snapCount": 289,
       "temporal": {
-        "askZ": -0.53,
-        "bidZ": -0.53,
+        "askZ": -0.52,
+        "bidZ": -0.52,
         "spreadZ": 0,
         "signal": ""
       },
@@ -11923,11 +11918,11 @@
         "exitAsk": 1900000,
         "tax": 38000
       },
-      "reliability": 0.818,
-      "fillConfidence": 0.775,
+      "reliability": 0.817,
+      "fillConfidence": 0.774,
       "vol24h": 877830,
       "bestHour": "20:00",
-      "snapCount": 249,
+      "snapCount": 248,
       "temporal": {
         "askZ": -0.27,
         "bidZ": -0.19,
@@ -11955,15 +11950,15 @@
         "exitAsk": 1300,
         "tax": 26
       },
-      "reliability": 0.538,
+      "reliability": 0.54,
       "fillConfidence": 0.777,
       "vol24h": 5243192,
       "bestHour": "13:00",
       "snapCount": 265,
       "temporal": {
-        "askZ": 1.71,
-        "bidZ": 1.23,
-        "spreadZ": 0.48,
+        "askZ": 3.76,
+        "bidZ": 1.81,
+        "spreadZ": 1.95,
         "signal": "sell"
       },
       "score": 0.001
@@ -12025,9 +12020,9 @@
       "bestHour": "18:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.22,
-        "bidZ": 0.54,
-        "spreadZ": -0.76,
+        "askZ": -0.21,
+        "bidZ": 0.56,
+        "spreadZ": -0.77,
         "signal": ""
       },
       "score": 0.001
@@ -12057,8 +12052,8 @@
       "bestHour": "19:00",
       "snapCount": 324,
       "temporal": {
-        "askZ": 0.67,
-        "bidZ": 0.78,
+        "askZ": 0.66,
+        "bidZ": 0.77,
         "spreadZ": -0.11,
         "signal": ""
       },
@@ -12179,11 +12174,11 @@
         "exitAsk": 1500,
         "tax": 30
       },
-      "reliability": 0.574,
-      "fillConfidence": 0.762,
+      "reliability": 0.573,
+      "fillConfidence": 0.761,
       "vol24h": 2501042,
       "bestHour": "20:00",
-      "snapCount": 256,
+      "snapCount": 255,
       "temporal": {
         "askZ": -0.52,
         "bidZ": -0.44,
@@ -12217,9 +12212,9 @@
       "bestHour": "5:00",
       "snapCount": 336,
       "temporal": {
-        "askZ": 0.89,
+        "askZ": 0.88,
         "bidZ": 0.97,
-        "spreadZ": -0.09,
+        "spreadZ": -0.08,
         "signal": ""
       },
       "score": 0.001
@@ -12275,15 +12270,15 @@
         "exitAsk": 1600,
         "tax": 32
       },
-      "reliability": 0.763,
+      "reliability": 0.76,
       "fillConfidence": 0.991,
       "vol24h": 102846943,
       "bestHour": "15:00",
       "snapCount": 335,
       "temporal": {
-        "askZ": 2.7,
-        "bidZ": 2.72,
-        "spreadZ": -0.02,
+        "askZ": 2.66,
+        "bidZ": 0.77,
+        "spreadZ": 1.9,
         "signal": "sell"
       },
       "score": 0.001
@@ -12314,7 +12309,7 @@
       "snapCount": 338,
       "temporal": {
         "askZ": -1.56,
-        "bidZ": -1.62,
+        "bidZ": -1.61,
         "spreadZ": 0.05,
         "signal": "buy"
       },
@@ -12339,15 +12334,15 @@
         "exitAsk": 155000,
         "tax": 3100
       },
-      "reliability": 0.756,
+      "reliability": 0.752,
       "fillConfidence": 0.874,
       "vol24h": 397960,
       "bestHour": "19:00",
       "snapCount": 317,
       "temporal": {
-        "askZ": -0.85,
+        "askZ": 0.2,
         "bidZ": -0.85,
-        "spreadZ": 0,
+        "spreadZ": 1.04,
         "signal": ""
       },
       "score": 0.001
@@ -12371,15 +12366,15 @@
         "exitAsk": 390,
         "tax": 7
       },
-      "reliability": 0.853,
-      "fillConfidence": 0.843,
+      "reliability": 0.852,
+      "fillConfidence": 0.84,
       "vol24h": 550220187,
       "bestHour": "20:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 2.09,
-        "bidZ": 2.25,
-        "spreadZ": -0.16,
+        "askZ": 2.07,
+        "bidZ": 2.22,
+        "spreadZ": -0.15,
         "signal": "sell"
       },
       "score": 0.001
@@ -12390,24 +12385,24 @@
       "catIdx": 5,
       "level": 0,
       "profit": {
-        "p25": 11400,
+        "p25": 11600,
         "p50": 21400,
         "p75": 41600
       },
       "spread": 20000,
       "roi": {
-        "p25": 2.9
+        "p25": 3
       },
       "prices": {
         "entryBid": 390000,
         "exitAsk": 430000,
         "tax": 8600
       },
-      "reliability": 0.368,
-      "fillConfidence": 0.853,
+      "reliability": 0.37,
+      "fillConfidence": 0.752,
       "vol24h": 12573,
       "bestHour": "19:00",
-      "snapCount": 102,
+      "snapCount": 101,
       "temporal": {
         "askZ": -0.96,
         "bidZ": 0.42,
@@ -12436,14 +12431,14 @@
         "tax": 12
       },
       "reliability": 0.633,
-      "fillConfidence": 0.985,
+      "fillConfidence": 0.982,
       "vol24h": 96378643,
       "bestHour": "18:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": 2.42,
-        "bidZ": 2.83,
-        "spreadZ": -0.41,
+        "askZ": 2.39,
+        "bidZ": 2.79,
+        "spreadZ": -0.39,
         "signal": "sell"
       },
       "score": 0.001
@@ -12467,15 +12462,15 @@
         "exitAsk": 78,
         "tax": 1
       },
-      "reliability": 0.562,
+      "reliability": 0.561,
       "fillConfidence": 1,
       "vol24h": 184901487,
       "bestHour": "18:00",
       "snapCount": 335,
       "temporal": {
-        "askZ": -1.14,
+        "askZ": -1.13,
         "bidZ": -0.19,
-        "spreadZ": -0.95,
+        "spreadZ": -0.94,
         "signal": ""
       },
       "score": 0.001
@@ -12499,16 +12494,16 @@
         "exitAsk": 680000,
         "tax": 13600
       },
-      "reliability": 0.471,
+      "reliability": 0.47,
       "fillConfidence": 0.868,
       "vol24h": 82545,
       "bestHour": "19:00",
       "snapCount": 287,
       "temporal": {
-        "askZ": -2.13,
-        "bidZ": -1.17,
-        "spreadZ": -0.96,
-        "signal": "buy"
+        "askZ": -0.35,
+        "bidZ": -0.62,
+        "spreadZ": 0.26,
+        "signal": ""
       },
       "score": 0.001
     },
@@ -12531,16 +12526,16 @@
         "exitAsk": 82000,
         "tax": 1640
       },
-      "reliability": 0.764,
+      "reliability": 0.711,
       "fillConfidence": 0.934,
       "vol24h": 41293,
-      "bestHour": "20:00",
+      "bestHour": "4:00",
       "snapCount": 198,
       "temporal": {
-        "askZ": 0.21,
+        "askZ": 5.86,
         "bidZ": 0.31,
-        "spreadZ": -0.1,
-        "signal": ""
+        "spreadZ": 5.55,
+        "signal": "sell"
       },
       "score": 0.001
     },
@@ -12552,7 +12547,7 @@
       "profit": {
         "p25": 360,
         "p50": 360,
-        "p75": 360
+        "p75": 400
       },
       "spread": 2000,
       "roi": {
@@ -12563,11 +12558,11 @@
         "exitAsk": 82000,
         "tax": 1640
       },
-      "reliability": 0.76,
+      "reliability": 0.759,
       "fillConfidence": 0.946,
       "vol24h": 43566,
       "bestHour": "19:00",
-      "snapCount": 205,
+      "snapCount": 204,
       "temporal": {
         "askZ": 0.21,
         "bidZ": 0.33,
@@ -12595,11 +12590,11 @@
         "exitAsk": 82000,
         "tax": 1640
       },
-      "reliability": 0.685,
+      "reliability": 0.684,
       "fillConfidence": 0.93,
       "vol24h": 41052,
       "bestHour": "7:00",
-      "snapCount": 200,
+      "snapCount": 199,
       "temporal": {
         "askZ": 0.13,
         "bidZ": 0.26,
@@ -12627,15 +12622,15 @@
         "exitAsk": 170000,
         "tax": 3400
       },
-      "reliability": 0.167,
+      "reliability": 0.168,
       "fillConfidence": 0.782,
       "vol24h": 28950,
       "bestHour": "12:00",
       "snapCount": 156,
       "temporal": {
-        "askZ": 1.35,
-        "bidZ": 0.88,
-        "spreadZ": 0.47,
+        "askZ": 1.33,
+        "bidZ": 0.32,
+        "spreadZ": 1,
         "signal": "sell"
       },
       "score": 0.001
@@ -12659,14 +12654,14 @@
         "exitAsk": 1400000,
         "tax": 28000
       },
-      "reliability": 0.574,
-      "fillConfidence": 0.869,
+      "reliability": 0.573,
+      "fillConfidence": 0.874,
       "vol24h": 27692,
       "bestHour": "20:00",
-      "snapCount": 183,
+      "snapCount": 182,
       "temporal": {
         "askZ": -0.77,
-        "bidZ": -0.32,
+        "bidZ": -0.31,
         "spreadZ": -0.46,
         "signal": ""
       },
@@ -12691,15 +12686,15 @@
         "exitAsk": 680000,
         "tax": 13600
       },
-      "reliability": 0.418,
+      "reliability": 0.416,
       "fillConfidence": 0.871,
       "vol24h": 39614,
       "bestHour": "1:00",
-      "snapCount": 140,
+      "snapCount": 139,
       "temporal": {
-        "askZ": 1.65,
+        "askZ": 1.67,
         "bidZ": 0.51,
-        "spreadZ": 1.14,
+        "spreadZ": 1.16,
         "signal": "sell"
       },
       "score": 0.001
@@ -12712,25 +12707,25 @@
       "profit": {
         "p25": 20400,
         "p50": 29000,
-        "p75": 60400
+        "p75": 69000
       },
       "spread": 40000,
       "roi": {
-        "p25": 2.1
+        "p25": 2.2
       },
       "prices": {
-        "entryBid": 960000,
+        "entryBid": 940000,
         "exitAsk": 1050000,
         "tax": 21000
       },
-      "reliability": 0.437,
-      "fillConfidence": 0.767,
+      "reliability": 0.436,
+      "fillConfidence": 0.764,
       "vol24h": 21168,
       "bestHour": "4:00",
-      "snapCount": 73,
+      "snapCount": 72,
       "temporal": {
-        "askZ": -0.52,
-        "bidZ": 0.01,
+        "askZ": -0.5,
+        "bidZ": 0.04,
         "spreadZ": -0.53,
         "signal": ""
       },
@@ -12755,11 +12750,11 @@
         "exitAsk": 1400000,
         "tax": 28000
       },
-      "reliability": 0.511,
-      "fillConfidence": 0.809,
+      "reliability": 0.513,
+      "fillConfidence": 0.811,
       "vol24h": 27482,
       "bestHour": "6:00",
-      "snapCount": 89,
+      "snapCount": 90,
       "temporal": {
         "askZ": 0.2,
         "bidZ": 0.43,
@@ -12883,15 +12878,15 @@
         "exitAsk": 88,
         "tax": 1
       },
-      "reliability": 0.55,
+      "reliability": 0.549,
       "fillConfidence": 1,
       "vol24h": 415662823,
       "bestHour": "20:00",
       "snapCount": 336,
       "temporal": {
-        "askZ": -1.7,
-        "bidZ": -0.67,
-        "spreadZ": -1.04,
+        "askZ": -0.82,
+        "bidZ": 0.23,
+        "spreadZ": -1.05,
         "signal": ""
       },
       "score": 0.001
@@ -12904,7 +12899,7 @@
       "profit": {
         "p25": 20400,
         "p50": 20800,
-        "p75": 69000
+        "p75": 60000
       },
       "spread": 40000,
       "roi": {
@@ -12915,15 +12910,15 @@
         "exitAsk": 980000,
         "tax": 19600
       },
-      "reliability": 0.395,
-      "fillConfidence": 0.767,
+      "reliability": 0.403,
+      "fillConfidence": 0.762,
       "vol24h": 10017,
       "bestHour": "6:00",
-      "snapCount": 43,
+      "snapCount": 42,
       "temporal": {
-        "askZ": -0.5,
-        "bidZ": -0.54,
-        "spreadZ": 0.03,
+        "askZ": -0.48,
+        "bidZ": -0.51,
+        "spreadZ": 0.04,
         "signal": ""
       },
       "score": 0.001
@@ -12983,7 +12978,7 @@
       "fillConfidence": 0.989,
       "vol24h": 38449,
       "bestHour": "9:00",
-      "snapCount": 180,
+      "snapCount": 179,
       "temporal": {
         "askZ": -0.17,
         "bidZ": -0.11,
@@ -13043,16 +13038,16 @@
         "exitAsk": 1600,
         "tax": 32
       },
-      "reliability": 0.693,
-      "fillConfidence": 0.881,
+      "reliability": 0.69,
+      "fillConfidence": 0.884,
       "vol24h": 18381976,
       "bestHour": "1:00",
       "snapCount": 320,
       "temporal": {
-        "askZ": -0.06,
-        "bidZ": 0.24,
-        "spreadZ": -0.3,
-        "signal": ""
+        "askZ": -0.05,
+        "bidZ": -1.39,
+        "spreadZ": 1.33,
+        "signal": "buy"
       },
       "score": 0.001
     },
@@ -13075,15 +13070,15 @@
         "exitAsk": 1850,
         "tax": 37
       },
-      "reliability": 0.724,
-      "fillConfidence": 0.77,
+      "reliability": 0.719,
+      "fillConfidence": 0.771,
       "vol24h": 11152823,
       "bestHour": "7:00",
-      "snapCount": 305,
+      "snapCount": 306,
       "temporal": {
-        "askZ": 1.62,
+        "askZ": 1.61,
         "bidZ": -0.29,
-        "spreadZ": 1.91,
+        "spreadZ": 1.9,
         "signal": "sell"
       },
       "score": 0.001
@@ -13113,9 +13108,9 @@
       "bestHour": "22:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -1.14,
-        "bidZ": -0.96,
-        "spreadZ": -0.19,
+        "askZ": -1.13,
+        "bidZ": -0.95,
+        "spreadZ": -0.18,
         "signal": ""
       },
       "score": 0.001
@@ -13145,7 +13140,7 @@
       "bestHour": "5:00",
       "snapCount": 316,
       "temporal": {
-        "askZ": -1.14,
+        "askZ": -1.13,
         "bidZ": -0.96,
         "spreadZ": -0.17,
         "signal": ""
@@ -13209,8 +13204,8 @@
       "bestHour": "1:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.87,
-        "bidZ": 0.88,
+        "askZ": 0.86,
+        "bidZ": 0.87,
         "spreadZ": -0.01,
         "signal": ""
       },
@@ -13236,13 +13231,13 @@
         "tax": 70
       },
       "reliability": 0.492,
-      "fillConfidence": 0.799,
+      "fillConfidence": 0.796,
       "vol24h": 683234,
-      "bestHour": "4:00",
+      "bestHour": "12:00",
       "snapCount": 324,
       "temporal": {
         "askZ": -0.34,
-        "bidZ": 1.4,
+        "bidZ": 1.39,
         "spreadZ": -1.73,
         "signal": ""
       },
@@ -13273,8 +13268,8 @@
       "bestHour": "11:00",
       "snapCount": 328,
       "temporal": {
-        "askZ": 1.4,
-        "bidZ": 1.39,
+        "askZ": 1.39,
+        "bidZ": 1.38,
         "spreadZ": 0.01,
         "signal": "sell"
       },
@@ -13319,7 +13314,7 @@
       "level": 0,
       "profit": {
         "p25": 32,
-        "p50": 224,
+        "p50": 226,
         "p75": 326
       },
       "spread": 100,
@@ -13331,15 +13326,15 @@
         "exitAsk": 3600,
         "tax": 72
       },
-      "reliability": 0.469,
-      "fillConfidence": 0.782,
+      "reliability": 0.47,
+      "fillConfidence": 0.783,
       "vol24h": 1098451,
       "bestHour": "20:00",
-      "snapCount": 317,
+      "snapCount": 318,
       "temporal": {
-        "askZ": -0.62,
-        "bidZ": 0.73,
-        "spreadZ": -1.35,
+        "askZ": 0.2,
+        "bidZ": 0.72,
+        "spreadZ": -0.53,
         "signal": ""
       },
       "score": 0.001
@@ -13460,12 +13455,12 @@
         "tax": 66
       },
       "reliability": 0.862,
-      "fillConfidence": 0.858,
+      "fillConfidence": 0.861,
       "vol24h": 111972434,
       "bestHour": "15:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.76,
+        "askZ": -0.75,
         "bidZ": -0.67,
         "spreadZ": -0.09,
         "signal": ""
@@ -13523,15 +13518,15 @@
         "exitAsk": 380000,
         "tax": 7600
       },
-      "reliability": 0.555,
-      "fillConfidence": 0.838,
+      "reliability": 0.559,
+      "fillConfidence": 0.845,
       "vol24h": 14342,
       "bestHour": "21:00",
-      "snapCount": 117,
+      "snapCount": 116,
       "temporal": {
-        "askZ": -0.08,
-        "bidZ": -0.18,
-        "spreadZ": 0.11,
+        "askZ": -0.07,
+        "bidZ": -0.16,
+        "spreadZ": 0.1,
         "signal": ""
       },
       "score": 0.001
@@ -13556,13 +13551,13 @@
         "tax": 13
       },
       "reliability": 0.718,
-      "fillConfidence": 0.95,
+      "fillConfidence": 0.953,
       "vol24h": 441336258,
       "bestHour": "14:00",
       "snapCount": 338,
       "temporal": {
         "askZ": -1.56,
-        "bidZ": -1.31,
+        "bidZ": -1.3,
         "spreadZ": -0.25,
         "signal": "buy"
       },
@@ -13619,15 +13614,15 @@
         "exitAsk": 720000,
         "tax": 14400
       },
-      "reliability": 0.499,
-      "fillConfidence": 0.903,
+      "reliability": 0.5,
+      "fillConfidence": 0.913,
       "vol24h": 20653,
       "bestHour": "8:00",
-      "snapCount": 93,
+      "snapCount": 92,
       "temporal": {
-        "askZ": -2.57,
-        "bidZ": -2.67,
-        "spreadZ": 0.1,
+        "askZ": -2.56,
+        "bidZ": -2.68,
+        "spreadZ": 0.12,
         "signal": "buy"
       },
       "score": 0.001
@@ -13651,14 +13646,14 @@
         "exitAsk": 640000,
         "tax": 12800
       },
-      "reliability": 0.586,
-      "fillConfidence": 0.937,
+      "reliability": 0.585,
+      "fillConfidence": 0.936,
       "vol24h": 10840,
       "bestHour": "21:00",
-      "snapCount": 95,
+      "snapCount": 94,
       "temporal": {
-        "askZ": -2.25,
-        "bidZ": -1.03,
+        "askZ": -2.24,
+        "bidZ": -1.02,
         "spreadZ": -1.22,
         "signal": "buy"
       },
@@ -13721,9 +13716,9 @@
       "bestHour": "18:00",
       "snapCount": 331,
       "temporal": {
-        "askZ": -0.99,
-        "bidZ": -0.88,
-        "spreadZ": -0.11,
+        "askZ": 0.96,
+        "bidZ": 1.13,
+        "spreadZ": -0.17,
         "signal": ""
       },
       "score": 0.001
@@ -13753,8 +13748,8 @@
       "bestHour": "5:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 2.36,
-        "bidZ": 2.45,
+        "askZ": 2.33,
+        "bidZ": 2.42,
         "spreadZ": -0.09,
         "signal": "sell"
       },
@@ -13779,14 +13774,14 @@
         "exitAsk": 3300,
         "tax": 66
       },
-      "reliability": 0.892,
-      "fillConfidence": 0.799,
+      "reliability": 0.891,
+      "fillConfidence": 0.796,
       "vol24h": 177965900,
       "bestHour": "11:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 2.57,
-        "bidZ": 2.59,
+        "askZ": 2.53,
+        "bidZ": 2.56,
         "spreadZ": -0.03,
         "signal": "sell"
       },
@@ -13843,14 +13838,14 @@
         "exitAsk": 740000,
         "tax": 14800
       },
-      "reliability": 0.893,
-      "fillConfidence": 0.949,
+      "reliability": 0.894,
+      "fillConfidence": 0.952,
       "vol24h": 219776,
       "bestHour": "2:00",
       "snapCount": 332,
       "temporal": {
         "askZ": -0.61,
-        "bidZ": -0.57,
+        "bidZ": -0.56,
         "spreadZ": -0.05,
         "signal": ""
       },
@@ -13864,7 +13859,7 @@
       "profit": {
         "p25": 5,
         "p50": 10,
-        "p75": 15
+        "p75": 10
       },
       "spread": 10,
       "roi": {
@@ -13872,18 +13867,18 @@
       },
       "prices": {
         "entryBid": 245,
-        "exitAsk": 255,
+        "exitAsk": 260,
         "tax": 5
       },
-      "reliability": 0.503,
+      "reliability": 0.502,
       "fillConfidence": 0.86,
       "vol24h": 42745530,
       "bestHour": "20:00",
       "snapCount": 322,
       "temporal": {
-        "askZ": 0.69,
-        "bidZ": 2.13,
-        "spreadZ": -1.44,
+        "askZ": 0.68,
+        "bidZ": 2.79,
+        "spreadZ": -2.11,
         "signal": ""
       },
       "score": 0.001
@@ -13907,7 +13902,7 @@
         "exitAsk": 35000,
         "tax": 700
       },
-      "reliability": 0.812,
+      "reliability": 0.818,
       "fillConfidence": 0.851,
       "vol24h": 985677,
       "bestHour": "1:00",
@@ -13939,15 +13934,15 @@
         "exitAsk": 185000,
         "tax": 3700
       },
-      "reliability": 0.463,
-      "fillConfidence": 0.788,
+      "reliability": 0.46,
+      "fillConfidence": 0.783,
       "vol24h": 62716,
       "bestHour": "9:00",
       "snapCount": 198,
       "temporal": {
-        "askZ": 0.66,
-        "bidZ": 0.62,
-        "spreadZ": 0.04,
+        "askZ": -0.19,
+        "bidZ": 0.61,
+        "spreadZ": -0.81,
         "signal": ""
       },
       "score": 0.001
@@ -13972,13 +13967,13 @@
         "tax": 64
       },
       "reliability": 0.946,
-      "fillConfidence": 0.766,
+      "fillConfidence": 0.763,
       "vol24h": 99910560,
       "bestHour": "23:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 1.73,
-        "bidZ": 1.77,
+        "askZ": 1.71,
+        "bidZ": 1.75,
         "spreadZ": -0.04,
         "signal": "sell"
       },
@@ -14003,15 +13998,15 @@
         "exitAsk": 320000,
         "tax": 6400
       },
-      "reliability": 0.537,
+      "reliability": 0.538,
       "fillConfidence": 0.829,
       "vol24h": 27499,
       "bestHour": "19:00",
       "snapCount": 152,
       "temporal": {
-        "askZ": 0.54,
+        "askZ": -1.73,
         "bidZ": -0.96,
-        "spreadZ": 1.5,
+        "spreadZ": -0.76,
         "signal": ""
       },
       "score": 0.001
@@ -14024,7 +14019,7 @@
       "profit": {
         "p25": 3400,
         "p50": 13400,
-        "p75": 38200
+        "p75": 38400
       },
       "spread": 10000,
       "roi": {
@@ -14035,15 +14030,15 @@
         "exitAsk": 330000,
         "tax": 6600
       },
-      "reliability": 0.375,
-      "fillConfidence": 0.877,
+      "reliability": 0.378,
+      "fillConfidence": 0.884,
       "vol24h": 31350,
       "bestHour": "20:00",
       "snapCount": 146,
       "temporal": {
-        "askZ": -0.22,
-        "bidZ": -3.03,
-        "spreadZ": 2.81,
+        "askZ": -0.81,
+        "bidZ": -2.57,
+        "spreadZ": 1.76,
         "signal": "buy"
       },
       "score": 0.001
@@ -14071,7 +14066,7 @@
       "fillConfidence": 1,
       "vol24h": 104819,
       "bestHour": "10:00",
-      "snapCount": 256,
+      "snapCount": 255,
       "temporal": {
         "askZ": -0.98,
         "bidZ": -0.93,
@@ -14163,15 +14158,15 @@
         "exitAsk": 11000,
         "tax": 220
       },
-      "reliability": 0.382,
-      "fillConfidence": 0.774,
+      "reliability": 0.383,
+      "fillConfidence": 0.779,
       "vol24h": 233748,
       "bestHour": "11:00",
       "snapCount": 208,
       "temporal": {
-        "askZ": 1.58,
-        "bidZ": 3.42,
-        "spreadZ": -1.84,
+        "askZ": 2.33,
+        "bidZ": 3.31,
+        "spreadZ": -0.98,
         "signal": "sell"
       },
       "score": 0.001
@@ -14195,13 +14190,13 @@
         "exitAsk": 7600,
         "tax": 152
       },
-      "reliability": 0.604,
+      "reliability": 0.607,
       "fillConfidence": 0.989,
       "vol24h": 354186,
       "bestHour": "19:00",
       "snapCount": 285,
       "temporal": {
-        "askZ": -0.51,
+        "askZ": -0.5,
         "bidZ": -0.1,
         "spreadZ": -0.4,
         "signal": ""
@@ -14216,7 +14211,7 @@
       "profit": {
         "p25": 10000,
         "p50": 20200,
-        "p75": 48400
+        "p75": 40800
       },
       "spread": 20000,
       "roi": {
@@ -14227,15 +14222,15 @@
         "exitAsk": 520000,
         "tax": 10400
       },
-      "reliability": 0.492,
-      "fillConfidence": 0.83,
+      "reliability": 0.494,
+      "fillConfidence": 0.829,
       "vol24h": 39435,
       "bestHour": "1:00",
-      "snapCount": 106,
+      "snapCount": 105,
       "temporal": {
-        "askZ": 1.16,
-        "bidZ": 1.57,
-        "spreadZ": -0.41,
+        "askZ": 1.19,
+        "bidZ": 1.56,
+        "spreadZ": -0.37,
         "signal": "sell"
       },
       "score": 0.001
@@ -14262,10 +14257,10 @@
       "reliability": 0.554,
       "fillConfidence": 1,
       "vol24h": 799876951,
-      "bestHour": "2:00",
+      "bestHour": "4:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": 0.04,
+        "askZ": 0.05,
         "bidZ": -0.49,
         "spreadZ": 0.53,
         "signal": ""
@@ -14297,10 +14292,10 @@
       "bestHour": "17:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.89,
-        "bidZ": 1.16,
-        "spreadZ": -0.26,
-        "signal": ""
+        "askZ": 1.43,
+        "bidZ": 1.75,
+        "spreadZ": -0.32,
+        "signal": "sell"
       },
       "score": 0.001
     },
@@ -14355,13 +14350,13 @@
         "exitAsk": 1700000,
         "tax": 34000
       },
-      "reliability": 0.736,
+      "reliability": 0.735,
       "fillConfidence": 1,
       "vol24h": 43019,
       "bestHour": "3:00",
-      "snapCount": 249,
+      "snapCount": 248,
       "temporal": {
-        "askZ": 2.46,
+        "askZ": 2.45,
         "bidZ": 1.35,
         "spreadZ": 1.1,
         "signal": "sell"
@@ -14391,7 +14386,7 @@
       "fillConfidence": 0.954,
       "vol24h": 5120263,
       "bestHour": "10:00",
-      "snapCount": 305,
+      "snapCount": 306,
       "temporal": {
         "askZ": 0.42,
         "bidZ": 0.83,
@@ -14451,11 +14446,11 @@
         "exitAsk": 5600,
         "tax": 112
       },
-      "reliability": 0.431,
+      "reliability": 0.432,
       "fillConfidence": 1,
       "vol24h": 1814704,
-      "bestHour": "4:00",
-      "snapCount": 226,
+      "bestHour": "10:00",
+      "snapCount": 227,
       "temporal": {
         "askZ": 0.06,
         "bidZ": 0.47,
@@ -14483,15 +14478,15 @@
         "exitAsk": 5800,
         "tax": 116
       },
-      "reliability": 0.636,
+      "reliability": 0.634,
       "fillConfidence": 0.925,
       "vol24h": 1606096,
       "bestHour": "13:00",
       "snapCount": 201,
       "temporal": {
-        "askZ": 1.66,
-        "bidZ": 0.38,
-        "spreadZ": 1.28,
+        "askZ": 1.64,
+        "bidZ": 0.37,
+        "spreadZ": 1.27,
         "signal": "sell"
       },
       "score": 0.001
@@ -14521,7 +14516,7 @@
       "bestHour": "20:00",
       "snapCount": 200,
       "temporal": {
-        "askZ": -0.65,
+        "askZ": -0.66,
         "bidZ": 0.08,
         "spreadZ": -0.74,
         "signal": ""
@@ -14547,15 +14542,15 @@
         "exitAsk": 3600,
         "tax": 72
       },
-      "reliability": 0.393,
+      "reliability": 0.392,
       "fillConfidence": 0.917,
       "vol24h": 2577615,
       "bestHour": "22:00",
       "snapCount": 229,
       "temporal": {
-        "askZ": -1.64,
+        "askZ": -1.62,
         "bidZ": 0.02,
-        "spreadZ": -1.66,
+        "spreadZ": -1.64,
         "signal": ""
       },
       "score": 0.001
@@ -14612,13 +14607,13 @@
         "tax": 132
       },
       "reliability": 0.92,
-      "fillConfidence": 0.827,
+      "fillConfidence": 0.824,
       "vol24h": 13678225,
       "bestHour": "16:00",
       "snapCount": 318,
       "temporal": {
-        "askZ": 1.93,
-        "bidZ": 1.87,
+        "askZ": 1.92,
+        "bidZ": 1.86,
         "spreadZ": 0.06,
         "signal": "sell"
       },
@@ -14643,14 +14638,14 @@
         "exitAsk": 340,
         "tax": 6
       },
-      "reliability": 0.615,
-      "fillConfidence": 0.891,
+      "reliability": 0.614,
+      "fillConfidence": 0.888,
       "vol24h": 301437799,
       "bestHour": "4:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 2.55,
-        "bidZ": 2.56,
+        "askZ": 2.52,
+        "bidZ": 2.53,
         "spreadZ": -0.01,
         "signal": "sell"
       },
@@ -14675,15 +14670,15 @@
         "exitAsk": 64000,
         "tax": 1280
       },
-      "reliability": 0.706,
+      "reliability": 0.708,
       "fillConfidence": 1,
       "vol24h": 23279,
       "bestHour": "8:00",
-      "snapCount": 88,
+      "snapCount": 89,
       "temporal": {
-        "askZ": -1.81,
-        "bidZ": -1.39,
-        "spreadZ": -0.42,
+        "askZ": -1.77,
+        "bidZ": -1.37,
+        "spreadZ": -0.4,
         "signal": "buy"
       },
       "score": 0.001
@@ -14740,8 +14735,8 @@
       "bestHour": "13:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.41,
-        "bidZ": 0.44,
+        "askZ": 0.4,
+        "bidZ": 0.43,
         "spreadZ": -0.03,
         "signal": ""
       },
@@ -14766,14 +14761,14 @@
         "exitAsk": 26500,
         "tax": 530
       },
-      "reliability": 0.452,
-      "fillConfidence": 0.777,
+      "reliability": 0.453,
+      "fillConfidence": 0.778,
       "vol24h": 17560,
       "bestHour": "17:00",
-      "snapCount": 175,
+      "snapCount": 176,
       "temporal": {
         "askZ": 0.69,
-        "bidZ": -0.2,
+        "bidZ": -0.19,
         "spreadZ": 0.89,
         "signal": ""
       },
@@ -14830,16 +14825,16 @@
         "exitAsk": 34000,
         "tax": 680
       },
-      "reliability": 0.535,
+      "reliability": 0.533,
       "fillConfidence": 1,
       "vol24h": 51749,
       "bestHour": "13:00",
       "snapCount": 236,
       "temporal": {
         "askZ": 0.65,
-        "bidZ": 0.03,
-        "spreadZ": 0.63,
-        "signal": ""
+        "bidZ": -2.33,
+        "spreadZ": 2.98,
+        "signal": "buy"
       },
       "score": 0.001
     },
@@ -14870,7 +14865,7 @@
       "temporal": {
         "askZ": -0.02,
         "bidZ": 0.72,
-        "spreadZ": -0.75,
+        "spreadZ": -0.74,
         "signal": ""
       },
       "score": 0.001
@@ -14895,14 +14890,14 @@
         "tax": 32
       },
       "reliability": 0.641,
-      "fillConfidence": 0.864,
+      "fillConfidence": 0.861,
       "vol24h": 57844700,
       "bestHour": "8:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 1.41,
-        "bidZ": 1.65,
-        "spreadZ": -0.24,
+        "askZ": 1.4,
+        "bidZ": 1.64,
+        "spreadZ": -0.23,
         "signal": "sell"
       },
       "score": 0.001
@@ -14932,8 +14927,8 @@
       "bestHour": "15:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 1,
-        "bidZ": 1.12,
+        "askZ": 0.99,
+        "bidZ": 1.11,
         "spreadZ": -0.12,
         "signal": ""
       },
@@ -14979,7 +14974,7 @@
       "profit": {
         "p25": 80,
         "p50": 2900,
-        "p75": 8000
+        "p75": 8900
       },
       "spread": 2000,
       "roi": {
@@ -14990,15 +14985,15 @@
         "exitAsk": 105000,
         "tax": 2100
       },
-      "reliability": 0.368,
+      "reliability": 0.367,
       "fillConfidence": 0.861,
       "vol24h": 33369,
       "bestHour": "22:00",
       "snapCount": 166,
       "temporal": {
-        "askZ": -1.5,
-        "bidZ": -3.2,
-        "spreadZ": 1.7,
+        "askZ": -1.14,
+        "bidZ": -3.09,
+        "spreadZ": 1.95,
         "signal": "buy"
       },
       "score": 0
@@ -15028,7 +15023,7 @@
       "bestHour": "1:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.53,
+        "askZ": 0.52,
         "bidZ": 0.56,
         "spreadZ": -0.03,
         "signal": ""
@@ -15082,17 +15077,17 @@
         "p25": 0.4
       },
       "prices": {
-        "entryBid": 3900,
-        "exitAsk": 4000,
-        "tax": 80
+        "entryBid": 4000,
+        "exitAsk": 4100,
+        "tax": 82
       },
       "reliability": 0.755,
-      "fillConfidence": 0.926,
+      "fillConfidence": 0.923,
       "vol24h": 306974259,
       "bestHour": "20:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 1.44,
+        "askZ": 1.43,
         "bidZ": 1.45,
         "spreadZ": -0.02,
         "signal": "sell"
@@ -15124,9 +15119,9 @@
       "bestHour": "18:00",
       "snapCount": 150,
       "temporal": {
-        "askZ": -0.85,
-        "bidZ": -0.37,
-        "spreadZ": -0.48,
+        "askZ": 0.23,
+        "bidZ": -0.36,
+        "spreadZ": 0.59,
         "signal": ""
       },
       "score": 0
@@ -15156,7 +15151,7 @@
       "bestHour": "13:00",
       "snapCount": 214,
       "temporal": {
-        "askZ": 0.26,
+        "askZ": 0.27,
         "bidZ": 0.23,
         "spreadZ": 0.03,
         "signal": ""
@@ -15247,13 +15242,13 @@
         "tax": 4400
       },
       "reliability": 0.444,
-      "fillConfidence": 0.862,
+      "fillConfidence": 0.859,
       "vol24h": 677964,
       "bestHour": "5:00",
       "snapCount": 333,
       "temporal": {
         "askZ": 0.4,
-        "bidZ": 1.6,
+        "bidZ": 1.59,
         "spreadZ": -1.19,
         "signal": ""
       },
@@ -15281,12 +15276,12 @@
       "reliability": 0.351,
       "fillConfidence": 1,
       "vol24h": 19306246,
-      "bestHour": "4:00",
+      "bestHour": "7:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.3,
+        "askZ": -1.95,
         "bidZ": -1.08,
-        "spreadZ": 0.79,
+        "spreadZ": -0.87,
         "signal": "buy"
       },
       "score": 0
@@ -15342,15 +15337,15 @@
         "exitAsk": 60000,
         "tax": 1200
       },
-      "reliability": 0.279,
-      "fillConfidence": 0.752,
+      "reliability": 0.28,
+      "fillConfidence": 0.755,
       "vol24h": 103880,
       "bestHour": "13:00",
       "snapCount": 290,
       "temporal": {
-        "askZ": -1.59,
-        "bidZ": -1.47,
-        "spreadZ": -0.11,
+        "askZ": -1.5,
+        "bidZ": -1.46,
+        "spreadZ": -0.04,
         "signal": "buy"
       },
       "score": 0
@@ -15374,15 +15369,15 @@
         "exitAsk": 860,
         "tax": 17
       },
-      "reliability": 0.402,
+      "reliability": 0.4,
       "fillConfidence": 1,
       "vol24h": 6736054,
       "bestHour": "7:00",
       "snapCount": 238,
       "temporal": {
-        "askZ": 0.65,
+        "askZ": 0.66,
         "bidZ": 1.07,
-        "spreadZ": -0.42,
+        "spreadZ": -0.41,
         "signal": ""
       },
       "score": 0
@@ -15406,14 +15401,14 @@
         "exitAsk": 1100000,
         "tax": 22000
       },
-      "reliability": 0.506,
+      "reliability": 0.503,
       "fillConfidence": 0.988,
       "vol24h": 1058824,
       "bestHour": "5:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -1.7,
-        "bidZ": -1.69,
+        "askZ": -1.69,
+        "bidZ": -1.67,
         "spreadZ": -0.01,
         "signal": "buy"
       },
@@ -15444,10 +15439,10 @@
       "bestHour": "18:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -2.76,
-        "bidZ": -2.84,
-        "spreadZ": 0.08,
-        "signal": "buy"
+        "askZ": -0.68,
+        "bidZ": -0.52,
+        "spreadZ": -0.16,
+        "signal": ""
       },
       "score": 0
     },
@@ -15508,9 +15503,9 @@
       "bestHour": "13:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": 1.53,
-        "bidZ": 1.32,
-        "spreadZ": 0.22,
+        "askZ": 1.52,
+        "bidZ": 1.31,
+        "spreadZ": 0.21,
         "signal": "sell"
       },
       "score": 0
@@ -15566,15 +15561,15 @@
         "exitAsk": 200000,
         "tax": 4000
       },
-      "reliability": 0.496,
+      "reliability": 0.497,
       "fillConfidence": 1,
       "vol24h": 35740,
       "bestHour": "5:00",
       "snapCount": 203,
       "temporal": {
-        "askZ": 0.38,
-        "bidZ": 1.13,
-        "spreadZ": -0.75,
+        "askZ": -2.4,
+        "bidZ": -0.35,
+        "spreadZ": -2.05,
         "signal": ""
       },
       "score": 0
@@ -15599,14 +15594,14 @@
         "tax": 192
       },
       "reliability": 0.233,
-      "fillConfidence": 0.791,
+      "fillConfidence": 0.794,
       "vol24h": 9658718,
       "bestHour": "21:00",
       "snapCount": 326,
       "temporal": {
-        "askZ": 1.06,
+        "askZ": 2.33,
         "bidZ": 1.14,
-        "spreadZ": -0.08,
+        "spreadZ": 1.19,
         "signal": "sell"
       },
       "score": 0
@@ -15630,13 +15625,13 @@
         "exitAsk": 150000,
         "tax": 3000
       },
-      "reliability": 0.379,
-      "fillConfidence": 0.758,
+      "reliability": 0.38,
+      "fillConfidence": 0.761,
       "vol24h": 92268,
       "bestHour": "19:00",
-      "snapCount": 256,
+      "snapCount": 255,
       "temporal": {
-        "askZ": -0.63,
+        "askZ": -0.62,
         "bidZ": -0.5,
         "spreadZ": -0.12,
         "signal": ""
@@ -15690,10 +15685,10 @@
         "tax": 104
       },
       "reliability": 0.009,
-      "fillConfidence": 0.852,
+      "fillConfidence": 0.851,
       "vol24h": 25551,
       "bestHour": "5:00",
-      "snapCount": 122,
+      "snapCount": 121,
       "temporal": {
         "askZ": -0.13,
         "bidZ": 0.96,
@@ -15727,7 +15722,7 @@
       "bestHour": "18:00",
       "snapCount": 279,
       "temporal": {
-        "askZ": -0.04,
+        "askZ": -0.05,
         "bidZ": 0.21,
         "spreadZ": -0.25,
         "signal": ""
@@ -15789,11 +15784,11 @@
       "fillConfidence": 0.993,
       "vol24h": 122971,
       "bestHour": "18:00",
-      "snapCount": 301,
+      "snapCount": 300,
       "temporal": {
         "askZ": 1.32,
         "bidZ": 0.02,
-        "spreadZ": 1.3,
+        "spreadZ": 1.29,
         "signal": "sell"
       },
       "score": 0
@@ -15818,12 +15813,12 @@
         "tax": 8
       },
       "reliability": 0.29,
-      "fillConfidence": 0.766,
+      "fillConfidence": 0.763,
       "vol24h": 162075066,
       "bestHour": "14:00",
       "snapCount": 329,
       "temporal": {
-        "askZ": 1.17,
+        "askZ": 1.16,
         "bidZ": 0.78,
         "spreadZ": 0.38,
         "signal": "sell"
@@ -15868,26 +15863,26 @@
       "catIdx": 5,
       "level": 0,
       "profit": {
-        "p25": 1100,
+        "p25": 1000,
         "p50": 6000,
         "p75": 6000
       },
       "spread": 5000,
       "roi": {
-        "p25": 0.6
+        "p25": 0.5
       },
       "prices": {
         "entryBid": 190000,
         "exitAsk": 200000,
         "tax": 4000
       },
-      "reliability": 0.561,
-      "fillConfidence": 0.75,
+      "reliability": 0.56,
+      "fillConfidence": 0.986,
       "vol24h": 18202,
       "bestHour": "13:00",
-      "snapCount": 140,
+      "snapCount": 139,
       "temporal": {
-        "askZ": -0.35,
+        "askZ": -0.34,
         "bidZ": -0.15,
         "spreadZ": -0.19,
         "signal": ""
@@ -15919,10 +15914,10 @@
       "bestHour": "17:00",
       "snapCount": 123,
       "temporal": {
-        "askZ": -0.44,
-        "bidZ": 0.51,
-        "spreadZ": -0.95,
-        "signal": ""
+        "askZ": 1.74,
+        "bidZ": -0.23,
+        "spreadZ": 1.97,
+        "signal": "sell"
       },
       "score": 0
     },
@@ -15945,15 +15940,15 @@
         "exitAsk": 245000,
         "tax": 4900
       },
-      "reliability": 0.397,
-      "fillConfidence": 0.828,
+      "reliability": 0.4,
+      "fillConfidence": 0.833,
       "vol24h": 31565,
       "bestHour": "19:00",
-      "snapCount": 157,
+      "snapCount": 156,
       "temporal": {
-        "askZ": 0.75,
-        "bidZ": 0.74,
-        "spreadZ": 0.02,
+        "askZ": 0.76,
+        "bidZ": 0.75,
+        "spreadZ": 0.01,
         "signal": ""
       },
       "score": 0
@@ -16009,15 +16004,15 @@
         "exitAsk": 390000,
         "tax": 7800
       },
-      "reliability": 0.506,
-      "fillConfidence": 0.824,
+      "reliability": 0.504,
+      "fillConfidence": 0.822,
       "vol24h": 19021,
       "bestHour": "0:00",
-      "snapCount": 136,
+      "snapCount": 135,
       "temporal": {
-        "askZ": -1.64,
-        "bidZ": 0.08,
-        "spreadZ": -1.72,
+        "askZ": -1.66,
+        "bidZ": 0.07,
+        "spreadZ": -1.73,
         "signal": ""
       },
       "score": 0
@@ -16041,15 +16036,15 @@
         "exitAsk": 410000,
         "tax": 8200
       },
-      "reliability": 0.502,
+      "reliability": 0.501,
       "fillConfidence": 1,
       "vol24h": 48459,
       "bestHour": "11:00",
-      "snapCount": 164,
+      "snapCount": 163,
       "temporal": {
-        "askZ": -3.56,
+        "askZ": -3.55,
         "bidZ": -0.6,
-        "spreadZ": -2.96,
+        "spreadZ": -2.94,
         "signal": ""
       },
       "score": 0
@@ -16077,10 +16072,10 @@
       "fillConfidence": 1,
       "vol24h": 35394,
       "bestHour": "1:00",
-      "snapCount": 184,
+      "snapCount": 183,
       "temporal": {
         "askZ": 0.23,
-        "bidZ": 0.03,
+        "bidZ": 0.04,
         "spreadZ": 0.19,
         "signal": ""
       },
@@ -16170,14 +16165,14 @@
         "tax": 42
       },
       "reliability": 0.413,
-      "fillConfidence": 0.814,
+      "fillConfidence": 0.817,
       "vol24h": 126311073,
       "bestHour": "16:00",
       "snapCount": 338,
       "temporal": {
         "askZ": 0.38,
-        "bidZ": 0.47,
-        "spreadZ": -0.1,
+        "bidZ": 0.48,
+        "spreadZ": -0.09,
         "signal": ""
       },
       "score": 0
@@ -16202,13 +16197,13 @@
         "tax": 45
       },
       "reliability": 0.404,
-      "fillConfidence": 0.82,
+      "fillConfidence": 0.822,
       "vol24h": 75194598,
       "bestHour": "13:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.16,
-        "bidZ": 0.07,
+        "askZ": -0.15,
+        "bidZ": 0.08,
         "spreadZ": -0.23,
         "signal": ""
       },
@@ -16233,13 +16228,13 @@
         "exitAsk": 960000,
         "tax": 19200
       },
-      "reliability": 0.44,
+      "reliability": 0.455,
       "fillConfidence": 0.82,
       "vol24h": 277276,
       "bestHour": "4:00",
       "snapCount": 316,
       "temporal": {
-        "askZ": -0.54,
+        "askZ": -0.53,
         "bidZ": -0.45,
         "spreadZ": -0.08,
         "signal": ""
@@ -16292,13 +16287,13 @@
         "exitAsk": 940,
         "tax": 18
       },
-      "reliability": 0.339,
+      "reliability": 0.338,
       "fillConfidence": 0.793,
       "vol24h": 350242648,
       "bestHour": "3:00",
       "snapCount": 333,
       "temporal": {
-        "askZ": 0.05,
+        "askZ": 0.04,
         "bidZ": 0.11,
         "spreadZ": -0.07,
         "signal": ""
@@ -16324,15 +16319,15 @@
         "exitAsk": 43000,
         "tax": 860
       },
-      "reliability": 0.335,
-      "fillConfidence": 0.833,
+      "reliability": 0.336,
+      "fillConfidence": 0.836,
       "vol24h": 1560961,
       "bestHour": "5:00",
       "snapCount": 330,
       "temporal": {
-        "askZ": -0.21,
+        "askZ": -0.2,
         "bidZ": -0.03,
-        "spreadZ": -0.17,
+        "spreadZ": -0.18,
         "signal": ""
       },
       "score": 0
@@ -16362,8 +16357,8 @@
       "bestHour": "23:00",
       "snapCount": 335,
       "temporal": {
-        "askZ": 0.53,
-        "bidZ": 0.7,
+        "askZ": 0.52,
+        "bidZ": 0.69,
         "spreadZ": -0.17,
         "signal": ""
       },
@@ -16388,15 +16383,15 @@
         "exitAsk": 205000,
         "tax": 4100
       },
-      "reliability": 0.375,
-      "fillConfidence": 0.816,
+      "reliability": 0.381,
+      "fillConfidence": 0.813,
       "vol24h": 148063,
-      "bestHour": "3:00",
+      "bestHour": "7:00",
       "snapCount": 326,
       "temporal": {
-        "askZ": 0.45,
-        "bidZ": 1.02,
-        "spreadZ": -0.58,
+        "askZ": 0.54,
+        "bidZ": 1.06,
+        "spreadZ": -0.52,
         "signal": ""
       },
       "score": 0
@@ -16421,14 +16416,14 @@
         "tax": 800
       },
       "reliability": 0.426,
-      "fillConfidence": 0.991,
+      "fillConfidence": 0.988,
       "vol24h": 401089,
       "bestHour": "21:00",
       "snapCount": 329,
       "temporal": {
         "askZ": 0.34,
-        "bidZ": 2.69,
-        "spreadZ": -2.35,
+        "bidZ": 2.66,
+        "spreadZ": -2.31,
         "signal": ""
       },
       "score": 0
@@ -16452,15 +16447,15 @@
         "exitAsk": 40000,
         "tax": 800
       },
-      "reliability": 0.093,
+      "reliability": 0.094,
       "fillConfidence": 0.955,
       "vol24h": 620750,
       "bestHour": "2:00",
       "snapCount": 333,
       "temporal": {
-        "askZ": 1.65,
+        "askZ": 5.18,
         "bidZ": -0.14,
-        "spreadZ": 1.8,
+        "spreadZ": 5.33,
         "signal": "sell"
       },
       "score": 0
@@ -16472,7 +16467,7 @@
       "level": 0,
       "profit": {
         "p25": 80,
-        "p50": 140,
+        "p50": 160,
         "p75": 200
       },
       "spread": 1000,
@@ -16484,16 +16479,16 @@
         "exitAsk": 44000,
         "tax": 880
       },
-      "reliability": 0.326,
+      "reliability": 0.32,
       "fillConfidence": 1,
       "vol24h": 281267,
       "bestHour": "13:00",
       "snapCount": 331,
       "temporal": {
-        "askZ": -0.23,
-        "bidZ": -1.39,
-        "spreadZ": 1.16,
-        "signal": "buy"
+        "askZ": 1.62,
+        "bidZ": -0.94,
+        "spreadZ": 2.56,
+        "signal": "sell"
       },
       "score": 0
     },
@@ -16517,13 +16512,13 @@
         "tax": 18
       },
       "reliability": 0.369,
-      "fillConfidence": 0.879,
+      "fillConfidence": 0.875,
       "vol24h": 10250086,
       "bestHour": "23:00",
       "snapCount": 280,
       "temporal": {
-        "askZ": 1.59,
-        "bidZ": 1.57,
+        "askZ": 1.58,
+        "bidZ": 1.56,
         "spreadZ": 0.02,
         "signal": "sell"
       },
@@ -16537,7 +16532,7 @@
       "profit": {
         "p25": 280,
         "p50": 300,
-        "p75": 1240
+        "p75": 1220
       },
       "spread": 1000,
       "roi": {
@@ -16548,13 +16543,13 @@
         "exitAsk": 35000,
         "tax": 700
       },
-      "reliability": 0.491,
+      "reliability": 0.493,
       "fillConfidence": 0.781,
       "vol24h": 917186,
       "bestHour": "13:00",
       "snapCount": 324,
       "temporal": {
-        "askZ": -0.73,
+        "askZ": -0.72,
         "bidZ": -0.48,
         "spreadZ": -0.24,
         "signal": ""
@@ -16613,14 +16608,14 @@
         "tax": 8800
       },
       "reliability": 0.286,
-      "fillConfidence": 0.818,
+      "fillConfidence": 0.815,
       "vol24h": 190793,
       "bestHour": "21:00",
       "snapCount": 303,
       "temporal": {
         "askZ": 1.12,
-        "bidZ": 2.09,
-        "spreadZ": -0.97,
+        "bidZ": 2.98,
+        "spreadZ": -1.86,
         "signal": "sell"
       },
       "score": 0
@@ -16644,15 +16639,15 @@
         "exitAsk": 1050,
         "tax": 21
       },
-      "reliability": 0.452,
+      "reliability": 0.451,
       "fillConfidence": 0.855,
       "vol24h": 35376231,
       "bestHour": "6:00",
       "snapCount": 338,
       "temporal": {
         "askZ": 0.55,
-        "bidZ": 0.81,
-        "spreadZ": -0.26,
+        "bidZ": 0.19,
+        "spreadZ": 0.36,
         "signal": ""
       },
       "score": 0
@@ -16665,7 +16660,7 @@
       "profit": {
         "p25": 70,
         "p50": 80,
-        "p75": 600
+        "p75": 610
       },
       "spread": 500,
       "roi": {
@@ -16680,7 +16675,7 @@
       "fillConfidence": 0.888,
       "vol24h": 64052,
       "bestHour": "11:00",
-      "snapCount": 233,
+      "snapCount": 232,
       "temporal": {
         "askZ": 0.65,
         "bidZ": -0.4,
@@ -16804,15 +16799,15 @@
         "exitAsk": 82000,
         "tax": 1640
       },
-      "reliability": 0.597,
-      "fillConfidence": 0.84,
+      "reliability": 0.582,
+      "fillConfidence": 0.845,
       "vol24h": 33461,
       "bestHour": "22:00",
       "snapCount": 181,
       "temporal": {
-        "askZ": 1.94,
+        "askZ": 2.61,
         "bidZ": 1.42,
-        "spreadZ": 0.52,
+        "spreadZ": 1.19,
         "signal": "sell"
       },
       "score": 0
@@ -16842,9 +16837,9 @@
       "bestHour": "11:00",
       "snapCount": 78,
       "temporal": {
-        "askZ": 2.34,
-        "bidZ": 2.36,
-        "spreadZ": -0.02,
+        "askZ": 2.29,
+        "bidZ": 3.17,
+        "spreadZ": -0.89,
         "signal": "sell"
       },
       "score": 0
@@ -16868,15 +16863,15 @@
         "exitAsk": 82000,
         "tax": 1640
       },
-      "reliability": 0.612,
-      "fillConfidence": 0.872,
+      "reliability": 0.588,
+      "fillConfidence": 0.877,
       "vol24h": 35958,
-      "bestHour": "6:00",
+      "bestHour": "4:00",
       "snapCount": 187,
       "temporal": {
-        "askZ": 1.34,
+        "askZ": 3.54,
         "bidZ": 1.53,
-        "spreadZ": -0.19,
+        "spreadZ": 2,
         "signal": "sell"
       },
       "score": 0
@@ -16906,8 +16901,8 @@
       "bestHour": "18:00",
       "snapCount": 308,
       "temporal": {
-        "askZ": 1.81,
-        "bidZ": 1.97,
+        "askZ": 1.8,
+        "bidZ": 1.96,
         "spreadZ": -0.16,
         "signal": "sell"
       },
@@ -16932,15 +16927,15 @@
         "exitAsk": 7800000,
         "tax": 156000
       },
-      "reliability": 0.405,
-      "fillConfidence": 0.844,
+      "reliability": 0.404,
+      "fillConfidence": 0.843,
       "vol24h": 12710,
       "bestHour": "13:00",
-      "snapCount": 90,
+      "snapCount": 89,
       "temporal": {
-        "askZ": -0.49,
-        "bidZ": -0.11,
-        "spreadZ": -0.38,
+        "askZ": -0.51,
+        "bidZ": -0.13,
+        "spreadZ": -0.37,
         "signal": ""
       },
       "score": 0
@@ -16964,14 +16959,14 @@
         "exitAsk": 72000,
         "tax": 1440
       },
-      "reliability": 0.216,
+      "reliability": 0.217,
       "fillConfidence": 0.835,
       "vol24h": 96979,
       "bestHour": "19:00",
       "snapCount": 279,
       "temporal": {
         "askZ": -0.78,
-        "bidZ": -0.75,
+        "bidZ": -0.74,
         "spreadZ": -0.04,
         "signal": ""
       },
@@ -17028,14 +17023,14 @@
         "exitAsk": 740000,
         "tax": 14800
       },
-      "reliability": 0.409,
+      "reliability": 0.408,
       "fillConfidence": 0.983,
       "vol24h": 19760,
       "bestHour": "3:00",
-      "snapCount": 121,
+      "snapCount": 120,
       "temporal": {
         "askZ": -0.54,
-        "bidZ": -0.86,
+        "bidZ": -0.87,
         "spreadZ": 0.32,
         "signal": ""
       },
@@ -17060,11 +17055,11 @@
         "exitAsk": 40000,
         "tax": 800
       },
-      "reliability": 0.405,
+      "reliability": 0.404,
       "fillConfidence": 0.914,
       "vol24h": 144308,
       "bestHour": "21:00",
-      "snapCount": 302,
+      "snapCount": 301,
       "temporal": {
         "askZ": 0.6,
         "bidZ": 1.93,
@@ -17092,15 +17087,15 @@
         "exitAsk": 4000000,
         "tax": 80000
       },
-      "reliability": 0.44,
-      "fillConfidence": 0.909,
+      "reliability": 0.424,
+      "fillConfidence": 0.917,
       "vol24h": 3430,
       "bestHour": "10:00",
-      "snapCount": 11,
+      "snapCount": 12,
       "temporal": {
-        "askZ": -0.32,
-        "bidZ": 0.69,
-        "spreadZ": -1.01,
+        "askZ": -1.69,
+        "bidZ": -0.25,
+        "spreadZ": -1.45,
         "signal": ""
       },
       "score": 0
@@ -17124,14 +17119,14 @@
         "exitAsk": 800000,
         "tax": 16000
       },
-      "reliability": 0.371,
-      "fillConfidence": 0.78,
+      "reliability": 0.375,
+      "fillConfidence": 0.786,
       "vol24h": 9292,
       "bestHour": "17:00",
-      "snapCount": 41,
+      "snapCount": 42,
       "temporal": {
         "askZ": 0.24,
-        "bidZ": 0.56,
+        "bidZ": 0.55,
         "spreadZ": -0.31,
         "signal": ""
       },
@@ -17185,17 +17180,17 @@
       },
       "prices": {
         "entryBid": 4700,
-        "exitAsk": 4900,
-        "tax": 98
+        "exitAsk": 4800,
+        "tax": 96
       },
       "reliability": 0.222,
-      "fillConfidence": 0.811,
+      "fillConfidence": 0.808,
       "vol24h": 380537037,
       "bestHour": "5:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.67,
-        "bidZ": 0.91,
+        "askZ": 0.68,
+        "bidZ": 0.92,
         "spreadZ": -0.24,
         "signal": ""
       },
@@ -17240,7 +17235,7 @@
       "level": 0,
       "profit": {
         "p25": 2800,
-        "p50": 21600,
+        "p50": 22400,
         "p75": 42400
       },
       "spread": 20000,
@@ -17252,14 +17247,14 @@
         "exitAsk": 860000,
         "tax": 17200
       },
-      "reliability": 0.388,
-      "fillConfidence": 0.916,
+      "reliability": 0.391,
+      "fillConfidence": 0.925,
       "vol24h": 52285,
       "bestHour": "11:00",
-      "snapCount": 107,
+      "snapCount": 106,
       "temporal": {
         "askZ": -0.83,
-        "bidZ": -0.72,
+        "bidZ": -0.71,
         "spreadZ": -0.11,
         "signal": ""
       },
@@ -17291,7 +17286,7 @@
       "snapCount": 338,
       "temporal": {
         "askZ": -1.44,
-        "bidZ": -1.23,
+        "bidZ": -1.22,
         "spreadZ": -0.22,
         "signal": "buy"
       },
@@ -17349,14 +17344,14 @@
         "tax": 800
       },
       "reliability": 0.272,
-      "fillConfidence": 0.987,
+      "fillConfidence": 0.984,
       "vol24h": 280278,
       "bestHour": "18:00",
       "snapCount": 316,
       "temporal": {
         "askZ": 0.19,
-        "bidZ": 2.56,
-        "spreadZ": -2.38,
+        "bidZ": 2.53,
+        "spreadZ": -2.35,
         "signal": ""
       },
       "score": 0
@@ -17380,13 +17375,13 @@
         "exitAsk": 42000,
         "tax": 840
       },
-      "reliability": 0.346,
-      "fillConfidence": 0.803,
+      "reliability": 0.347,
+      "fillConfidence": 0.806,
       "vol24h": 345606,
       "bestHour": "21:00",
       "snapCount": 325,
       "temporal": {
-        "askZ": -1.21,
+        "askZ": -1.2,
         "bidZ": -0.96,
         "spreadZ": -0.25,
         "signal": ""
@@ -17412,16 +17407,16 @@
         "exitAsk": 40000,
         "tax": 800
       },
-      "reliability": 0.34,
+      "reliability": 0.331,
       "fillConfidence": 1,
       "vol24h": 277627,
       "bestHour": "21:00",
       "snapCount": 327,
       "temporal": {
-        "askZ": -0.02,
+        "askZ": 3.58,
         "bidZ": 0.94,
-        "spreadZ": -0.96,
-        "signal": ""
+        "spreadZ": 2.64,
+        "signal": "sell"
       },
       "score": 0
     },
@@ -17508,14 +17503,14 @@
         "exitAsk": 5200000,
         "tax": 104000
       },
-      "reliability": 0.516,
-      "fillConfidence": 0.772,
+      "reliability": 0.511,
+      "fillConfidence": 0.767,
       "vol24h": 25556,
       "bestHour": "22:00",
       "snapCount": 202,
       "temporal": {
-        "askZ": -1.53,
-        "bidZ": -1.39,
+        "askZ": -1.51,
+        "bidZ": -1.38,
         "spreadZ": -0.13,
         "signal": "buy"
       },
@@ -17547,7 +17542,7 @@
       "snapCount": 301,
       "temporal": {
         "askZ": -0.75,
-        "bidZ": -0.7,
+        "bidZ": -0.69,
         "spreadZ": -0.05,
         "signal": ""
       },
@@ -17610,8 +17605,8 @@
       "bestHour": "17:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 1.19,
-        "bidZ": 1.2,
+        "askZ": 1.18,
+        "bidZ": 1.19,
         "spreadZ": -0.01,
         "signal": "sell"
       },
@@ -17637,14 +17632,14 @@
         "tax": 720
       },
       "reliability": 0.378,
-      "fillConfidence": 0.798,
+      "fillConfidence": 0.801,
       "vol24h": 852087,
       "bestHour": "15:00",
       "snapCount": 326,
       "temporal": {
         "askZ": -0.19,
-        "bidZ": 0.18,
-        "spreadZ": -0.37,
+        "bidZ": 0.19,
+        "spreadZ": -0.38,
         "signal": ""
       },
       "score": 0
@@ -17674,10 +17669,10 @@
       "bestHour": "23:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -0.95,
-        "bidZ": -0.84,
-        "spreadZ": -0.11,
-        "signal": ""
+        "askZ": -3.8,
+        "bidZ": -1.8,
+        "spreadZ": -2,
+        "signal": "buy"
       },
       "score": 0
     },
@@ -17778,6 +17773,38 @@
       "score": 0
     },
     {
+      "slug": "luna_robe_top",
+      "name": "Luna Robe Top",
+      "catIdx": 5,
+      "level": 0,
+      "profit": {
+        "p25": 8000,
+        "p50": 57000,
+        "p75": 155000
+      },
+      "spread": 50000,
+      "roi": {
+        "p25": 0.4
+      },
+      "prices": {
+        "entryBid": 2050000,
+        "exitAsk": 2200000,
+        "tax": 44000
+      },
+      "reliability": 0.493,
+      "fillConfidence": 0.895,
+      "vol24h": 2079,
+      "bestHour": "9:00",
+      "snapCount": 19,
+      "temporal": {
+        "askZ": 0.83,
+        "bidZ": 1.99,
+        "spreadZ": -1.16,
+        "signal": ""
+      },
+      "score": 0
+    },
+    {
       "slug": "magic_coffee",
       "name": "Magic Coffee",
       "catIdx": 1,
@@ -17796,7 +17823,7 @@
         "exitAsk": 1950,
         "tax": 39
       },
-      "reliability": 0.496,
+      "reliability": 0.495,
       "fillConfidence": 0.908,
       "vol24h": 31149872,
       "bestHour": "20:00",
@@ -17863,12 +17890,12 @@
       "reliability": 0.226,
       "fillConfidence": 0.811,
       "vol24h": 514741,
-      "bestHour": "8:00",
+      "bestHour": "3:00",
       "snapCount": 301,
       "temporal": {
-        "askZ": -3.3,
-        "bidZ": -2.06,
-        "spreadZ": -1.23,
+        "askZ": -2.9,
+        "bidZ": -1.81,
+        "spreadZ": -1.09,
         "signal": "buy"
       },
       "score": 0
@@ -17893,14 +17920,14 @@
         "tax": 2000
       },
       "reliability": 0.315,
-      "fillConfidence": 0.836,
+      "fillConfidence": 0.835,
       "vol24h": 36125,
       "bestHour": "22:00",
-      "snapCount": 165,
+      "snapCount": 164,
       "temporal": {
-        "askZ": 2.23,
-        "bidZ": 0.54,
-        "spreadZ": 1.7,
+        "askZ": 2.22,
+        "bidZ": 0.53,
+        "spreadZ": 1.69,
         "signal": "sell"
       },
       "score": 0
@@ -17924,15 +17951,15 @@
         "exitAsk": 86000000,
         "tax": 1720000
       },
-      "reliability": 0.429,
+      "reliability": 0.428,
       "fillConfidence": 0.986,
       "vol24h": 24347,
       "bestHour": "20:00",
-      "snapCount": 145,
+      "snapCount": 144,
       "temporal": {
-        "askZ": -0.25,
+        "askZ": -0.24,
         "bidZ": 0.7,
-        "spreadZ": -0.95,
+        "spreadZ": -0.94,
         "signal": ""
       },
       "score": 0
@@ -17956,15 +17983,15 @@
         "exitAsk": 200,
         "tax": 4
       },
-      "reliability": 0.544,
+      "reliability": 0.545,
       "fillConfidence": 1,
       "vol24h": 386763741,
       "bestHour": "21:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 0.42,
-        "bidZ": 0.68,
-        "spreadZ": -0.26,
+        "askZ": -0.3,
+        "bidZ": -0.06,
+        "spreadZ": -0.24,
         "signal": ""
       },
       "score": 0
@@ -17989,13 +18016,13 @@
         "tax": 43
       },
       "reliability": 0.367,
-      "fillConfidence": 0.809,
+      "fillConfidence": 0.812,
       "vol24h": 31983810,
       "bestHour": "1:00",
       "snapCount": 335,
       "temporal": {
         "askZ": 0.26,
-        "bidZ": 0.5,
+        "bidZ": 0.51,
         "spreadZ": -0.24,
         "signal": ""
       },
@@ -18024,11 +18051,11 @@
       "fillConfidence": 1,
       "vol24h": 74000,
       "bestHour": "18:00",
-      "snapCount": 138,
+      "snapCount": 139,
       "temporal": {
         "askZ": -0.3,
         "bidZ": 0.58,
-        "spreadZ": -0.89,
+        "spreadZ": -0.88,
         "signal": ""
       },
       "score": 0
@@ -18040,7 +18067,7 @@
       "level": 0,
       "profit": {
         "p25": 11,
-        "p50": 12,
+        "p50": 13,
         "p75": 61
       },
       "spread": 50,
@@ -18052,13 +18079,13 @@
         "exitAsk": 1900,
         "tax": 38
       },
-      "reliability": 0.409,
-      "fillConfidence": 0.75,
+      "reliability": 0.41,
+      "fillConfidence": 0.753,
       "vol24h": 8528405,
       "bestHour": "7:00",
       "snapCount": 312,
       "temporal": {
-        "askZ": 0.18,
+        "askZ": 0.19,
         "bidZ": -0.02,
         "spreadZ": 0.2,
         "signal": ""
@@ -18084,16 +18111,16 @@
         "exitAsk": 740000,
         "tax": 14800
       },
-      "reliability": 0.493,
+      "reliability": 0.488,
       "fillConfidence": 0.804,
       "vol24h": 95036,
       "bestHour": "13:00",
       "snapCount": 296,
       "temporal": {
-        "askZ": -0.53,
+        "askZ": 2.45,
         "bidZ": -0.3,
-        "spreadZ": -0.23,
-        "signal": ""
+        "spreadZ": 2.75,
+        "signal": "sell"
       },
       "score": 0
     },
@@ -18154,9 +18181,9 @@
       "bestHour": "9:00",
       "snapCount": 281,
       "temporal": {
-        "askZ": -1.08,
-        "bidZ": -1.15,
-        "spreadZ": 0.07,
+        "askZ": -1.15,
+        "bidZ": -1.25,
+        "spreadZ": 0.1,
         "signal": "buy"
       },
       "score": 0
@@ -18180,14 +18207,14 @@
         "exitAsk": 8600000,
         "tax": 172000
       },
-      "reliability": 0.401,
+      "reliability": 0.399,
       "fillConfidence": 0.76,
       "vol24h": 20768,
       "bestHour": "23:00",
       "snapCount": 233,
       "temporal": {
         "askZ": 0.49,
-        "bidZ": 0.54,
+        "bidZ": 0.53,
         "spreadZ": -0.05,
         "signal": ""
       },
@@ -18212,14 +18239,14 @@
         "exitAsk": 8600000,
         "tax": 172000
       },
-      "reliability": 0.424,
-      "fillConfidence": 0.808,
+      "reliability": 0.423,
+      "fillConfidence": 0.804,
       "vol24h": 21353,
       "bestHour": "20:00",
       "snapCount": 240,
       "temporal": {
         "askZ": 0.91,
-        "bidZ": 1.04,
+        "bidZ": 1.03,
         "spreadZ": -0.13,
         "signal": ""
       },
@@ -18231,28 +18258,28 @@
       "catIdx": 2,
       "level": 0,
       "profit": {
-        "p25": 800,
+        "p25": 900,
         "p50": 900,
         "p75": 900
       },
       "spread": 5000,
       "roi": {
-        "p25": 0.4
+        "p25": 0.5
       },
       "prices": {
         "entryBid": 200000,
         "exitAsk": 205000,
         "tax": 4100
       },
-      "reliability": 0.597,
-      "fillConfidence": 0.919,
+      "reliability": 0.593,
+      "fillConfidence": 0.75,
       "vol24h": 521367,
       "bestHour": "11:00",
       "snapCount": 320,
       "temporal": {
-        "askZ": 0.1,
-        "bidZ": 0.17,
-        "spreadZ": -0.07,
+        "askZ": 0.11,
+        "bidZ": -0.41,
+        "spreadZ": 0.52,
         "signal": ""
       },
       "score": 0
@@ -18276,14 +18303,14 @@
         "exitAsk": 68000,
         "tax": 1360
       },
-      "reliability": 0.318,
-      "fillConfidence": 0.859,
+      "reliability": 0.317,
+      "fillConfidence": 0.858,
       "vol24h": 307682,
       "bestHour": "20:00",
-      "snapCount": 283,
+      "snapCount": 282,
       "temporal": {
-        "askZ": -0.76,
-        "bidZ": -1.4,
+        "askZ": -0.75,
+        "bidZ": -1.39,
         "spreadZ": 0.64,
         "signal": "buy"
       },
@@ -18328,7 +18355,7 @@
       "level": 0,
       "profit": {
         "p25": 800,
-        "p50": 1200,
+        "p50": 800,
         "p75": 1200
       },
       "spread": 20000,
@@ -18340,14 +18367,14 @@
         "exitAsk": 940000,
         "tax": 18800
       },
-      "reliability": 0.444,
-      "fillConfidence": 0.812,
+      "reliability": 0.442,
+      "fillConfidence": 0.809,
       "vol24h": 487231,
       "bestHour": "10:00",
       "snapCount": 329,
       "temporal": {
-        "askZ": 2.04,
-        "bidZ": 2.16,
+        "askZ": 2.02,
+        "bidZ": 2.14,
         "spreadZ": -0.12,
         "signal": "sell"
       },
@@ -18372,15 +18399,15 @@
         "exitAsk": 380,
         "tax": 7
       },
-      "reliability": 0.384,
-      "fillConfidence": 0.796,
+      "reliability": 0.385,
+      "fillConfidence": 0.799,
       "vol24h": 56772622,
       "bestHour": "22:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -1.19,
-        "bidZ": -0.32,
-        "spreadZ": -0.88,
+        "askZ": -1.68,
+        "bidZ": -0.62,
+        "spreadZ": -1.06,
         "signal": ""
       },
       "score": 0
@@ -18405,14 +18432,14 @@
         "tax": 1480
       },
       "reliability": 0.364,
-      "fillConfidence": 0.892,
+      "fillConfidence": 0.895,
       "vol24h": 99507,
       "bestHour": "21:00",
       "snapCount": 286,
       "temporal": {
-        "askZ": -1.42,
-        "bidZ": -1.35,
-        "spreadZ": -0.06,
+        "askZ": -1.4,
+        "bidZ": -1.52,
+        "spreadZ": 0.12,
         "signal": "buy"
       },
       "score": 0
@@ -18436,15 +18463,15 @@
         "exitAsk": 4400,
         "tax": 88
       },
-      "reliability": 0.394,
+      "reliability": 0.395,
       "fillConfidence": 0.887,
       "vol24h": 20260121,
       "bestHour": "1:00",
       "snapCount": 335,
       "temporal": {
-        "askZ": -0.82,
+        "askZ": 0.15,
         "bidZ": -0.47,
-        "spreadZ": -0.35,
+        "spreadZ": 0.62,
         "signal": ""
       },
       "score": 0
@@ -18474,9 +18501,9 @@
       "bestHour": "16:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": -0.31,
-        "bidZ": -1,
-        "spreadZ": 0.69,
+        "askZ": -0.32,
+        "bidZ": 0.38,
+        "spreadZ": -0.7,
         "signal": ""
       },
       "score": 0
@@ -18507,9 +18534,9 @@
       "snapCount": 338,
       "temporal": {
         "askZ": -0.12,
-        "bidZ": 0.44,
-        "spreadZ": -0.56,
-        "signal": ""
+        "bidZ": -1.04,
+        "spreadZ": 0.92,
+        "signal": "buy"
       },
       "score": 0
     },
@@ -18533,14 +18560,14 @@
         "tax": 10000
       },
       "reliability": 0.35,
-      "fillConfidence": 0.767,
+      "fillConfidence": 0.765,
       "vol24h": 52371,
       "bestHour": "19:00",
-      "snapCount": 163,
+      "snapCount": 162,
       "temporal": {
-        "askZ": -0.04,
+        "askZ": -0.05,
         "bidZ": 0.07,
-        "spreadZ": -0.12,
+        "spreadZ": -0.11,
         "signal": ""
       },
       "score": 0
@@ -18564,15 +18591,15 @@
         "exitAsk": 860000,
         "tax": 17200
       },
-      "reliability": 0.371,
-      "fillConfidence": 0.802,
+      "reliability": 0.373,
+      "fillConfidence": 0.81,
       "vol24h": 27371,
       "bestHour": "18:00",
-      "snapCount": 106,
+      "snapCount": 105,
       "temporal": {
-        "askZ": -0.56,
-        "bidZ": -1.63,
-        "spreadZ": 1.08,
+        "askZ": -0.54,
+        "bidZ": -1.64,
+        "spreadZ": 1.1,
         "signal": "buy"
       },
       "score": 0
@@ -18628,15 +18655,15 @@
         "exitAsk": 380000,
         "tax": 7600
       },
-      "reliability": 0.474,
-      "fillConfidence": 0.805,
+      "reliability": 0.472,
+      "fillConfidence": 0.803,
       "vol24h": 28116,
       "bestHour": "16:00",
-      "snapCount": 123,
+      "snapCount": 122,
       "temporal": {
-        "askZ": -1.44,
+        "askZ": -1.43,
         "bidZ": 0.33,
-        "spreadZ": -1.77,
+        "spreadZ": -1.76,
         "signal": ""
       },
       "score": 0
@@ -18724,15 +18751,15 @@
         "exitAsk": 760000,
         "tax": 15200
       },
-      "reliability": 0.483,
-      "fillConfidence": 0.803,
+      "reliability": 0.486,
+      "fillConfidence": 0.802,
       "vol24h": 39964,
       "bestHour": "21:00",
-      "snapCount": 127,
+      "snapCount": 126,
       "temporal": {
-        "askZ": -0.89,
-        "bidZ": -1.82,
-        "spreadZ": 0.93,
+        "askZ": -0.88,
+        "bidZ": -1.85,
+        "spreadZ": 0.97,
         "signal": "buy"
       },
       "score": 0
@@ -18757,14 +18784,14 @@
         "tax": 16000
       },
       "reliability": 0.468,
-      "fillConfidence": 0.877,
+      "fillConfidence": 0.878,
       "vol24h": 28914,
       "bestHour": "19:00",
-      "snapCount": 155,
+      "snapCount": 156,
       "temporal": {
-        "askZ": -1.64,
-        "bidZ": -0.74,
-        "spreadZ": -0.9,
+        "askZ": -0.09,
+        "bidZ": -0.73,
+        "spreadZ": 0.64,
         "signal": ""
       },
       "score": 0
@@ -18794,9 +18821,9 @@
       "bestHour": "13:00",
       "snapCount": 125,
       "temporal": {
-        "askZ": 0.65,
-        "bidZ": 0.27,
-        "spreadZ": 0.39,
+        "askZ": 0.12,
+        "bidZ": 0.26,
+        "spreadZ": -0.14,
         "signal": ""
       },
       "score": 0
@@ -18820,15 +18847,15 @@
         "exitAsk": 780000,
         "tax": 15600
       },
-      "reliability": 0.379,
+      "reliability": 0.382,
       "fillConfidence": 0.838,
       "vol24h": 14853,
       "bestHour": "7:00",
       "snapCount": 105,
       "temporal": {
-        "askZ": 0.73,
-        "bidZ": 1.78,
-        "spreadZ": -1.05,
+        "askZ": 0.74,
+        "bidZ": 1.73,
+        "spreadZ": -0.99,
         "signal": ""
       },
       "score": 0
@@ -18852,15 +18879,15 @@
         "exitAsk": 800000,
         "tax": 16000
       },
-      "reliability": 0.47,
+      "reliability": 0.467,
       "fillConfidence": 0.916,
       "vol24h": 12544,
       "bestHour": "19:00",
       "snapCount": 119,
       "temporal": {
-        "askZ": 1.23,
+        "askZ": 2.22,
         "bidZ": -0.18,
-        "spreadZ": 1.41,
+        "spreadZ": 2.41,
         "signal": "sell"
       },
       "score": 0
@@ -18884,15 +18911,15 @@
         "exitAsk": 9800000,
         "tax": 196000
       },
-      "reliability": 0.209,
+      "reliability": 0.125,
       "fillConfidence": 0.94,
       "vol24h": 18610,
-      "bestHour": "11:00",
-      "snapCount": 182,
+      "bestHour": "4:00",
+      "snapCount": 183,
       "temporal": {
-        "askZ": -1.93,
-        "bidZ": -1.6,
-        "spreadZ": -0.33,
+        "askZ": -1.91,
+        "bidZ": -11.89,
+        "spreadZ": 9.98,
         "signal": "buy"
       },
       "score": 0
@@ -18916,15 +18943,15 @@
         "exitAsk": 2000,
         "tax": 40
       },
-      "reliability": 0.613,
+      "reliability": 0.617,
       "fillConfidence": 0.914,
       "vol24h": 36857068,
       "bestHour": "8:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": -0.13,
+        "askZ": -0.12,
         "bidZ": 0.16,
-        "spreadZ": -0.29,
+        "spreadZ": -0.28,
         "signal": ""
       },
       "score": 0
@@ -18948,15 +18975,15 @@
         "exitAsk": 36000,
         "tax": 720
       },
-      "reliability": 0.279,
+      "reliability": 0.278,
       "fillConfidence": 0.852,
       "vol24h": 473584,
       "bestHour": "14:00",
       "snapCount": 297,
       "temporal": {
         "askZ": -0.36,
-        "bidZ": 0.1,
-        "spreadZ": -0.45,
+        "bidZ": 0.09,
+        "spreadZ": -0.44,
         "signal": ""
       },
       "score": 0
@@ -19044,16 +19071,16 @@
         "exitAsk": 2150000,
         "tax": 43000
       },
-      "reliability": 0.84,
-      "fillConfidence": 1,
+      "reliability": 0.841,
+      "fillConfidence": 0.993,
       "vol24h": 129775,
       "bestHour": "3:00",
-      "snapCount": 145,
+      "snapCount": 146,
       "temporal": {
-        "askZ": -0.17,
-        "bidZ": 0,
-        "spreadZ": -0.17,
-        "signal": ""
+        "askZ": 5.31,
+        "bidZ": 12.04,
+        "spreadZ": -6.73,
+        "signal": "sell"
       },
       "score": 0
     },
@@ -19076,15 +19103,15 @@
         "exitAsk": 230000,
         "tax": 4600
       },
-      "reliability": 0.42,
+      "reliability": 0.421,
       "fillConfidence": 0.75,
       "vol24h": 25615,
       "bestHour": "3:00",
       "snapCount": 176,
       "temporal": {
         "askZ": 0.72,
-        "bidZ": 1.58,
-        "spreadZ": -0.86,
+        "bidZ": 1.56,
+        "spreadZ": -0.84,
         "signal": ""
       },
       "score": 0
@@ -19109,13 +19136,13 @@
         "tax": 17600
       },
       "reliability": 0.437,
-      "fillConfidence": 0.801,
+      "fillConfidence": 0.804,
       "vol24h": 121346,
       "bestHour": "4:00",
       "snapCount": 271,
       "temporal": {
         "askZ": -0.52,
-        "bidZ": -0.23,
+        "bidZ": -0.22,
         "spreadZ": -0.29,
         "signal": ""
       },
@@ -19144,7 +19171,7 @@
       "fillConfidence": 0.929,
       "vol24h": 143955,
       "bestHour": "11:00",
-      "snapCount": 212,
+      "snapCount": 211,
       "temporal": {
         "askZ": -2.69,
         "bidZ": -1.23,
@@ -19204,14 +19231,14 @@
         "exitAsk": 62000,
         "tax": 1240
       },
-      "reliability": 0.455,
-      "fillConfidence": 0.79,
+      "reliability": 0.456,
+      "fillConfidence": 0.793,
       "vol24h": 481883,
       "bestHour": "18:00",
       "snapCount": 329,
       "temporal": {
-        "askZ": 0.12,
-        "bidZ": 0.19,
+        "askZ": 0.13,
+        "bidZ": 0.2,
         "spreadZ": -0.07,
         "signal": ""
       },
@@ -19243,8 +19270,8 @@
       "snapCount": 311,
       "temporal": {
         "askZ": -1.32,
-        "bidZ": -3.31,
-        "spreadZ": 1.99,
+        "bidZ": -3.24,
+        "spreadZ": 1.93,
         "signal": "buy"
       },
       "score": 0
@@ -19268,15 +19295,15 @@
         "exitAsk": 2000,
         "tax": 40
       },
-      "reliability": 0.562,
-      "fillConfidence": 0.754,
+      "reliability": 0.561,
+      "fillConfidence": 0.751,
       "vol24h": 149117785,
       "bestHour": "17:00",
       "snapCount": 337,
       "temporal": {
-        "askZ": 2.01,
-        "bidZ": 1.51,
-        "spreadZ": 0.49,
+        "askZ": 2.84,
+        "bidZ": 3.48,
+        "spreadZ": -0.65,
         "signal": "sell"
       },
       "score": 0
@@ -19339,7 +19366,7 @@
       "snapCount": 338,
       "temporal": {
         "askZ": 0.53,
-        "bidZ": 0.58,
+        "bidZ": 0.57,
         "spreadZ": -0.04,
         "signal": ""
       },
@@ -19364,15 +19391,15 @@
         "exitAsk": 2000,
         "tax": 40
       },
-      "reliability": 0.53,
-      "fillConfidence": 0.775,
+      "reliability": 0.532,
+      "fillConfidence": 0.772,
       "vol24h": 154458326,
       "bestHour": "16:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": 1.27,
-        "bidZ": -0.06,
-        "spreadZ": 1.33,
+        "askZ": 1.26,
+        "bidZ": 1.49,
+        "spreadZ": -0.23,
         "signal": "sell"
       },
       "score": 0
@@ -19396,14 +19423,14 @@
         "exitAsk": 9800000,
         "tax": 196000
       },
-      "reliability": 0.207,
+      "reliability": 0.208,
       "fillConfidence": 0.922,
       "vol24h": 30973,
       "bestHour": "23:00",
-      "snapCount": 205,
+      "snapCount": 206,
       "temporal": {
-        "askZ": -2.17,
-        "bidZ": -2.01,
+        "askZ": -2.14,
+        "bidZ": -1.98,
         "spreadZ": -0.16,
         "signal": "buy"
       },
@@ -19434,8 +19461,8 @@
       "bestHour": "16:00",
       "snapCount": 338,
       "temporal": {
-        "askZ": -1.13,
-        "bidZ": -1.09,
+        "askZ": -1.12,
+        "bidZ": -1.08,
         "spreadZ": -0.04,
         "signal": "buy"
       },
@@ -19460,14 +19487,14 @@
         "exitAsk": 4200,
         "tax": 84
       },
-      "reliability": 0.41,
+      "reliability": 0.409,
       "fillConfidence": 0.816,
       "vol24h": 4562419,
       "bestHour": "22:00",
       "snapCount": 185,
       "temporal": {
-        "askZ": -0.53,
-        "bidZ": 0.16,
+        "askZ": -0.54,
+        "bidZ": 0.15,
         "spreadZ": -0.69,
         "signal": ""
       },
@@ -19525,10 +19552,10 @@
         "tax": 68
       },
       "reliability": 0.379,
-      "fillConfidence": 0.783,
+      "fillConfidence": 0.782,
       "vol24h": 2058253,
       "bestHour": "14:00",
-      "snapCount": 230,
+      "snapCount": 229,
       "temporal": {
         "askZ": -0.6,
         "bidZ": 0.29,
@@ -19557,14 +19584,14 @@
         "tax": 82
       },
       "reliability": 0.376,
-      "fillConfidence": 0.797,
+      "fillConfidence": 0.793,
       "vol24h": 4558881,
       "bestHour": "23:00",
       "snapCount": 266,
       "temporal": {
-        "askZ": 0.59,
-        "bidZ": 1.96,
-        "spreadZ": -1.37,
+        "askZ": 0.58,
+        "bidZ": 1.94,
+        "spreadZ": -1.36,
         "signal": ""
       },
       "score": 0
@@ -19588,11 +19615,11 @@
         "exitAsk": 3800,
         "tax": 76
       },
-      "reliability": 0.556,
-      "fillConfidence": 0.769,
+      "reliability": 0.557,
+      "fillConfidence": 0.77,
       "vol24h": 1549418,
       "bestHour": "23:00",
-      "snapCount": 199,
+      "snapCount": 200,
       "temporal": {
         "askZ": -0.47,
         "bidZ": -0.17,
@@ -19621,14 +19648,14 @@
         "tax": 800
       },
       "reliability": 0.181,
-      "fillConfidence": 0.82,
+      "fillConfidence": 0.817,
       "vol24h": 379178,
       "bestHour": "22:00",
       "snapCount": 322,
       "temporal": {
         "askZ": 0.01,
-        "bidZ": 2.99,
-        "spreadZ": -2.98,
+        "bidZ": 2.94,
+        "spreadZ": -2.93,
         "signal": ""
       },
       "score": 0
@@ -19684,14 +19711,14 @@
         "exitAsk": 43000,
         "tax": 860
       },
-      "reliability": 0.374,
-      "fillConfidence": 0.836,
+      "reliability": 0.373,
+      "fillConfidence": 0.832,
       "vol24h": 81984,
       "bestHour": "21:00",
       "snapCount": 274,
       "temporal": {
-        "askZ": 0.6,
-        "bidZ": 0.98,
+        "askZ": 0.59,
+        "bidZ": 0.97,
         "spreadZ": -0.38,
         "signal": ""
       },
@@ -19717,12 +19744,12 @@
         "tax": 47000
       },
       "reliability": 0.228,
-      "fillConfidence": 0.813,
+      "fillConfidence": 0.812,
       "vol24h": 24021,
       "bestHour": "2:00",
-      "snapCount": 203,
+      "snapCount": 202,
       "temporal": {
-        "askZ": 0.58,
+        "askZ": 0.57,
         "bidZ": 0.67,
         "spreadZ": -0.1,
         "signal": ""
@@ -19749,13 +19776,13 @@
         "tax": 580
       },
       "reliability": 0.299,
-      "fillConfidence": 0.771,
+      "fillConfidence": 0.774,
       "vol24h": 250776,
       "bestHour": "20:00",
-      "snapCount": 288,
+      "snapCount": 287,
       "temporal": {
         "askZ": -1.17,
-        "bidZ": -0.74,
+        "bidZ": -0.73,
         "spreadZ": -0.43,
         "signal": ""
       },
@@ -19780,14 +19807,14 @@
         "exitAsk": 23000,
         "tax": 460
       },
-      "reliability": 0.442,
-      "fillConfidence": 0.754,
+      "reliability": 0.44,
+      "fillConfidence": 0.753,
       "vol24h": 105614,
       "bestHour": "21:00",
-      "snapCount": 187,
+      "snapCount": 186,
       "temporal": {
-        "askZ": 3.95,
-        "bidZ": 2.46,
+        "askZ": 3.94,
+        "bidZ": 2.45,
         "spreadZ": 1.49,
         "signal": "sell"
       },
@@ -19812,11 +19839,11 @@
         "exitAsk": 8000,
         "tax": 160
       },
-      "reliability": 0.467,
+      "reliability": 0.466,
       "fillConfidence": 1,
       "vol24h": 8379119,
       "bestHour": "11:00",
-      "snapCount": 222,
+      "snapCount": 221,
       "temporal": {
         "askZ": -0.91,
         "bidZ": -0.22,
@@ -19844,13 +19871,13 @@
         "exitAsk": 8600,
         "tax": 172
       },
-      "reliability": 0.446,
+      "reliability": 0.445,
       "fillConfidence": 0.97,
       "vol24h": 1542112,
       "bestHour": "23:00",
-      "snapCount": 201,
+      "snapCount": 200,
       "temporal": {
-        "askZ": 1.08,
+        "askZ": 1.07,
         "bidZ": 0.54,
         "spreadZ": 0.54,
         "signal": "sell"
@@ -19863,7 +19890,7 @@
       "catIdx": 1,
       "level": 0,
       "profit": {
-        "p25": 44,
+        "p25": 48,
         "p50": 48,
         "p75": 244
       },
@@ -19877,14 +19904,14 @@
         "tax": 152
       },
       "reliability": 0.432,
-      "fillConfidence": 0.926,
+      "fillConfidence": 0.75,
       "vol24h": 2769965,
       "bestHour": "13:00",
       "snapCount": 256,
       "temporal": {
         "askZ": -0.83,
         "bidZ": -0.2,
-        "spreadZ": -0.64,
+        "spreadZ": -0.63,
         "signal": ""
       },
       "score": 0
@@ -19908,15 +19935,15 @@
         "exitAsk": 9600,
         "tax": 192
       },
-      "reliability": 0.19,
+      "reliability": 0.188,
       "fillConfidence": 0.993,
       "vol24h": 919097,
       "bestHour": "13:00",
       "snapCount": 153,
       "temporal": {
-        "askZ": -0.52,
+        "askZ": -0.51,
         "bidZ": -0.32,
-        "spreadZ": -0.2,
+        "spreadZ": -0.19,
         "signal": ""
       },
       "score": 0
@@ -19973,14 +20000,14 @@
         "tax": 196
       },
       "reliability": 0.116,
-      "fillConfidence": 0.761,
+      "fillConfidence": 0.758,
       "vol24h": 2591430,
       "bestHour": "11:00",
       "snapCount": 264,
       "temporal": {
-        "askZ": 1.42,
+        "askZ": 1.41,
         "bidZ": 0.51,
-        "spreadZ": 0.91,
+        "spreadZ": 0.9,
         "signal": "sell"
       },
       "score": 0
@@ -20004,15 +20031,15 @@
         "exitAsk": 7800,
         "tax": 156
       },
-      "reliability": 0.287,
+      "reliability": 0.289,
       "fillConfidence": 0.893,
       "vol24h": 1820179,
       "bestHour": "11:00",
       "snapCount": 234,
       "temporal": {
         "askZ": -0.07,
-        "bidZ": -1.57,
-        "spreadZ": 1.5,
+        "bidZ": -1.56,
+        "spreadZ": 1.49,
         "signal": "buy"
       },
       "score": 0
@@ -20036,14 +20063,14 @@
         "exitAsk": 460000,
         "tax": 9200
       },
-      "reliability": 0.378,
-      "fillConfidence": 0.928,
+      "reliability": 0.38,
+      "fillConfidence": 0.927,
       "vol24h": 30463,
       "bestHour": "21:00",
-      "snapCount": 138,
+      "snapCount": 137,
       "temporal": {
         "askZ": -0.01,
-        "bidZ": -0.28,
+        "bidZ": -0.27,
         "spreadZ": 0.27,
         "signal": ""
       },
@@ -20075,7 +20102,7 @@
       "snapCount": 277,
       "temporal": {
         "askZ": 0.27,
-        "bidZ": 0.45,
+        "bidZ": 0.44,
         "spreadZ": -0.17,
         "signal": ""
       },
@@ -20202,9 +20229,9 @@
       "bestHour": "17:00",
       "snapCount": 315,
       "temporal": {
-        "askZ": -1.14,
-        "bidZ": -1.96,
-        "spreadZ": 0.83,
+        "askZ": -1.13,
+        "bidZ": -1.02,
+        "spreadZ": -0.11,
         "signal": "buy"
       },
       "score": 0
@@ -20228,14 +20255,14 @@
         "exitAsk": 230,
         "tax": 4
       },
-      "reliability": 0.494,
+      "reliability": 0.493,
       "fillConfidence": 1,
       "vol24h": 122623651,
       "bestHour": "8:00",
       "snapCount": 336,
       "temporal": {
-        "askZ": 0.88,
-        "bidZ": 1.54,
+        "askZ": 0.87,
+        "bidZ": 1.53,
         "spreadZ": -0.66,
         "signal": ""
       },
@@ -20298,9 +20325,9 @@
       "bestHour": "2:00",
       "snapCount": 310,
       "temporal": {
-        "askZ": -1.58,
+        "askZ": -1.57,
         "bidZ": -1.04,
-        "spreadZ": -0.54,
+        "spreadZ": -0.53,
         "signal": "buy"
       },
       "score": 0
