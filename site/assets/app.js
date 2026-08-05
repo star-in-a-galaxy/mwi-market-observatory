@@ -17,10 +17,11 @@ const DEFAULT_WINDOW = '15d';
 
 // Filter cache management
 const FILTER_CACHE_KEY = 'mwi_home_filters';
+const FAVORITES_KEY = 'mwi_favorites';
 
-function saveFilters(category, searchQuery) {
+function saveFilters(category, searchQuery, favoritesOnly) {
   try {
-    localStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({ category, searchQuery }));
+    localStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({ category, searchQuery, favoritesOnly }));
   } catch (e) {
     console.warn('Failed to save filter cache:', e);
   }
@@ -29,11 +30,52 @@ function saveFilters(category, searchQuery) {
 function loadFilters() {
   try {
     const cached = localStorage.getItem(FILTER_CACHE_KEY);
-    return cached ? JSON.parse(cached) : { category: 'all', searchQuery: '' };
+    return cached ? JSON.parse(cached) : { category: 'all', searchQuery: '', favoritesOnly: false };
   } catch (e) {
     console.warn('Failed to load filter cache:', e);
-    return { category: 'all', searchQuery: '' };
+    return { category: 'all', searchQuery: '', favoritesOnly: false };
   }
+}
+
+function loadFavorites() {
+  try {
+    const cached = localStorage.getItem(FAVORITES_KEY);
+    const parsed = cached ? JSON.parse(cached) : [];
+    return Array.isArray(parsed) ? parsed.map((s) => String(s).toLowerCase()) : [];
+  } catch (e) {
+    console.warn('Failed to load favorites:', e);
+    return [];
+  }
+}
+
+function saveFavorites(slugs) {
+  try {
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(slugs));
+  } catch (e) {
+    console.warn('Failed to save favorites:', e);
+  }
+}
+
+function toggleFavorite(slug) {
+  const normalized = String(slug).toLowerCase();
+  const favorites = loadFavorites();
+  const index = favorites.indexOf(normalized);
+  let isFavorite = true;
+  if (index >= 0) {
+    favorites.splice(index, 1);
+    isFavorite = false;
+  } else {
+    favorites.push(normalized);
+  }
+  saveFavorites(favorites);
+  return isFavorite;
+}
+
+function favoriteStarHtml(slug, isFavorite, extraClass) {
+  const classes = ['favorite-star', isFavorite ? 'is-favorite' : '', extraClass || ''].filter(Boolean).join(' ');
+  return `<span class="${classes}" data-fav-slug="${escapeHtml(String(slug).toLowerCase())}" title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+  </span>`;
 }
 
 // Global catalog cache to prevent redundant parsing
@@ -1009,6 +1051,7 @@ async function renderHome(root) {
       <a class="item-card" href="${itemLink(item.slug)}" loading="lazy">
         <img class="item-icon" src="${iconSvg}" alt="${escapeHtml(item.name || slugToTitle(item.slug))}" onerror="if(!this._tried){this._tried=true;this.src='${iconPng}'}else{this.style.display='none'}" />
         <span class="item-card-title">${escapeHtml(displayName)}</span>
+        ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
       </a>
     `;
       })
@@ -1063,12 +1106,39 @@ async function renderHome(root) {
   let filteredItems = [...sortedItems];
   const cachedFilters = loadFilters();
   let selectedCategories = new Set(cachedFilters.category === 'all' ? [] : Array.isArray(cachedFilters.category) ? cachedFilters.category : [cachedFilters.category]);
-  const filtersHtml = [`<button class="filter-pill ${selectedCategories.size === 0 ? 'active' : ''}" data-index="all">All</button>`, ...categories.map(c => `<button class="filter-pill ${selectedCategories.has(c.id) ? 'active' : ''}" data-index="${c.id}">${escapeHtml(c.label)}</button>` )].join('');
+  let favoritesOnly = cachedFilters.favoritesOnly === true;
+  const favoriteSet = new Set(loadFavorites());
+  const filtersHtml = [`<button class="filter-pill ${selectedCategories.size === 0 && !favoritesOnly ? 'active' : ''}" data-index="all">All</button>`, `<button class="filter-pill ${favoritesOnly ? 'active' : ''}" data-index="fav">Favorites</button>`, ...categories.map(c => `<button class="filter-pill ${selectedCategories.has(c.id) ? 'active' : ''}" data-index="${c.id}">${escapeHtml(c.label)}</button>` )].join('');
 
   const renderFilteredItems = () => {
     list.innerHTML = filteredItems.length
       ? renderItemCards(filteredItems)
       : '<div class="empty-state">No items matched that search.</div>';
+  };
+
+  const computeFiltered = () => {
+    const query = search.value.trim().toLowerCase();
+    return sortedItems.filter((item) => {
+      if (selectedCategories.size > 0) {
+        const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
+        if (!selectedCategories.has(catIdx)) return false;
+      }
+      if (favoritesOnly && !favoriteSet.has(String(item.slug).toLowerCase())) return false;
+      const name = (item.name || slugToTitle(item.slug)).toLowerCase();
+      return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
+    });
+  };
+
+  const syncFilterButtons = () => {
+    Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
+      if (b.dataset.index === 'all') {
+        b.classList.toggle('active', selectedCategories.size === 0 && !favoritesOnly);
+      } else if (b.dataset.index === 'fav') {
+        b.classList.toggle('active', favoritesOnly);
+      } else {
+        b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
+      }
+    });
   };
 
   const logoHtml = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" /></a>`;
@@ -1129,6 +1199,9 @@ async function renderHome(root) {
 
       if (idx === 'all') {
         selectedCategories.clear();
+        favoritesOnly = false;
+      } else if (idx === 'fav') {
+        favoritesOnly = !favoritesOnly;
       } else {
         const catIdx = Number(idx);
         if (selectedCategories.has(catIdx)) {
@@ -1138,69 +1211,55 @@ async function renderHome(root) {
         }
       }
 
-      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
-        if (b.dataset.index === 'all') {
-          b.classList.toggle('active', selectedCategories.size === 0);
-        } else {
-          b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
-        }
-      });
-
-      const query = search.value.trim().toLowerCase();
-      filteredItems = sortedItems.filter((item) => {
-        if (selectedCategories.size > 0) {
-          const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
-          if (!selectedCategories.has(catIdx)) return false;
-        }
-        const name = (item.name || slugToTitle(item.slug)).toLowerCase();
-        return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
-      });
-
-      saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], query);
+      saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], search.value.trim().toLowerCase(), favoritesOnly);
+      syncFilterButtons();
+      filteredItems = computeFiltered();
       renderFilteredItems();
     });
   }
 
   search.addEventListener('input', () => {
-    const query = search.value.trim().toLowerCase();
-    filteredItems = sortedItems.filter((item) => {
-      if (selectedCategories.size > 0) {
-        const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
-        if (!selectedCategories.has(catIdx)) return false;
-      }
-      const name = (item.name || slugToTitle(item.slug)).toLowerCase();
-      return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
-    });
+    filteredItems = computeFiltered();
 
-    saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], query);
+    saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], search.value.trim().toLowerCase(), favoritesOnly);
+    renderFilteredItems();
+  });
+
+  list.addEventListener('click', (event) => {
+    const star = event.target.closest('.favorite-star');
+    if (!star || !star.dataset.favSlug) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const slug = String(star.dataset.favSlug).toLowerCase();
+    const isFavorite = toggleFavorite(slug);
+    if (isFavorite) favoriteSet.add(slug);
+    else favoriteSet.delete(slug);
+    filteredItems = computeFiltered();
     renderFilteredItems();
   });
 
   // Apply cached filters to button states and render
-  if (filtersContainer && selectedCategories.size > 0) {
-    Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
-      if (b.dataset.index === 'all') {
-        b.classList.toggle('active', selectedCategories.size === 0);
-      } else {
-        b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
-      }
-    });
+  if (filtersContainer) {
+    syncFilterButtons();
   }
 
   // Filter items based on cached state
-  filteredItems = sortedItems.filter((item) => {
-    if (selectedCategories.size > 0) {
-      const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
-      if (!selectedCategories.has(catIdx)) return false;
-    }
-    const query = search.value.trim().toLowerCase();
-    const name = (item.name || slugToTitle(item.slug)).toLowerCase();
-    return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
-  });
+  filteredItems = computeFiltered();
 
   renderFilteredItems();
 
 }
+
+// Delegated favorite-star clicks: toggle in place, never navigate.
+document.addEventListener('click', (event) => {
+  const star = event.target.closest('.favorite-star');
+  if (!star || !star.dataset.favSlug) return;
+  event.preventDefault();
+  event.stopPropagation();
+  const isFavorite = toggleFavorite(star.dataset.favSlug);
+  star.classList.toggle('is-favorite', isFavorite);
+  star.setAttribute('title', isFavorite ? 'Remove from favorites' : 'Add to favorites');
+});
 
 function windowPoints(points, windowKey) {
   if (!points.length) {
@@ -1596,6 +1655,7 @@ async function renderItem(root, slug) {
         <header class="dashboard-header">
           <div class="item-identity">
             ${iconHtml}
+            ${favoriteStarHtml(slug, loadFavorites().includes(String(slug).toLowerCase()), 'item-page-star')}
             <h1>${escapeHtml(itemName)}</h1>
           </div>
           ${enhancementBlock}
