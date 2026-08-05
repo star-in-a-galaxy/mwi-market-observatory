@@ -1702,6 +1702,7 @@ async function renderGroup(root) {
   let state = loadGroupState();
   let itemCache = {};
   let groupWindow = '15d';
+  let currentPresetIndex = -1;
 
   function loadGroupState() {
     try {
@@ -1744,6 +1745,7 @@ async function renderGroup(root) {
     const presets = loadPresets();
     presets.push({ name, cells: capturePresetCells(), window: groupWindow });
     savePresets(presets);
+    return presets.length - 1;
   }
 
   function deletePreset(index) {
@@ -1751,6 +1753,9 @@ async function renderGroup(root) {
     if (index >= 0 && index < presets.length) {
       presets.splice(index, 1);
       savePresets(presets);
+      if (index < currentPresetIndex) currentPresetIndex -= 1;
+      else if (index === currentPresetIndex) currentPresetIndex = -1;
+      updateCurrentPresetUI();
     }
   }
 
@@ -1760,10 +1765,26 @@ async function renderGroup(root) {
     const preset = presets[index];
     state.cells = preset.cells.map((c) => ({ slug: c.slug, level: c.level }));
     groupWindow = preset.window || '15d';
+    currentPresetIndex = index;
     saveGroupState();
+    updateCurrentPresetUI();
     const row = root.querySelector('.range-container .button-row');
     if (row) row.innerHTML = renderWindowButtons();
     reRenderGrid();
+  }
+
+  function updateCurrentPresetUI() {
+    const el = root.querySelector('.group-current-preset');
+    if (!el) return;
+    const presets = loadPresets();
+    const preset = currentPresetIndex >= 0 && currentPresetIndex < presets.length ? presets[currentPresetIndex] : null;
+    if (preset) {
+      const nameEl = root.querySelector('.group-current-preset-name');
+      if (nameEl) nameEl.textContent = preset.name;
+      el.classList.remove('is-hidden');
+    } else {
+      el.classList.add('is-hidden');
+    }
   }
 
   function renderPresetsHTML() {
@@ -1773,6 +1794,7 @@ async function renderGroup(root) {
     }
     return presets.map((p, i) =>
       `<div class="group-preset-item" data-preset-index="${i}">
+        <span class="group-preset-handle" draggable="true" title="Drag to reorder"><svg width="16" height="20" viewBox="0 0 16 20" fill="none"><circle cx="5" cy="3" r="1.5" fill="currentColor"/><circle cx="11" cy="3" r="1.5" fill="currentColor"/><circle cx="5" cy="10" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="5" cy="17" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg></span>
         <span class="group-preset-name" data-preset-load="${i}">${escapeHtml(p.name)}</span>
         <button class="group-preset-delete" data-preset-delete="${i}" title="Delete preset">&times;</button>
       </div>`
@@ -1932,10 +1954,18 @@ async function renderGroup(root) {
     <nav class="group-nav">
       <a class="minimal-back-link" href="${SITE_BASE_PATH}">&#8592; Home</a>
       <span class="group-nav-sep"></span>
-      <button class="pill group-save-btn" data-action="save-preset">+ Save Preset</button>
-      <div class="group-preset-wrap">
-        <button class="pill group-load-btn" data-action="toggle-presets">Load &#9660;</button>
-        <div class="group-preset-dropdown is-hidden"></div>
+      <div class="group-preset-controls">
+        <div class="group-preset-buttons">
+          <button class="pill group-save-btn" data-action="save-preset">+ Save Preset</button>
+          <div class="group-preset-wrap">
+            <button class="pill group-load-btn" data-action="toggle-presets">Load &#9660;</button>
+            <div class="group-preset-dropdown is-hidden"></div>
+          </div>
+        </div>
+        <div class="group-current-preset is-hidden">
+          <span>Current: <strong class="group-current-preset-name"></strong></span>
+          <button class="pill group-overwrite-btn" data-action="overwrite-preset">Overwrite</button>
+        </div>
       </div>
     </nav>
     <div class="range-container">
@@ -1965,6 +1995,18 @@ async function renderGroup(root) {
   root.addEventListener('touchmove', handleTouchMove, { passive: false });
   root.addEventListener('touchend', handleTouchEnd);
   root.addEventListener('touchcancel', handleTouchCancel);
+  // Preset drag & drop (desktop + touch)
+  let presetDragIndex = -1;
+  let presetDragPreview = null;
+  root.addEventListener('dragstart', handlePresetDragStart);
+  root.addEventListener('dragover', handlePresetDragOver);
+  root.addEventListener('dragleave', handlePresetDragLeave);
+  root.addEventListener('drop', handlePresetDrop);
+  root.addEventListener('dragend', handlePresetDragEnd);
+  root.addEventListener('touchstart', handlePresetTouchStart, { passive: false });
+  root.addEventListener('touchmove', handlePresetTouchMove, { passive: false });
+  root.addEventListener('touchend', handlePresetTouchEnd);
+  root.addEventListener('touchcancel', handlePresetTouchCancel);
 
   // Close preset dropdown on outside click
   document.addEventListener('click', function closePresetDD(e) {
@@ -1996,8 +2038,12 @@ async function renderGroup(root) {
     const removeBtn = e.target.closest('.group-cell-remove');
     if (removeBtn) {
       const idx = parseInt(removeBtn.getAttribute('data-cell-index'), 10);
-      if (!isNaN(idx) && state.cells.length > 1) {
-        state.cells.splice(idx, 1);
+      if (!isNaN(idx) && idx >= 0 && idx < state.cells.length) {
+        if (state.cells.length > 1) {
+          state.cells.splice(idx, 1);
+        } else {
+          state.cells[0] = { slug: null, level: null };
+        }
         saveGroupState();
         reRenderGrid();
       }
@@ -2030,6 +2076,8 @@ async function renderGroup(root) {
     if (clearAllBtn) {
       state.cells = [{ slug: null, level: null }];
       saveGroupState();
+      currentPresetIndex = -1;
+      updateCurrentPresetUI();
       reRenderGrid();
       return;
     }
@@ -2038,7 +2086,21 @@ async function renderGroup(root) {
     if (saveBtn) {
       const name = prompt('Preset name:');
       if (name && name.trim()) {
-        savePresetWithName(name.trim());
+        currentPresetIndex = savePresetWithName(name.trim());
+        updateCurrentPresetUI();
+        const dd = root.querySelector('.group-preset-dropdown');
+        if (dd) dd.innerHTML = renderPresetsHTML();
+      }
+      return;
+    }
+
+    const overwriteBtn = e.target.closest('[data-action="overwrite-preset"]');
+    if (overwriteBtn) {
+      const presets = loadPresets();
+      if (currentPresetIndex >= 0 && currentPresetIndex < presets.length) {
+        presets[currentPresetIndex] = { name: presets[currentPresetIndex].name, cells: capturePresetCells(), window: groupWindow };
+        savePresets(presets);
+        updateCurrentPresetUI();
         const dd = root.querySelector('.group-preset-dropdown');
         if (dd) dd.innerHTML = renderPresetsHTML();
       }
@@ -2182,6 +2244,7 @@ async function renderGroup(root) {
   }
 
   function handleDragOver(e) {
+    if (presetDragIndex >= 0) return;
     const grid = root.querySelector('.group-grid');
     if (!grid) return;
     // Allow drops inside the card padding (which is inside root)
@@ -2231,7 +2294,7 @@ async function renderGroup(root) {
 
   function handleDrop(e) {
     e.preventDefault();
-    if (isNaN(dragSourceIdx)) { dropCleanup(); return; }
+    if (dragSourceIdx < 0) { dropCleanup(); return; }
     const cell = e.target.closest('.group-cell');
     if (cell) {
       const tgtIdx = parseInt(cell.getAttribute('data-cell-index'), 10);
@@ -2336,6 +2399,153 @@ async function renderGroup(root) {
   }
 
   function handleTouchCancel() { if (dragSourceIdx >= 0) dropCleanup(); }
+
+  // ── Preset drag & drop handlers ──
+
+  function getPresetDropdown() {
+    const dd = root.querySelector('.group-preset-dropdown');
+    return dd && !dd.classList.contains('is-hidden') ? dd : null;
+  }
+
+  function handlePresetDragStart(e) {
+    const handle = e.target.closest('.group-preset-handle');
+    if (!handle) return;
+    const item = handle.closest('.group-preset-item');
+    if (!item) return;
+    presetDragIndex = parseInt(item.getAttribute('data-preset-index'), 10);
+    if (isNaN(presetDragIndex)) { presetDragIndex = -1; return; }
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(presetDragIndex));
+    item.classList.add('dragging');
+    const clone = item.cloneNode(true);
+    clone.style.position = 'absolute';
+    clone.style.top = '-9999px';
+    clone.style.left = '-9999px';
+    clone.style.width = item.offsetWidth + 'px';
+    clone.style.background = 'var(--bg-panel)';
+    clone.style.border = '1px solid var(--accent-cyan)';
+    clone.style.borderRadius = '8px';
+    clone.style.opacity = '0.85';
+    clone.style.pointerEvents = 'none';
+    document.body.appendChild(clone);
+    e.dataTransfer.setDragImage(clone, 20, 12);
+    requestAnimationFrame(() => clone.remove());
+  }
+
+  function handlePresetDragOver(e) {
+    const dd = getPresetDropdown();
+    if (!dd || presetDragIndex < 0 || dragSourceIdx >= 0) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    dd.querySelectorAll('.group-preset-item').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
+    const item = e.target.closest('.group-preset-item');
+    if (item) {
+      const r = item.getBoundingClientRect();
+      const y = (e.clientY - r.top) / r.height;
+      if (y < 0.5) item.classList.add('drop-before');
+      else item.classList.add('drop-after');
+    }
+  }
+
+  function handlePresetDragLeave(e) {
+    const item = e.target.closest('.group-preset-item');
+    if (item) {
+      const rel = e.relatedTarget;
+      if (rel && item.contains(rel)) return;
+      item.classList.remove('drop-before', 'drop-after');
+    }
+  }
+
+  function handlePresetDrop(e) {
+    e.preventDefault();
+    if (presetDragIndex < 0) { presetDropCleanup(); return; }
+    const item = e.target.closest('.group-preset-item');
+    if (item) {
+      const tgtIdx = parseInt(item.getAttribute('data-preset-index'), 10);
+      if (!isNaN(tgtIdx) && tgtIdx !== presetDragIndex) {
+        reorderPreset(presetDragIndex, tgtIdx, item);
+      }
+    }
+    presetDropCleanup();
+  }
+
+  function handlePresetDragEnd() { presetDropCleanup(); }
+
+  function presetDropCleanup() {
+    presetDragIndex = -1;
+    if (presetDragPreview) { presetDragPreview.remove(); presetDragPreview = null; }
+    root.querySelectorAll('.group-preset-item').forEach((el) => el.classList.remove('dragging', 'drop-before', 'drop-after'));
+  }
+
+  function handlePresetTouchStart(e) {
+    const handle = e.target.closest('.group-preset-handle');
+    if (!handle) return;
+    const item = handle.closest('.group-preset-item');
+    if (!item) return;
+    presetDragIndex = parseInt(item.getAttribute('data-preset-index'), 10);
+    if (isNaN(presetDragIndex)) { presetDragIndex = -1; return; }
+    item.classList.add('dragging');
+    presetDragPreview = item.cloneNode(true);
+    presetDragPreview.style.position = 'fixed';
+    presetDragPreview.style.pointerEvents = 'none';
+    presetDragPreview.style.zIndex = '9999';
+    presetDragPreview.style.width = item.offsetWidth + 'px';
+    presetDragPreview.style.left = '-9999px';
+    presetDragPreview.style.top = '-9999px';
+    document.body.appendChild(presetDragPreview);
+  }
+
+  function handlePresetTouchMove(e) {
+    if (presetDragIndex < 0) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (presetDragPreview) {
+      presetDragPreview.style.left = (touch.clientX - presetDragPreview.offsetWidth / 2) + 'px';
+      presetDragPreview.style.top = (touch.clientY - Math.min(presetDragPreview.offsetHeight, 40)) + 'px';
+    }
+    const dd = getPresetDropdown();
+    if (!dd) return;
+    dd.querySelectorAll('.group-preset-item').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const item = target?.closest('.group-preset-item');
+    if (item) {
+      const r = item.getBoundingClientRect();
+      const y = (touch.clientY - r.top) / r.height;
+      if (y < 0.5) item.classList.add('drop-before');
+      else item.classList.add('drop-after');
+    }
+  }
+
+  function handlePresetTouchEnd(e) {
+    if (presetDragIndex < 0) return;
+    const touch = e.changedTouches[0];
+    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+    const item = target?.closest('.group-preset-item');
+    if (item) {
+      const tgtIdx = parseInt(item.getAttribute('data-preset-index'), 10);
+      if (!isNaN(tgtIdx) && tgtIdx !== presetDragIndex) {
+        reorderPreset(presetDragIndex, tgtIdx, item);
+      }
+    }
+    presetDropCleanup();
+  }
+
+  function handlePresetTouchCancel() { if (presetDragIndex >= 0) presetDropCleanup(); }
+
+  function reorderPreset(srcIdx, tgtIdx, tgtItem) {
+    const presets = loadPresets();
+    const currentPreset = currentPresetIndex >= 0 && currentPresetIndex < presets.length ? presets[currentPresetIndex] : null;
+    if (srcIdx < 0 || srcIdx >= presets.length || tgtIdx < 0 || tgtIdx >= presets.length) return;
+    const [moved] = presets.splice(srcIdx, 1);
+    const adj = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
+    let insertIdx = tgtItem.classList.contains('drop-after') ? adj + 1 : adj;
+    presets.splice(insertIdx, 0, moved);
+    savePresets(presets);
+    if (currentPreset) currentPresetIndex = presets.indexOf(currentPreset);
+    const dd = root.querySelector('.group-preset-dropdown');
+    if (dd) dd.innerHTML = renderPresetsHTML();
+    updateCurrentPresetUI();
+  }
 
   function performReorder(srcIdx, tgtIdx, clientY, tgtCell) {
     // Use the CSS class set during dragover, not a recalculation,
