@@ -17,11 +17,10 @@ const DEFAULT_WINDOW = '15d';
 
 // Filter cache management
 const FILTER_CACHE_KEY = 'mwi_home_filters';
-const FAVORITES_KEY = 'mwi_favorites';
 
-function saveFilters(category, searchQuery, favoritesOnly) {
+function saveFilters(category, searchQuery) {
   try {
-    localStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({ category, searchQuery, favoritesOnly }));
+    localStorage.setItem(FILTER_CACHE_KEY, JSON.stringify({ category, searchQuery }));
   } catch (e) {
     console.warn('Failed to save filter cache:', e);
   }
@@ -30,52 +29,11 @@ function saveFilters(category, searchQuery, favoritesOnly) {
 function loadFilters() {
   try {
     const cached = localStorage.getItem(FILTER_CACHE_KEY);
-    return cached ? JSON.parse(cached) : { category: 'all', searchQuery: '', favoritesOnly: false };
+    return cached ? JSON.parse(cached) : { category: 'all', searchQuery: '' };
   } catch (e) {
     console.warn('Failed to load filter cache:', e);
-    return { category: 'all', searchQuery: '', favoritesOnly: false };
+    return { category: 'all', searchQuery: '' };
   }
-}
-
-function loadFavorites() {
-  try {
-    const cached = localStorage.getItem(FAVORITES_KEY);
-    const parsed = cached ? JSON.parse(cached) : [];
-    return Array.isArray(parsed) ? parsed.map((s) => String(s).toLowerCase()) : [];
-  } catch (e) {
-    console.warn('Failed to load favorites:', e);
-    return [];
-  }
-}
-
-function saveFavorites(slugs) {
-  try {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify(slugs));
-  } catch (e) {
-    console.warn('Failed to save favorites:', e);
-  }
-}
-
-function toggleFavorite(slug) {
-  const normalized = String(slug).toLowerCase();
-  const favorites = loadFavorites();
-  const index = favorites.indexOf(normalized);
-  let isFavorite = true;
-  if (index >= 0) {
-    favorites.splice(index, 1);
-    isFavorite = false;
-  } else {
-    favorites.push(normalized);
-  }
-  saveFavorites(favorites);
-  return isFavorite;
-}
-
-function favoriteStarHtml(slug, isFavorite, extraClass) {
-  const classes = ['favorite-star', isFavorite ? 'is-favorite' : '', extraClass || ''].filter(Boolean).join(' ');
-  return `<span class="${classes}" data-fav-slug="${escapeHtml(String(slug).toLowerCase())}" title="${isFavorite ? 'Remove from favorites' : 'Add to favorites'}">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
-  </span>`;
 }
 
 // Global catalog cache to prevent redundant parsing
@@ -1051,7 +1009,6 @@ async function renderHome(root) {
       <a class="item-card" href="${itemLink(item.slug)}" loading="lazy">
         <img class="item-icon" src="${iconSvg}" alt="${escapeHtml(item.name || slugToTitle(item.slug))}" onerror="if(!this._tried){this._tried=true;this.src='${iconPng}'}else{this.style.display='none'}" />
         <span class="item-card-title">${escapeHtml(displayName)}</span>
-        ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
       </a>
     `;
       })
@@ -1106,39 +1063,12 @@ async function renderHome(root) {
   let filteredItems = [...sortedItems];
   const cachedFilters = loadFilters();
   let selectedCategories = new Set(cachedFilters.category === 'all' ? [] : Array.isArray(cachedFilters.category) ? cachedFilters.category : [cachedFilters.category]);
-  let favoritesOnly = cachedFilters.favoritesOnly === true;
-  const favoriteSet = new Set(loadFavorites());
-  const filtersHtml = [`<button class="filter-pill ${selectedCategories.size === 0 && !favoritesOnly ? 'active' : ''}" data-index="all">All</button>`, `<button class="filter-pill ${favoritesOnly ? 'active' : ''}" data-index="fav">Favorites</button>`, ...categories.map(c => `<button class="filter-pill ${selectedCategories.has(c.id) ? 'active' : ''}" data-index="${c.id}">${escapeHtml(c.label)}</button>` )].join('');
+  const filtersHtml = [`<button class="filter-pill ${selectedCategories.size === 0 ? 'active' : ''}" data-index="all">All</button>`, ...categories.map(c => `<button class="filter-pill ${selectedCategories.has(c.id) ? 'active' : ''}" data-index="${c.id}">${escapeHtml(c.label)}</button>` )].join('');
 
   const renderFilteredItems = () => {
     list.innerHTML = filteredItems.length
       ? renderItemCards(filteredItems)
       : '<div class="empty-state">No items matched that search.</div>';
-  };
-
-  const computeFiltered = () => {
-    const query = search.value.trim().toLowerCase();
-    return sortedItems.filter((item) => {
-      if (selectedCategories.size > 0) {
-        const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
-        if (!selectedCategories.has(catIdx)) return false;
-      }
-      if (favoritesOnly && !favoriteSet.has(String(item.slug).toLowerCase())) return false;
-      const name = (item.name || slugToTitle(item.slug)).toLowerCase();
-      return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
-    });
-  };
-
-  const syncFilterButtons = () => {
-    Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
-      if (b.dataset.index === 'all') {
-        b.classList.toggle('active', selectedCategories.size === 0 && !favoritesOnly);
-      } else if (b.dataset.index === 'fav') {
-        b.classList.toggle('active', favoritesOnly);
-      } else {
-        b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
-      }
-    });
   };
 
   const logoHtml = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" /></a>`;
@@ -1199,9 +1129,6 @@ async function renderHome(root) {
 
       if (idx === 'all') {
         selectedCategories.clear();
-        favoritesOnly = false;
-      } else if (idx === 'fav') {
-        favoritesOnly = !favoritesOnly;
       } else {
         const catIdx = Number(idx);
         if (selectedCategories.has(catIdx)) {
@@ -1211,55 +1138,69 @@ async function renderHome(root) {
         }
       }
 
-      saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], search.value.trim().toLowerCase(), favoritesOnly);
-      syncFilterButtons();
-      filteredItems = computeFiltered();
+      Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
+        if (b.dataset.index === 'all') {
+          b.classList.toggle('active', selectedCategories.size === 0);
+        } else {
+          b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
+        }
+      });
+
+      const query = search.value.trim().toLowerCase();
+      filteredItems = sortedItems.filter((item) => {
+        if (selectedCategories.size > 0) {
+          const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
+          if (!selectedCategories.has(catIdx)) return false;
+        }
+        const name = (item.name || slugToTitle(item.slug)).toLowerCase();
+        return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
+      });
+
+      saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], query);
       renderFilteredItems();
     });
   }
 
   search.addEventListener('input', () => {
-    filteredItems = computeFiltered();
+    const query = search.value.trim().toLowerCase();
+    filteredItems = sortedItems.filter((item) => {
+      if (selectedCategories.size > 0) {
+        const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
+        if (!selectedCategories.has(catIdx)) return false;
+      }
+      const name = (item.name || slugToTitle(item.slug)).toLowerCase();
+      return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
+    });
 
-    saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], search.value.trim().toLowerCase(), favoritesOnly);
-    renderFilteredItems();
-  });
-
-  list.addEventListener('click', (event) => {
-    const star = event.target.closest('.favorite-star');
-    if (!star || !star.dataset.favSlug) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const slug = String(star.dataset.favSlug).toLowerCase();
-    const isFavorite = toggleFavorite(slug);
-    if (isFavorite) favoriteSet.add(slug);
-    else favoriteSet.delete(slug);
-    filteredItems = computeFiltered();
+    saveFilters(selectedCategories.size === 0 ? 'all' : [...selectedCategories], query);
     renderFilteredItems();
   });
 
   // Apply cached filters to button states and render
-  if (filtersContainer) {
-    syncFilterButtons();
+  if (filtersContainer && selectedCategories.size > 0) {
+    Array.from(filtersContainer.querySelectorAll('button')).forEach((b) => {
+      if (b.dataset.index === 'all') {
+        b.classList.toggle('active', selectedCategories.size === 0);
+      } else {
+        b.classList.toggle('active', selectedCategories.has(Number(b.dataset.index)));
+      }
+    });
   }
 
   // Filter items based on cached state
-  filteredItems = computeFiltered();
+  filteredItems = sortedItems.filter((item) => {
+    if (selectedCategories.size > 0) {
+      const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
+      if (!selectedCategories.has(catIdx)) return false;
+    }
+    const query = search.value.trim().toLowerCase();
+    const name = (item.name || slugToTitle(item.slug)).toLowerCase();
+    return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
+  });
 
   renderFilteredItems();
 
 }
-
-// Delegated favorite-star clicks: toggle in place, never navigate.
-document.addEventListener('click', (event) => {
-  const star = event.target.closest('.favorite-star');
-  if (!star || !star.dataset.favSlug) return;
-  event.preventDefault();
-  event.stopPropagation();
-  const isFavorite = toggleFavorite(star.dataset.favSlug);
-  star.classList.toggle('is-favorite', isFavorite);
-  star.setAttribute('title', isFavorite ? 'Remove from favorites' : 'Add to favorites');
-});
 
 function windowPoints(points, windowKey) {
   if (!points.length) {
@@ -1304,28 +1245,8 @@ async function renderItem(root, slug) {
 
   const levels = itemData?.data || {};
   const levelKeys = itemData?.levels || ['0'];
-  const defaultLevel = levelKeys.includes('0') ? '0' : levelKeys[0];
-  let selectedLevel = defaultLevel;
+  let selectedLevel = levelKeys.includes('0') ? '0' : levelKeys[0];
   let selectedWindow = DEFAULT_WINDOW;
-
-  const syncLevelURL = () => {
-    const params = new URLSearchParams(window.location.search);
-    if (selectedLevel !== defaultLevel) {
-      params.set('level', selectedLevel);
-    } else {
-      params.delete('level');
-    }
-    const qs = params.toString();
-    const url = window.location.pathname + (qs ? `?${qs}` : '');
-    if (window.location.pathname + window.location.search !== url) {
-      history.replaceState(null, '', url);
-    }
-  };
-
-  const requestedLevel = new URLSearchParams(window.location.search).get('level');
-  if (requestedLevel != null && levelKeys.includes(String(requestedLevel))) {
-    selectedLevel = String(requestedLevel);
-  }
 
   const renderLevelButtons = () => levelKeys
     .map((level) => `<button class="pill ${level === selectedLevel ? 'active' : ''}" data-level="${escapeHtml(level)}">+${escapeHtml(level)}</button>`)
@@ -1675,7 +1596,6 @@ async function renderItem(root, slug) {
         <header class="dashboard-header">
           <div class="item-identity">
             ${iconHtml}
-            ${favoriteStarHtml(slug, loadFavorites().includes(String(slug).toLowerCase()), 'item-page-star')}
             <h1>${escapeHtml(itemName)}</h1>
           </div>
           ${enhancementBlock}
@@ -1701,12 +1621,11 @@ async function renderItem(root, slug) {
   `;
 
   updateView();
-  syncLevelURL();
 
   const rootElement = document.getElementById('app');
   rootElement.addEventListener('click', (event) => {
     const level = event.target.getAttribute('data-level');
-    if (level) { selectedLevel = level; syncLevelURL(); updateView(); return; }
+    if (level) { selectedLevel = level; updateView(); return; }
     const windowKey = event.target.getAttribute('data-window');
     if (windowKey) { selectedWindow = windowKey; updateView(); }
   });
@@ -1723,7 +1642,6 @@ async function renderGroup(root) {
   let state = loadGroupState();
   let itemCache = {};
   let groupWindow = '15d';
-  let currentPresetIndex = -1;
 
   function loadGroupState() {
     try {
@@ -1766,7 +1684,6 @@ async function renderGroup(root) {
     const presets = loadPresets();
     presets.push({ name, cells: capturePresetCells(), window: groupWindow });
     savePresets(presets);
-    return presets.length - 1;
   }
 
   function deletePreset(index) {
@@ -1774,9 +1691,6 @@ async function renderGroup(root) {
     if (index >= 0 && index < presets.length) {
       presets.splice(index, 1);
       savePresets(presets);
-      if (index < currentPresetIndex) currentPresetIndex -= 1;
-      else if (index === currentPresetIndex) currentPresetIndex = -1;
-      updateCurrentPresetUI();
     }
   }
 
@@ -1786,26 +1700,10 @@ async function renderGroup(root) {
     const preset = presets[index];
     state.cells = preset.cells.map((c) => ({ slug: c.slug, level: c.level }));
     groupWindow = preset.window || '15d';
-    currentPresetIndex = index;
     saveGroupState();
-    updateCurrentPresetUI();
     const row = root.querySelector('.range-container .button-row');
     if (row) row.innerHTML = renderWindowButtons();
     reRenderGrid();
-  }
-
-  function updateCurrentPresetUI() {
-    const el = root.querySelector('.group-current-preset');
-    if (!el) return;
-    const presets = loadPresets();
-    const preset = currentPresetIndex >= 0 && currentPresetIndex < presets.length ? presets[currentPresetIndex] : null;
-    if (preset) {
-      const nameEl = root.querySelector('.group-current-preset-name');
-      if (nameEl) nameEl.textContent = preset.name;
-      el.classList.remove('is-hidden');
-    } else {
-      el.classList.add('is-hidden');
-    }
   }
 
   function renderPresetsHTML() {
@@ -1815,7 +1713,6 @@ async function renderGroup(root) {
     }
     return presets.map((p, i) =>
       `<div class="group-preset-item" data-preset-index="${i}">
-        <span class="group-preset-handle" draggable="true" title="Drag to reorder"><svg width="16" height="20" viewBox="0 0 16 20" fill="none"><circle cx="5" cy="3" r="1.5" fill="currentColor"/><circle cx="11" cy="3" r="1.5" fill="currentColor"/><circle cx="5" cy="10" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="5" cy="17" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg></span>
         <span class="group-preset-name" data-preset-load="${i}">${escapeHtml(p.name)}</span>
         <button class="group-preset-delete" data-preset-delete="${i}" title="Delete preset">&times;</button>
       </div>`
@@ -1975,18 +1872,10 @@ async function renderGroup(root) {
     <nav class="group-nav">
       <a class="minimal-back-link" href="${SITE_BASE_PATH}">&#8592; Home</a>
       <span class="group-nav-sep"></span>
-      <div class="group-preset-controls">
-        <div class="group-preset-buttons">
-          <button class="pill group-save-btn" data-action="save-preset">+ Save Preset</button>
-          <div class="group-preset-wrap">
-            <button class="pill group-load-btn" data-action="toggle-presets">Load &#9660;</button>
-            <div class="group-preset-dropdown is-hidden"></div>
-          </div>
-        </div>
-        <div class="group-current-preset is-hidden">
-          <span>Current: <strong class="group-current-preset-name"></strong></span>
-          <button class="pill group-overwrite-btn" data-action="overwrite-preset">Overwrite</button>
-        </div>
+      <button class="pill group-save-btn" data-action="save-preset">+ Save Preset</button>
+      <div class="group-preset-wrap">
+        <button class="pill group-load-btn" data-action="toggle-presets">Load &#9660;</button>
+        <div class="group-preset-dropdown is-hidden"></div>
       </div>
     </nav>
     <div class="range-container">
@@ -2016,18 +1905,6 @@ async function renderGroup(root) {
   root.addEventListener('touchmove', handleTouchMove, { passive: false });
   root.addEventListener('touchend', handleTouchEnd);
   root.addEventListener('touchcancel', handleTouchCancel);
-  // Preset drag & drop (desktop + touch)
-  let presetDragIndex = -1;
-  let presetDragPreview = null;
-  root.addEventListener('dragstart', handlePresetDragStart);
-  root.addEventListener('dragover', handlePresetDragOver);
-  root.addEventListener('dragleave', handlePresetDragLeave);
-  root.addEventListener('drop', handlePresetDrop);
-  root.addEventListener('dragend', handlePresetDragEnd);
-  root.addEventListener('touchstart', handlePresetTouchStart, { passive: false });
-  root.addEventListener('touchmove', handlePresetTouchMove, { passive: false });
-  root.addEventListener('touchend', handlePresetTouchEnd);
-  root.addEventListener('touchcancel', handlePresetTouchCancel);
 
   // Close preset dropdown on outside click
   document.addEventListener('click', function closePresetDD(e) {
@@ -2059,12 +1936,8 @@ async function renderGroup(root) {
     const removeBtn = e.target.closest('.group-cell-remove');
     if (removeBtn) {
       const idx = parseInt(removeBtn.getAttribute('data-cell-index'), 10);
-      if (!isNaN(idx) && idx >= 0 && idx < state.cells.length) {
-        if (state.cells.length > 1) {
-          state.cells.splice(idx, 1);
-        } else {
-          state.cells[0] = { slug: null, level: null };
-        }
+      if (!isNaN(idx) && state.cells.length > 1) {
+        state.cells.splice(idx, 1);
         saveGroupState();
         reRenderGrid();
       }
@@ -2097,8 +1970,6 @@ async function renderGroup(root) {
     if (clearAllBtn) {
       state.cells = [{ slug: null, level: null }];
       saveGroupState();
-      currentPresetIndex = -1;
-      updateCurrentPresetUI();
       reRenderGrid();
       return;
     }
@@ -2107,21 +1978,7 @@ async function renderGroup(root) {
     if (saveBtn) {
       const name = prompt('Preset name:');
       if (name && name.trim()) {
-        currentPresetIndex = savePresetWithName(name.trim());
-        updateCurrentPresetUI();
-        const dd = root.querySelector('.group-preset-dropdown');
-        if (dd) dd.innerHTML = renderPresetsHTML();
-      }
-      return;
-    }
-
-    const overwriteBtn = e.target.closest('[data-action="overwrite-preset"]');
-    if (overwriteBtn) {
-      const presets = loadPresets();
-      if (currentPresetIndex >= 0 && currentPresetIndex < presets.length) {
-        presets[currentPresetIndex] = { name: presets[currentPresetIndex].name, cells: capturePresetCells(), window: groupWindow };
-        savePresets(presets);
-        updateCurrentPresetUI();
+        savePresetWithName(name.trim());
         const dd = root.querySelector('.group-preset-dropdown');
         if (dd) dd.innerHTML = renderPresetsHTML();
       }
@@ -2265,7 +2122,6 @@ async function renderGroup(root) {
   }
 
   function handleDragOver(e) {
-    if (presetDragIndex >= 0) return;
     const grid = root.querySelector('.group-grid');
     if (!grid) return;
     // Allow drops inside the card padding (which is inside root)
@@ -2315,7 +2171,7 @@ async function renderGroup(root) {
 
   function handleDrop(e) {
     e.preventDefault();
-    if (dragSourceIdx < 0) { dropCleanup(); return; }
+    if (isNaN(dragSourceIdx)) { dropCleanup(); return; }
     const cell = e.target.closest('.group-cell');
     if (cell) {
       const tgtIdx = parseInt(cell.getAttribute('data-cell-index'), 10);
@@ -2420,153 +2276,6 @@ async function renderGroup(root) {
   }
 
   function handleTouchCancel() { if (dragSourceIdx >= 0) dropCleanup(); }
-
-  // ── Preset drag & drop handlers ──
-
-  function getPresetDropdown() {
-    const dd = root.querySelector('.group-preset-dropdown');
-    return dd && !dd.classList.contains('is-hidden') ? dd : null;
-  }
-
-  function handlePresetDragStart(e) {
-    const handle = e.target.closest('.group-preset-handle');
-    if (!handle) return;
-    const item = handle.closest('.group-preset-item');
-    if (!item) return;
-    presetDragIndex = parseInt(item.getAttribute('data-preset-index'), 10);
-    if (isNaN(presetDragIndex)) { presetDragIndex = -1; return; }
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(presetDragIndex));
-    item.classList.add('dragging');
-    const clone = item.cloneNode(true);
-    clone.style.position = 'absolute';
-    clone.style.top = '-9999px';
-    clone.style.left = '-9999px';
-    clone.style.width = item.offsetWidth + 'px';
-    clone.style.background = 'var(--bg-panel)';
-    clone.style.border = '1px solid var(--accent-cyan)';
-    clone.style.borderRadius = '8px';
-    clone.style.opacity = '0.85';
-    clone.style.pointerEvents = 'none';
-    document.body.appendChild(clone);
-    e.dataTransfer.setDragImage(clone, 20, 12);
-    requestAnimationFrame(() => clone.remove());
-  }
-
-  function handlePresetDragOver(e) {
-    const dd = getPresetDropdown();
-    if (!dd || presetDragIndex < 0 || dragSourceIdx >= 0) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    dd.querySelectorAll('.group-preset-item').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
-    const item = e.target.closest('.group-preset-item');
-    if (item) {
-      const r = item.getBoundingClientRect();
-      const y = (e.clientY - r.top) / r.height;
-      if (y < 0.5) item.classList.add('drop-before');
-      else item.classList.add('drop-after');
-    }
-  }
-
-  function handlePresetDragLeave(e) {
-    const item = e.target.closest('.group-preset-item');
-    if (item) {
-      const rel = e.relatedTarget;
-      if (rel && item.contains(rel)) return;
-      item.classList.remove('drop-before', 'drop-after');
-    }
-  }
-
-  function handlePresetDrop(e) {
-    e.preventDefault();
-    if (presetDragIndex < 0) { presetDropCleanup(); return; }
-    const item = e.target.closest('.group-preset-item');
-    if (item) {
-      const tgtIdx = parseInt(item.getAttribute('data-preset-index'), 10);
-      if (!isNaN(tgtIdx) && tgtIdx !== presetDragIndex) {
-        reorderPreset(presetDragIndex, tgtIdx, item);
-      }
-    }
-    presetDropCleanup();
-  }
-
-  function handlePresetDragEnd() { presetDropCleanup(); }
-
-  function presetDropCleanup() {
-    presetDragIndex = -1;
-    if (presetDragPreview) { presetDragPreview.remove(); presetDragPreview = null; }
-    root.querySelectorAll('.group-preset-item').forEach((el) => el.classList.remove('dragging', 'drop-before', 'drop-after'));
-  }
-
-  function handlePresetTouchStart(e) {
-    const handle = e.target.closest('.group-preset-handle');
-    if (!handle) return;
-    const item = handle.closest('.group-preset-item');
-    if (!item) return;
-    presetDragIndex = parseInt(item.getAttribute('data-preset-index'), 10);
-    if (isNaN(presetDragIndex)) { presetDragIndex = -1; return; }
-    item.classList.add('dragging');
-    presetDragPreview = item.cloneNode(true);
-    presetDragPreview.style.position = 'fixed';
-    presetDragPreview.style.pointerEvents = 'none';
-    presetDragPreview.style.zIndex = '9999';
-    presetDragPreview.style.width = item.offsetWidth + 'px';
-    presetDragPreview.style.left = '-9999px';
-    presetDragPreview.style.top = '-9999px';
-    document.body.appendChild(presetDragPreview);
-  }
-
-  function handlePresetTouchMove(e) {
-    if (presetDragIndex < 0) return;
-    e.preventDefault();
-    const touch = e.touches[0];
-    if (presetDragPreview) {
-      presetDragPreview.style.left = (touch.clientX - presetDragPreview.offsetWidth / 2) + 'px';
-      presetDragPreview.style.top = (touch.clientY - Math.min(presetDragPreview.offsetHeight, 40)) + 'px';
-    }
-    const dd = getPresetDropdown();
-    if (!dd) return;
-    dd.querySelectorAll('.group-preset-item').forEach((el) => el.classList.remove('drop-before', 'drop-after'));
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    const item = target?.closest('.group-preset-item');
-    if (item) {
-      const r = item.getBoundingClientRect();
-      const y = (touch.clientY - r.top) / r.height;
-      if (y < 0.5) item.classList.add('drop-before');
-      else item.classList.add('drop-after');
-    }
-  }
-
-  function handlePresetTouchEnd(e) {
-    if (presetDragIndex < 0) return;
-    const touch = e.changedTouches[0];
-    const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    const item = target?.closest('.group-preset-item');
-    if (item) {
-      const tgtIdx = parseInt(item.getAttribute('data-preset-index'), 10);
-      if (!isNaN(tgtIdx) && tgtIdx !== presetDragIndex) {
-        reorderPreset(presetDragIndex, tgtIdx, item);
-      }
-    }
-    presetDropCleanup();
-  }
-
-  function handlePresetTouchCancel() { if (presetDragIndex >= 0) presetDropCleanup(); }
-
-  function reorderPreset(srcIdx, tgtIdx, tgtItem) {
-    const presets = loadPresets();
-    const currentPreset = currentPresetIndex >= 0 && currentPresetIndex < presets.length ? presets[currentPresetIndex] : null;
-    if (srcIdx < 0 || srcIdx >= presets.length || tgtIdx < 0 || tgtIdx >= presets.length) return;
-    const [moved] = presets.splice(srcIdx, 1);
-    const adj = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
-    let insertIdx = tgtItem.classList.contains('drop-after') ? adj + 1 : adj;
-    presets.splice(insertIdx, 0, moved);
-    savePresets(presets);
-    if (currentPreset) currentPresetIndex = presets.indexOf(currentPreset);
-    const dd = root.querySelector('.group-preset-dropdown');
-    if (dd) dd.innerHTML = renderPresetsHTML();
-    updateCurrentPresetUI();
-  }
 
   function performReorder(srcIdx, tgtIdx, clientY, tgtCell) {
     // Use the CSS class set during dragover, not a recalculation,
