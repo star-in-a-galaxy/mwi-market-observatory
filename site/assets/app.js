@@ -1304,8 +1304,28 @@ async function renderItem(root, slug) {
 
   const levels = itemData?.data || {};
   const levelKeys = itemData?.levels || ['0'];
-  let selectedLevel = levelKeys.includes('0') ? '0' : levelKeys[0];
+  const defaultLevel = levelKeys.includes('0') ? '0' : levelKeys[0];
+  let selectedLevel = defaultLevel;
   let selectedWindow = DEFAULT_WINDOW;
+
+  const syncLevelURL = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (selectedLevel !== defaultLevel) {
+      params.set('level', selectedLevel);
+    } else {
+      params.delete('level');
+    }
+    const qs = params.toString();
+    const url = window.location.pathname + (qs ? `?${qs}` : '');
+    if (window.location.pathname + window.location.search !== url) {
+      history.replaceState(null, '', url);
+    }
+  };
+
+  const requestedLevel = new URLSearchParams(window.location.search).get('level');
+  if (requestedLevel != null && levelKeys.includes(String(requestedLevel))) {
+    selectedLevel = String(requestedLevel);
+  }
 
   const renderLevelButtons = () => levelKeys
     .map((level) => `<button class="pill ${level === selectedLevel ? 'active' : ''}" data-level="${escapeHtml(level)}">+${escapeHtml(level)}</button>`)
@@ -1681,11 +1701,12 @@ async function renderItem(root, slug) {
   `;
 
   updateView();
+  syncLevelURL();
 
   const rootElement = document.getElementById('app');
   rootElement.addEventListener('click', (event) => {
     const level = event.target.getAttribute('data-level');
-    if (level) { selectedLevel = level; updateView(); return; }
+    if (level) { selectedLevel = level; syncLevelURL(); updateView(); return; }
     const windowKey = event.target.getAttribute('data-window');
     if (windowKey) { selectedWindow = windowKey; updateView(); }
   });
