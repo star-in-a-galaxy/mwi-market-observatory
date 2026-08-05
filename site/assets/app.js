@@ -257,6 +257,14 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function setHTML(el, html) {
+  if (el && window.DOMPurify) {
+    el.innerHTML = DOMPurify.sanitize(html);
+  } else if (el) {
+    el.innerHTML = html;
+  }
+}
+
 function slugToTitle(slug) {
   return slug
     .split('_')
@@ -361,7 +369,11 @@ function getRoute() {
   const cleaned = path.replace(/\/+$/, '');
 
   if (cleaned.startsWith('items/')) {
-    return { type: 'item', slug: decodeURIComponent(cleaned.slice('items/'.length)) };
+    const slug = decodeURIComponent(cleaned.slice('items/'.length));
+    if (!/^[a-z0-9_]+$/.test(slug)) {
+      return { type: 'home' };
+    }
+    return { type: 'item', slug };
   }
   if (cleaned === 'arbitrage') {
     return { type: 'arbitrage' };
@@ -879,7 +891,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
 }
 
 function renderShell(root, title, content, subtitle = '', iconHtml = '', logoHtml = '') {
-  root.innerHTML = `
+  setHTML(root, `
     <header class="hero">
       <p class="kicker">Milky Way Idle</p>
       <div class="hero-title">
@@ -892,7 +904,7 @@ function renderShell(root, title, content, subtitle = '', iconHtml = '', logoHtm
       ${logoHtml ? `<div class="hero-logo">${logoHtml}</div>` : ''}
     </header>
     ${content}
-  `;
+  `);
 }
 
 function itemLink(slug) {
@@ -1049,7 +1061,7 @@ async function renderHome(root) {
           const displayName = (item.name || slugToTitle(item.slug)).replace(/\s+Refined$/, ' (R)');
         return `
       <a class="item-card" href="${itemLink(item.slug)}" loading="lazy">
-        <img class="item-icon" src="${iconSvg}" alt="${escapeHtml(item.name || slugToTitle(item.slug))}" onerror="if(!this._tried){this._tried=true;this.src='${iconPng}'}else{this.style.display='none'}" />
+        <img class="item-icon" src="${iconSvg}" alt="${escapeHtml(item.name || slugToTitle(item.slug))}" data-fallback-src="${iconPng}" />
         <span class="item-card-title">${escapeHtml(displayName)}</span>
         ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
       </a>
@@ -1111,9 +1123,9 @@ async function renderHome(root) {
   const filtersHtml = [`<button class="filter-pill ${selectedCategories.size === 0 && !favoritesOnly ? 'active' : ''}" data-index="all">All</button>`, `<button class="filter-pill ${favoritesOnly ? 'active' : ''}" data-index="fav">Favorites</button>`, ...categories.map(c => `<button class="filter-pill ${selectedCategories.has(c.id) ? 'active' : ''}" data-index="${c.id}">${escapeHtml(c.label)}</button>` )].join('');
 
   const renderFilteredItems = () => {
-    list.innerHTML = filteredItems.length
+    setHTML(list, filteredItems.length
       ? renderItemCards(filteredItems)
-      : '<div class="empty-state">No items matched that search.</div>';
+      : '<div class="empty-state">No items matched that search.</div>');
   };
 
   const computeFiltered = () => {
@@ -1141,7 +1153,7 @@ async function renderHome(root) {
     });
   };
 
-  const logoHtml = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" /></a>`;
+  const logoHtml = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" /></a>`;
 
   renderShell(
     root,
@@ -1510,7 +1522,7 @@ async function renderItem(root, slug) {
     
     const windowConfig = WINDOW_CONFIG[selectedWindow];
     const chartData = buildChart(points, 960, 400, globalRange.min, globalRange.max, windowConfig, points);
-    chart.innerHTML = chartData.html;
+    setHTML(chart, chartData.html);
     
     const cachedPosData = chartData.pointPositions || [];
     const cachedDataPoints = chartData.pointData || [];
@@ -1556,7 +1568,7 @@ async function renderItem(root, slug) {
 
         chartHover.style.left = `${hoverLeft}px`;
         chartHover.style.top = `20px`;
-        chartHover.innerHTML = `
+        setHTML(chartHover, `
           <div class="chart-hover-date">${escapeHtml(point.label)}</div>
           <div class="chart-hover-row"><span>Ask: </span><strong>${formatCurrency(point.a)}</strong></div>
           <div class="chart-hover-row"><span>Bid: </span><strong>${formatCurrency(point.b)}</strong></div>
@@ -1564,7 +1576,7 @@ async function renderItem(root, slug) {
           <div class="chart-hover-row"><span>Spread %: </span><strong>${formatPercent(point.spPct)}</strong></div>
           <div class="chart-hover-row"><span>Volume: </span><strong>${formatNumber(point.v)}</strong></div>
           <div class="chart-hover-row"><span>VWAP: </span><strong>${formatCurrency(point.p)}</strong></div>
-        `;
+        `);
       };
 
       chartWrap.onmouseleave = hideHover;
@@ -1586,21 +1598,21 @@ async function renderItem(root, slug) {
 
     if (stats) {
       const vwap = currentLevel.vwap || { p1d: null, p7d: null };
-      stats.innerHTML = latest ? `
+      setHTML(stats, latest ? `
         <div><span class="stat-label">Ask</span><strong>${formatNumber(latest.a)}</strong></div>
         <div><span class="stat-label">Bid</span><strong>${formatNumber(latest.b)}</strong></div>
         <div><span class="stat-label">1d VWAP</span><strong>${formatNumber(vwap.p1d)}</strong></div>
         <div><span class="stat-label">7d VWAP</span><strong>${formatNumber(vwap.p7d)}</strong></div>
         <div><span class="stat-label">Volume (24h)</span><strong>${formatNumber(hourlyVolume24h)}</strong></div>
         <div><span class="stat-label">Volume (7d avg)</span><strong>${formatNumber(dailyVolume7dAvg)}</strong></div>
-      ` : '<div class="empty-state">No data available.</div>';
+      ` : '<div class="empty-state">No data available.</div>');
     }
 
     const levelButtons = document.getElementById('level-buttons');
-    if (levelButtons) levelButtons.innerHTML = renderLevelButtons();
+    if (levelButtons) setHTML(levelButtons, renderLevelButtons());
 
     const windowButtons = document.getElementById('window-buttons');
-    if (windowButtons) windowButtons.innerHTML = renderWindowButtons();
+    if (windowButtons) setHTML(windowButtons, renderWindowButtons());
 
     const pointMeta = document.getElementById('point-meta');
     if (pointMeta) {
@@ -1657,10 +1669,10 @@ async function renderItem(root, slug) {
 
   const iconUrlSvg = resolveIconAssetPath(catalog.iconFiles, slug, 'svg');
   const iconUrlPng = resolveIconAssetPath(catalog.iconFiles, slug, 'png');
-  const iconHtml = `<img class="dashboard-icon" src="${iconUrlSvg}" alt="${itemName}" onerror="if(!this._tried){this._tried=true;this.src='${iconUrlPng}'}else{this.style.display='none'}" />`;
-  const logoHtmlItem = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" onerror="this.style.display='none'" /></a>`;
+  const iconHtml = `<img class="dashboard-icon" src="${iconUrlSvg}" alt="${itemName}" data-fallback-src="${iconUrlPng}" />`;
+  const logoHtmlItem = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" /></a>`;
 
-  root.innerHTML = `
+  setHTML(root, `
     <div class="dashboard-layout">
       <nav class="group-nav outside-back">
         <a class="minimal-back-link" href="${SITE_BASE_PATH}">
@@ -1698,7 +1710,7 @@ async function renderItem(root, slug) {
         <div id="item-stats" class="stats-grid"></div>
       </section>
     </div>
-  `;
+  `);
 
   updateView();
   syncLevelURL();
@@ -1790,7 +1802,7 @@ async function renderGroup(root) {
     saveGroupState();
     updateCurrentPresetUI();
     const row = root.querySelector('.range-container .button-row');
-    if (row) row.innerHTML = renderWindowButtons();
+    if (row) setHTML(row, renderWindowButtons());
     reRenderGrid();
   }
 
@@ -1921,7 +1933,7 @@ async function renderGroup(root) {
       <div class="group-cell-header">
         <span class="cell-drag-handle" draggable="true" data-cell-index="${index}" title="Drag to reorder">${dragIcon}</span>
         <button class="group-cell-remove" data-cell-index="${index}" title="Remove">&times;</button>
-        <img class="group-cell-icon" src="${svg}" alt="${escapeHtml(name)}" onerror="if(!this._tried){this._tried=true;this.src='${png}'}else{this.style.display='none'}" />
+        <img class="group-cell-icon" src="${svg}" alt="${escapeHtml(name)}" data-fallback-src="${png}" />
         <span class="group-cell-name" data-cell-index="${index}" data-slug="${escapeHtml(cell.slug)}">${escapeHtml(name)}</span>
       </div>
     `;
@@ -1959,7 +1971,7 @@ async function renderGroup(root) {
 
   // ── Initial render ──
   root.className = 'shell shell-wide';
-  root.innerHTML = `
+  setHTML(root, `
     <header class="hero">
       <p class="kicker">Milky Way Idle</p>
       <div class="hero-title">
@@ -1969,7 +1981,7 @@ async function renderGroup(root) {
         </div>
       </div>
       <div class="hero-logo">
-        <a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" /></a>
+        <a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" /></a>
       </div>
     </header>
     <nav class="group-nav">
@@ -1996,7 +2008,7 @@ async function renderGroup(root) {
     <section class="card group-view-card">
       ${renderGridHTML()}
     </section>
-  `;
+  `);
 
   // ── Event delegation ──
   root.addEventListener('click', handleClick);
@@ -2051,7 +2063,7 @@ async function renderGroup(root) {
       groupWindow = btnWindow.getAttribute('data-window');
       saveGroupState();
       const row = root.querySelector('.range-container .button-row');
-      if (row) row.innerHTML = renderWindowButtons();
+      if (row) setHTML(row, renderWindowButtons());
       reRenderAllCharts();
       return;
     }
@@ -2110,7 +2122,7 @@ async function renderGroup(root) {
         currentPresetIndex = savePresetWithName(name.trim());
         updateCurrentPresetUI();
         const dd = root.querySelector('.group-preset-dropdown');
-        if (dd) dd.innerHTML = renderPresetsHTML();
+        if (dd) setHTML(dd, renderPresetsHTML());
       }
       return;
     }
@@ -2123,7 +2135,7 @@ async function renderGroup(root) {
         savePresets(presets);
         updateCurrentPresetUI();
         const dd = root.querySelector('.group-preset-dropdown');
-        if (dd) dd.innerHTML = renderPresetsHTML();
+        if (dd) setHTML(dd, renderPresetsHTML());
       }
       return;
     }
@@ -2132,7 +2144,7 @@ async function renderGroup(root) {
     if (toggleBtn) {
       const dd = root.querySelector('.group-preset-dropdown');
       if (dd) {
-        dd.innerHTML = renderPresetsHTML();
+        setHTML(dd, renderPresetsHTML());
         dd.classList.toggle('is-hidden');
       }
       return;
@@ -2155,7 +2167,7 @@ async function renderGroup(root) {
       if (!isNaN(idx)) {
         deletePreset(idx);
         const dd = root.querySelector('.group-preset-dropdown');
-        if (dd) dd.innerHTML = renderPresetsHTML();
+        if (dd) setHTML(dd, renderPresetsHTML());
       }
       return;
     }
@@ -2196,7 +2208,7 @@ async function renderGroup(root) {
     if (!dropdown) return;
     if (!query) {
       dropdown.classList.add('is-hidden');
-      dropdown.innerHTML = '';
+      setHTML(dropdown, '');
       return;
     }
     const matches = (catalog.items || []).filter((item) => {
@@ -2205,18 +2217,18 @@ async function renderGroup(root) {
     }).slice(0, 30);
     if (!matches.length) {
       dropdown.classList.add('is-hidden');
-      dropdown.innerHTML = '';
+      setHTML(dropdown, '');
       return;
     }
-    dropdown.innerHTML = matches.map((item) => {
+    setHTML(dropdown, matches.map((item) => {
       const itemName = item.name || slugToTitle(item.slug);
       const iconSvg = resolveIconAssetPath(catalog.iconFiles, item.slug, 'svg');
       const iconPng = resolveIconAssetPath(catalog.iconFiles, item.slug, 'png');
       return `<button class="group-search-result" data-cell-index="${idx}" data-slug="${escapeHtml(item.slug)}">
-        <img class="group-search-icon" src="${iconSvg}" alt="" onerror="if(!this._tried){this._tried=true;this.src='${iconPng}'}else{this.style.display='none'}" />
+        <img class="group-search-icon" src="${iconSvg}" alt="" data-fallback-src="${iconPng}" />
         <span>${escapeHtml(itemName)}</span>
       </button>`;
-    }).join('');
+    }).join(''));
     dropdown.classList.remove('is-hidden');
     const inputRect = input.getBoundingClientRect();
     const emptyRect = dropdown.closest('.group-cell-empty').getBoundingClientRect();
@@ -2564,7 +2576,7 @@ async function renderGroup(root) {
     savePresets(presets);
     if (currentPreset) currentPresetIndex = presets.indexOf(currentPreset);
     const dd = root.querySelector('.group-preset-dropdown');
-    if (dd) dd.innerHTML = renderPresetsHTML();
+    if (dd) setHTML(dd, renderPresetsHTML());
     updateCurrentPresetUI();
   }
 
@@ -2827,7 +2839,7 @@ async function renderGroup(root) {
       const points = aggregateDisplaySeries(windowed, groupWindow);
 
       if (!points || points.length === 0) {
-        chartWrap.innerHTML = '<div class="empty-state">No data for this window.</div>';
+        setHTML(chartWrap, '<div class="empty-state">No data for this window.</div>');
         return;
       }
 
@@ -2840,13 +2852,13 @@ async function renderGroup(root) {
         cellEl.appendChild(lvlsEl);
       }
       if (lvlsEl) {
-        lvlsEl.innerHTML = levelKeys.map((lv) =>
+        setHTML(lvlsEl, levelKeys.map((lv) =>
           `<button class="pill ${lv === cell.level ? 'active' : ''}" data-level="${escapeHtml(lv)}" data-cell-index="${idx}">+${escapeHtml(lv)}</button>`
-        ).join('');
+        ).join(''));
       }
 
       const chartData = buildChart(points, 960, 400, null, null, WINDOW_CONFIG[groupWindow], points);
-      chartWrap.innerHTML = chartData.html;
+      setHTML(chartWrap, chartData.html);
 
       const guideEl = document.createElement('div');
       guideEl.className = 'chart-guide group-cell-guide is-hidden';
@@ -2857,7 +2869,7 @@ async function renderGroup(root) {
 
       setupCellHover(chartWrap, chartData, points);
     } catch (err) {
-      chartWrap.innerHTML = `<div class="empty-state">Error: ${escapeHtml(err.message)}</div>`;
+      setHTML(chartWrap, `<div class="empty-state">Error: ${escapeHtml(err.message)}</div>`);
     }
   }
 
@@ -2892,7 +2904,7 @@ async function renderGroup(root) {
       const hl = sr < bw + bg + bm ? Math.max(bm, x - bw - bg) : Math.min(x + bg, bounds.width - bw - bm);
       hover.style.left = `${hl}px`;
       hover.style.top = '16px';
-      hover.innerHTML = `
+      setHTML(hover, `
         <div class="chart-hover-date">${escapeHtml(pt.label)}</div>
         <div class="chart-hover-row"><span>Ask: </span><strong>${formatCurrency(pt.a)}</strong></div>
         <div class="chart-hover-row"><span>Bid: </span><strong>${formatCurrency(pt.b)}</strong></div>
@@ -2900,7 +2912,7 @@ async function renderGroup(root) {
         <div class="chart-hover-row"><span>Spread %: </span><strong>${formatPercent(pt.spPct)}</strong></div>
         <div class="chart-hover-row"><span>Volume: </span><strong>${formatNumber(pt.v)}</strong></div>
         <div class="chart-hover-row"><span>VWAP: </span><strong>${formatCurrency(pt.p)}</strong></div>
-      `;
+      `);
     }
 
     chartWrap.onmouseleave = hide;
@@ -2913,6 +2925,18 @@ async function main() {
   if (!root) {
     return;
   }
+
+  document.addEventListener('error', (event) => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement)) return;
+    const fallback = img.getAttribute('data-fallback-src');
+    if (fallback && !img.getAttribute('data-tried')) {
+      img.setAttribute('data-tried', '1');
+      img.src = fallback;
+    } else {
+      img.style.display = 'none';
+    }
+  }, true);
 
   const route = getRoute();
   try {
@@ -3180,7 +3204,7 @@ async function renderArbitrage(root) {
   function renderArbPage() {
     applyFilters();
 
-    const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" onerror="this.style.display='none'" />`;
+    const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" />`;
 
     renderShell(
       root,
@@ -3213,18 +3237,18 @@ async function renderArbitrage(root) {
     const wrap = document.querySelector('.arb-table-wrap');
     if (!filteredItems.length) {
       if (wrap) {
-        wrap.innerHTML = '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>';
+        setHTML(wrap, '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>');
       }
     } else {
       const hadEmptyState = wrap && !wrap.querySelector('.arb-table');
       if (hadEmptyState || !wrap) {
         if (wrap) {
-          wrap.innerHTML = renderArbTable();
+          setHTML(wrap, renderArbTable());
         }
       } else {
         const tbody = wrap.querySelector('.arb-table tbody');
         if (tbody) {
-          tbody.innerHTML = renderArbTableRows();
+          setHTML(tbody, renderArbTableRows());
         }
       }
     }
@@ -3253,7 +3277,7 @@ async function renderArbitrage(root) {
       const bidZClass = temporal && temporal.bidZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ > 0.5 ? ' arb-z-bear' : '');
 
       const cols = [
-        `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" onerror="if(!this._t){this._t=1;this.src='${iconUrls.pngUrl}'}else{this.style.display='none'}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
+        `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" data-fallback-src="${iconUrls.pngUrl}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
         `<td class="arb-num">+${item.level}</td>`,
         `<td class="arb-num">${formatArbCoin(item.spread)}</td>`,
         `<td class="arb-num arb-profit">${item.roi.p25.toFixed(1)}%</td>`,
@@ -3281,7 +3305,7 @@ async function renderArbitrage(root) {
       itemData = normalizePublicItemData(await fetchJson(assetPath(`data/public/items/${encodeURIComponent(item.slug)}.json`)));
     } catch {
       const chartEl = document.getElementById('arb-detail-chart');
-      if (chartEl) chartEl.innerHTML = '<div class="empty-state">Could not load item data.</div>';
+      if (chartEl) setHTML(chartEl, '<div class="empty-state">Could not load item data.</div>');
       return;
     }
 
@@ -3291,7 +3315,7 @@ async function renderArbitrage(root) {
     const yValues = points.flatMap(p => [p.ask, p.bid]).filter(v => typeof v === 'number' && v > 0);
     if (!yValues.length) {
       const chartEl = document.getElementById('arb-detail-chart');
-      if (chartEl) chartEl.innerHTML = '<div class="empty-state">No chart data available.</div>';
+      if (chartEl) setHTML(chartEl, '<div class="empty-state">No chart data available.</div>');
       return;
     }
 
@@ -3303,7 +3327,7 @@ async function renderArbitrage(root) {
 
     const chartEl = document.getElementById('arb-detail-chart');
     if (chartEl) {
-      chartEl.innerHTML = chart.html;
+      setHTML(chartEl, chart.html);
     }
   }
 
