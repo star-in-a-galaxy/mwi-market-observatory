@@ -22,8 +22,6 @@ jobs:
           git checkout FETCH_HEAD -- scripts site package.json
           git reset
       - run: node scripts/fetch.js
-      - run: node scripts/analyze.js
-      - run: node scripts/compute-arbitrage.js
       - name: Commit if changed
         run: |
           git config user.name "github-actions[bot]"

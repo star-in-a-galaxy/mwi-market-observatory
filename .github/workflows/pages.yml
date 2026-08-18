@@ -33,7 +33,9 @@ jobs:
           git reset
 
       - name: Build public analysis files
-        run: node scripts/analyze.js
+        run: |
+          node scripts/analyze.js
+          node scripts/compute-arbitrage.js
 
       - name: Prepare site artifact
         run: |
