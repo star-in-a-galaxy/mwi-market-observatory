@@ -23,17 +23,21 @@ jobs:
           git reset
       - run: node scripts/fetch.js
       - name: Commit if changed
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --cached --quiet || (
-            git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z" &&
-            git pull --rebase origin data || true &&
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z"
+            git pull --rebase origin data || true
             git push origin data
-          )
+          fi
       - name: Trigger pages deploy
-        if: success()
+        if: steps.commit.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
