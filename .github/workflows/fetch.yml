@@ -29,7 +29,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git diff --cached --quiet || (git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z" && git push origin data)
+          git diff --cached --quiet || (
+            git commit -m "data: $(date -u +%Y-%m-%dT%H:%M)Z" &&
+            git pull --rebase origin data || true &&
+            git push origin data
+          )
       - name: Trigger pages deploy
         if: success()
         env:

@@ -23,10 +23,13 @@ jobs:
           git reset
       - run: node scripts/aggregate.js
       - run: node scripts/prune.js
-      - name: Squash data branch to snapshot and push
+      - name: Aggregate, squash data branch, and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin data || true
+          node scripts/aggregate.js
+          node scripts/prune.js
           node scripts/squash-data.js
           git push --force origin data
       - name: Trigger pages deploy
