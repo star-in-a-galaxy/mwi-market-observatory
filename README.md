@@ -1,16 +1,25 @@
 # MWI Market Observatory
 
-Automated market data collectio for [Milky Way Idle](https://www.milkywayidle.com/) marketplace.
+Automated market data collection for [Milky Way Idle](https://www.milkywayidle.com/) marketplace.
 
 ## Overview
 
 This repository automatically:
 - **Fetches** market price data every ~30 minutes through cron-job.org-triggered GitHub Actions
-- **Stores** hourly snapshots for 7 days (kept for comparison)
-- **Aggregates** hourly data into daily OHLCV (Open, High, Low, Close, Volume) files
-- **Builds** public site data and icon manifests into `data/public/`
-- **Deploys** the static site to GitHub Pages from `main`
-- **Prunes** old hourly data to keep the repository clean
+- **Stores** hourly snapshots for 16 days (kept for comparison)
+- **Aggregates** hourly data into daily OHLCV (Open, High, Low, Close, Volume) files, kept forever
+- **Builds** public site data and icon manifests at build time
+- **Deploys** the static site to GitHub Pages
+- **Squashes** the data branch history so the repository stays small
+
+The repository is split across **two branches** to keep history lean:
+
+- **`main`** holds the code only: `site/`, `scripts/`, workflows, config. Clean, small, meaningful history.
+- **`data`** holds the data only: `data/hourly/` (16-day window) and `data/daily/` (kept forever). Squashed to a single snapshot on every aggregate.
+
+## Site
+
+The website is available at [https://star-in-a-galaxy.github.io/mwi-market-observatory/](https://star-in-a-galaxy.github.io/mwi-market-observatory/)
 
 ## Data Source
 
@@ -22,71 +31,72 @@ https://www.milkywayidle.com/game_data/marketplace.json
 ## Repository Structure
 
 ```
-mwi-market-observatory/
-├── .github/
-│   └── workflows/
-│       ├── aggregate.yml      # Daily aggregate/prune/analyze commit flow
-│       ├── fetch.yml          # Fetches marketplace snapshots
-│       └── pages.yml          # Builds and deploys site from main
-├── data/
-│   ├── daily/                 # YYYY-MM-DD.json (kept forever)
-│   ├── hourly/                # YYYY-MM-DD/HH-MM.json (kept for 7 days)
-│   └── public/                # Generated site data consumed by the frontend
+main (code)
+├── .github/workflows/
+│   ├── aggregate.yml          # Daily aggregate + prune + squash
+│   ├── fetch.yml              # Fetches marketplace snapshots
+│   └── pages.yml              # Builds and deploys site
 ├── scripts/
 │   ├── aggregate.js           # Combine hourly files into daily OHLCV
 │   ├── analyze.js             # Build public data bundles and icon manifests
+│   ├── compute-arbitrage.js   # Compute flip/arbitrage opportunities
 │   ├── fetch.js               # Fetch API, dedupe, write hourly file
-│   ├── prune.js               # Delete hourly files older than 7 days
-│   └── serve.js               # Local static server
-├── site/
-│   ├── 404.html
-│   ├── index.html
-│   └── assets/
-│       ├── app.js
-│       ├── item_categories/
-│       ├── item_icons/
-│       └── styles.css
-├── package.json
-└── README.md
+│   ├── prune.js               # Delete hourly files older than 16 days
+│   ├── serve.js               # Local static server
+│   └── squash-data.js         # Collapse the data branch to one snapshot
+└── site/                      # The page source (index.html, assets/, ...)
+
+data (data branch)
+└── data/
+    ├── daily/                 # YYYY-MM-DD.json (kept forever)
+    └── hourly/                # YYYY-MM-DD.json + YYYY-MM-DD/HH-MM.json (16 days)
 ```
+
+`data/public/` is **derived** and not stored in the repo; it is regenerated at build time.
 
 ## Workflows
 
 ### fetch.yml (Every 30 Minutes)
 
-Triggered externally every 30 minutes by cron-job.org.
+Checks out the `data` branch, overlays the code from `main`, and runs `fetch.js`.
 
 **Steps:**
 1. Fetch marketplace data from the API
 2. Deduplicate by API timestamp (skip if data hasn't changed)
-3. Write hourly snapshot to `data/hourly/YYYY-MM-DD/HH-MM.json`
-4. Commit and push if data changed
+3. Write hourly snapshot to `data/hourly/`
+4. Commit and push to the `data` branch if data changed
+5. Trigger a pages deploy **only if** new data was committed
 
 ### aggregate.yml (Daily)
 
-Triggered externally once per day by cron-job.org.
+Checks out the `data` branch, overlays the code from `main`.
 
 **Steps:**
 1. Read all hourly files from yesterday
 2. Compute OHLCV for each item and enhancement level
 3. Write daily summary to `data/daily/YYYY-MM-DD.json`
-4. Prune hourly directories older than 7 days
-5. Commit and push
+4. Prune hourly data older than 16 days
+5. Collapse the `data` branch to a single snapshot commit (`squash-data.js`)
+6. Force-push the `data` branch
 
-### pages.yml (Main branch Pages pipeline)
+### pages.yml (Build And Deploy Pages)
 
-Pushes to `main` build and deploy to GitHub Pages.
-Pull requests targeting `main` run build validation only.
+Combines `main` (code) and `data` (data) at build time.
 
-The site source is in `site/`. The UI is item-first: the home page is a searchable item browser and item pages live at `/items/<item_slug>`.
-During workflow execution, `data/hourly/`, `data/daily/`, and `data/public/` are copied into the deploy artifact, and `scripts/analyze.js` turns the hourly snapshots into the hourly series used by the charts.
+**Steps:**
+1. Check out `main`
+2. Overlay `data/` from the `data` branch
+3. Run `analyze.js` and `compute-arbitrage.js` to generate `data/public/`
+4. Assemble `_site/` from `site/` + `data/public/` + `data/daily/`
+5. Deploy to GitHub Pages
 
+The UI is item-first: the home page is a searchable item browser and item pages live at `/items/<item_slug>`.
 
 ## Data Format
 
 ### Hourly File Structure
 
-`data/hourly/YYYY-MM-DD/HH-MM.json`:
+`data/hourly/YYYY-MM-DD.json` (consolidated) and `data/hourly/YYYY-MM-DD/HH-MM.json` (individual):
 ```json
 {
   "timestamp": 1234567890,
@@ -135,24 +145,28 @@ During workflow execution, `data/hourly/`, `data/daily/`, and `data/public/` are
 - `lb` = low bid
 - `ca` = close ask
 - `cb` = close bid
-- `v` = volume (last snapshot value)
+- `v` = volume
 
 ## Local Testing
 
-The item chart always uses hourly data. The selected range controls the total span shown, with options for 1 Day, 7 Days, 15 Days, 30 Days, 60 Days, 90 Days, and 120 Days.
+The data lives on the `data` branch, so to test locally you need both branches. From a fresh clone:
 
-Generate data for the site:
 ```bash
-npm run aggregate
-npm run analyze
+# checkout the code
+git checkout main
+# overlay the data branch
+git fetch origin data
+git checkout FETCH_HEAD -- data
 ```
 
-Serve the site locally:
+Then generate the public data and serve:
+
 ```bash
+npm run analyze
 npm run serve
 ```
 
-Then open:
+Open:
 - `http://localhost:4173/` for the item browser
 - `http://localhost:4173/items/cursed_bow` for an item detail page
 
