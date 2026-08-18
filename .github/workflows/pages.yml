@@ -3,15 +3,6 @@ name: Build And Deploy Pages
 on:
   repository_dispatch:
     types: [deploy-pages]
-  pull_request:
-    branches:
-      - main
-    paths:
-      - site/**
-      - data/hourly/**
-      - data/public/**
-      - data/daily/**
-      - .github/workflows/pages.yml
   workflow_dispatch: {}
 
 permissions:
@@ -25,13 +16,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout main (code)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Overlay data from data branch
+        run: |
+          git fetch origin data
+          git checkout FETCH_HEAD -- data
+          git reset
 
       - name: Build public analysis files
         run: node scripts/analyze.js
@@ -60,10 +59,8 @@ jobs:
 
   deploy:
     if: >
-      github.event_name != 'pull_request' && (
-        github.event_name == 'workflow_dispatch' ||
-        github.event_name == 'repository_dispatch'
-      )
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'repository_dispatch'
     needs: build
     runs-on: ubuntu-latest
     permissions:

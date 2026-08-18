@@ -11,17 +11,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: data             # data branch holds data/
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Overlay code from main
+        run: |
+          git fetch origin main
+          git checkout FETCH_HEAD -- scripts package.json
+          git reset
       - run: node scripts/aggregate.js
       - run: node scripts/prune.js
-      - name: Commit
+      - name: Squash data branch to snapshot and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/
-          git diff --cached --quiet || git commit -m "aggregate: $(date -u +%Y-%m-%d)"
-          git pull --rebase --autostash origin main || true
-          git push
+          node scripts/squash-data.js
+          git push --force origin data
+      - name: Trigger pages deploy
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api /repos/${{ github.repository }}/dispatches \
+            --method POST \
+            --field event_type=deploy-pages
