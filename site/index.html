@@ -8,7 +8,7 @@
       (function () {
         var segments = window.location.pathname.split('/').filter(Boolean);
         var first = segments[0] || '';
-        var base = (first === 'items' || first === 'arbitrage' || first === 'group') ? '/' : (first ? '/' + first + '/' : '/');
+        var base = (first === 'items' || first === 'trends' || first === 'group') ? '/' : (first ? '/' + first + '/' : '/');
         window.__SITE_BASE__ = base;
         document.write('<base href="' + base + '">');
       })();

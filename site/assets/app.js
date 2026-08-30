@@ -4,7 +4,7 @@ function getSiteBasePath() {
   }
 
   const segments = window.location.pathname.split('/').filter(Boolean);
-  if (segments.length === 0 || segments[0] === 'items' || segments[0] === 'arbitrage') {
+  if (segments.length === 0 || segments[0] === 'items' || segments[0] === 'trends') {
     return '/';
   }
 
@@ -34,6 +34,26 @@ function loadFilters() {
   } catch (e) {
     console.warn('Failed to load filter cache:', e);
     return { category: 'all', searchQuery: '', favoritesOnly: false };
+  }
+}
+
+const TRENDS_FILTER_KEY = 'mwi_trends_filters';
+
+function saveTrendsFilters(windowKey, categories, showEnhanced, favoritesOnly) {
+  try {
+    localStorage.setItem(TRENDS_FILTER_KEY, JSON.stringify({ window: windowKey, categories, showEnhanced, favoritesOnly }));
+  } catch (e) {
+    console.warn('Failed to save trends filter cache:', e);
+  }
+}
+
+function loadTrendsFilters() {
+  try {
+    const cached = localStorage.getItem(TRENDS_FILTER_KEY);
+    return cached ? JSON.parse(cached) : { window: '24h', categories: [], showEnhanced: true, favoritesOnly: false };
+  } catch (e) {
+    console.warn('Failed to load trends filter cache:', e);
+    return { window: '24h', categories: [], showEnhanced: true, favoritesOnly: false };
   }
 }
 
@@ -291,35 +311,6 @@ function formatCompactNumber(value) {
   return value.toLocaleString('en-US');
 }
 
-function parseRoiInput(str) {
-  if (str == null || str === '') return 0;
-  const s = String(str).trim().replace(/,/g, '.');
-  const num = parseFloat(s);
-  return Number.isFinite(num) && num >= 0 ? num : 0;
-}
-
-function parseVolumeInput(str) {
-  if (str == null || str === '') return 0;
-  let s = String(str).trim().replace(/,/g, '');
-  if (!s) return 0;
-  const suffix = s.slice(-1).toUpperCase();
-  let mult = 1;
-  if (suffix === 'K') { mult = 1e3; s = s.slice(0, -1).trim(); }
-  else if (suffix === 'M') { mult = 1e6; s = s.slice(0, -1).trim(); }
-  else if (suffix === 'B') { mult = 1e9; s = s.slice(0, -1).trim(); }
-  const num = parseFloat(s);
-  return Number.isFinite(num) && num > 0 ? Math.round(num * mult) : 0;
-}
-
-function formatAbbrVolume(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return '0';
-  if (value === 0) return '0';
-  if (value >= 1e9) return (value / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
-  if (value >= 1e6) return (value / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (value >= 1e3) return (value / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
-  return String(value);
-}
-
 function formatPercent(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '-';
@@ -375,8 +366,8 @@ function getRoute() {
     }
     return { type: 'item', slug };
   }
-  if (cleaned === 'arbitrage') {
-    return { type: 'arbitrage' };
+  if (cleaned === 'trends') {
+    return { type: 'trends' };
   }
   if (cleaned === 'group') {
     return { type: 'group' };
@@ -1002,56 +993,52 @@ function sortItemsByRefineAndSuffix(items) {
 
 }
 
+function titleCase(str) {
+  return str.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+}
+
+async function loadCategories() {
+  const files = [
+    '01_resources.txt',
+    '02_consumables.txt',
+    '03_books.txt',
+    '04_labyrinth.txt',
+    '05_keys.txt',
+    '06_equipment.txt',
+    '07_accessories.txt',
+    '08_tools.txt',
+  ];
+  const categories = [];
+  const slugToCategory = {};
+
+  for (let i = 0; i < files.length; i++) {
+    const fname = files[i];
+    const label = titleCase(fname.replace(/^\d+_/, '').replace(/\.txt$/, '').replace(/_/g, ' '));
+    try {
+      const res = await fetch(assetPath(`assets/item_categories/${fname}`));
+      if (!res.ok) {
+        categories.push({ id: i, label, slugs: [] });
+        continue;
+      }
+      const text = await res.text();
+      const slugs = text.split(/\r?\n/).map(l => l.trim().toLowerCase()).filter(Boolean);
+      categories.push({ id: i, label, slugs });
+      for (const slug of slugs) {
+        if (slug) slugToCategory[slug] = i;
+      }
+    } catch (err) {
+      categories.push({ id: i, label, slugs: [] });
+    }
+  }
+
+  return { categories, slugToCategory };
+}
+
 async function renderHome(root) {
   const catalog = await loadCatalog();
   const items = catalog.items || [];
 
   const ITEMS_PER_PAGE = 48;
-
-  // Load category files and build slug -> category index map
-  async function loadCategories() {
-    const files = [
-      '01_resources.txt',
-      '02_consumables.txt',
-      '03_books.txt',
-      '04_labyrinth.txt',
-      '05_keys.txt',
-      '06_equipment.txt',
-      '07_accessories.txt',
-      '08_tools.txt',
-    ];
-    const categories = [];
-    const slugToCategory = {};
-
-    for (let i = 0; i < files.length; i++) {
-      const fname = files[i];
-      try {
-        const res = await fetch(assetPath(`assets/item_categories/${fname}`));
-        if (!res.ok) {
-          const label = fname.replace(/^\d+_/, '').replace(/\.txt$/, '').replace(/_/g, ' ');
-          categories.push({ id: i, label: titleCase(label) });
-          continue;
-        }
-        const text = await res.text();
-        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        const label = fname.replace(/^\d+_/, '').replace(/\.txt$/, '').replace(/_/g, ' ');
-        const slugs = lines.map(l => l.toLowerCase());
-        categories.push({ id: i, label: titleCase(label), slugs });
-        for (const slug of slugs) {
-          if (slug) slugToCategory[slug] = i;
-        }
-      } catch (err) {
-        const label = fname.replace(/^\d+_/, '').replace(/\.txt$/, '').replace(/_/g, ' ');
-        categories.push({ id: i, label: titleCase(label), slugs: [] });
-      }
-    }
-
-    return { categories, slugToCategory };
-  }
-
-  function titleCase(str) {
-    return str.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-  }
 
   const renderItemCards = (itemsToRender) => {
     return itemsToRender
@@ -1131,11 +1118,12 @@ async function renderHome(root) {
   const computeFiltered = () => {
     const query = search.value.trim().toLowerCase();
     return sortedItems.filter((item) => {
-      if (selectedCategories.size > 0) {
+      if (favoritesOnly) {
+        if (!favoriteSet.has(String(item.slug).toLowerCase())) return false;
+      } else if (selectedCategories.size > 0) {
         const catIdx = typeof slugToCategory[item.slug] === 'number' ? slugToCategory[item.slug] : null;
         if (!selectedCategories.has(catIdx)) return false;
       }
-      if (favoritesOnly && !favoriteSet.has(String(item.slug).toLowerCase())) return false;
       const name = (item.name || slugToTitle(item.slug)).toLowerCase();
       return !query || name.includes(query) || item.slug.toLowerCase().includes(query);
     });
@@ -1153,7 +1141,7 @@ async function renderHome(root) {
     });
   };
 
-  const logoHtml = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" /></a>`;
+  const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" />`;
 
   renderShell(
     root,
@@ -1161,6 +1149,7 @@ async function renderHome(root) {
     `
       <nav class="group-nav">
         <a class="minimal-back-link" href="${SITE_BASE_PATH}group">Group View</a>
+        <a class="minimal-back-link" href="${SITE_BASE_PATH}trends">Trends</a>
       </nav>
       <section class="card">
         <div class="section-header">
@@ -1214,7 +1203,9 @@ async function renderHome(root) {
         favoritesOnly = false;
       } else if (idx === 'fav') {
         favoritesOnly = !favoritesOnly;
+        if (favoritesOnly) selectedCategories.clear();
       } else {
+        if (favoritesOnly) favoritesOnly = false;
         const catIdx = Number(idx);
         if (selectedCategories.has(catIdx)) {
           selectedCategories.delete(catIdx);
@@ -1670,7 +1661,7 @@ async function renderItem(root, slug) {
   const iconUrlSvg = resolveIconAssetPath(catalog.iconFiles, slug, 'svg');
   const iconUrlPng = resolveIconAssetPath(catalog.iconFiles, slug, 'png');
   const iconHtml = `<img class="dashboard-icon" src="${iconUrlSvg}" alt="${itemName}" data-fallback-src="${iconUrlPng}" />`;
-  const logoHtmlItem = `<a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" /></a>`;
+  const logoHtmlItem = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="item-logo-img" />`;
 
   setHTML(root, `
     <div class="dashboard-layout">
@@ -1680,6 +1671,7 @@ async function renderItem(root, slug) {
           Home
         </a>
         <a class="minimal-back-link" href="${SITE_BASE_PATH}group">Group View</a>
+        <a class="minimal-back-link" href="${SITE_BASE_PATH}trends">Trends</a>
       </nav>
       
       <section class="dashboard-card">
@@ -1981,11 +1973,12 @@ async function renderGroup(root) {
         </div>
       </div>
       <div class="hero-logo">
-        <a href="${SITE_BASE_PATH}arbitrage" class="logo-link"><img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" /></a>
+        <img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" />
       </div>
     </header>
     <nav class="group-nav">
       <a class="minimal-back-link" href="${SITE_BASE_PATH}">&#8592; Home</a>
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}trends">Trends</a>
       <span class="group-nav-sep"></span>
       <div class="group-preset-controls">
         <div class="group-preset-buttons">
@@ -2942,8 +2935,8 @@ async function main() {
   try {
     if (route.type === 'item' && route.slug) {
       await renderItem(root, route.slug);
-    } else if (route.type === 'arbitrage') {
-      await renderArbitrage(root);
+    } else if (route.type === 'trends') {
+      await renderTrends(root);
     } else if (route.type === 'group') {
       await renderGroup(root);
     } else {
@@ -2956,509 +2949,392 @@ async function main() {
   }
 }
 
-function formatArbCoin(v) {
+function formatTrendCoin(v) {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return '-';
   if (v >= 1e9) return (v / 1e9).toFixed(2) + 'B';
   if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
   if (v >= 100e3) return (v / 1e3).toFixed(0) + 'K';
   return v.toLocaleString('en-US');
 }
 
-const ARB_WINDOW_PRESETS = [
-  { days: 1, label: '1 Day' },
-  { days: 3, label: '3 Days' },
-  { days: 5, label: '5 Days' },
-  { days: 7, label: '7 Days' },
-  { days: 14, label: '14 Days' },
-];
+function formatTrendPct(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
+}
 
-async function renderArbitrage(root) {
+const TREND_WINDOWS = ['12h', '24h', '3d', '7d', '14d', '30d'];
+const TREND_WINDOW_LABELS = {
+  '12h': '12 Hours',
+  '24h': '24 Hours',
+  '3d': '3 Days',
+  '7d': '7 Days',
+  '14d': '14 Days',
+  '30d': '30 Days',
+};
+
+async function renderTrends(root) {
   const catalog = await loadCatalog();
-  const catFiles = [
-    { file: '01_resources.txt', label: 'Resources' },
-    { file: '02_consumables.txt', label: 'Consumables' },
-    { file: '03_books.txt', label: 'Books' },
-    { file: '04_labyrinth.txt', label: 'Labyrinth' },
-    { file: '05_keys.txt', label: 'Keys' },
-    { file: '06_equipment.txt', label: 'Equipment' },
-    { file: '07_accessories.txt', label: 'Accessories' },
-    { file: '08_tools.txt', label: 'Tools' },
-  ];
-
-  const slugToCat = {};
-  for (let i = 0; i < catFiles.length; i++) {
-    try {
-      const res = await fetch(assetPath(`assets/item_categories/${catFiles[i].file}`));
-      if (!res.ok) continue;
-      const text = await res.text();
-      for (const line of text.split('\n')) {
-        const name = line.trim().toLowerCase().replace(/\s+/g, '_');
-        if (name) slugToCat[name] = i;
-      }
-    } catch { /* ignore */ }
+  const iconFiles = catalog.iconFiles || {};
+  const slugToName = {};
+  for (const item of catalog.items || []) {
+    slugToName[item.slug] = item.name;
   }
+  const { categories, slugToCategory } = await loadCategories();
+
+  const PANEL_LIMIT = 50;
+  const savedTrends = loadTrendsFilters();
+  const validCatIds = new Set(categories.map((c) => c.id));
+  let selectedWindow = TREND_WINDOWS.includes(savedTrends.window) ? savedTrends.window : '24h';
+  let items = [];
+  let status = 'loading';
+  let showAll = false;
+  let selectedCategories = new Set((Array.isArray(savedTrends.categories) ? savedTrends.categories : []).filter((id) => validCatIds.has(id)));
+  let showEnhanced = savedTrends.showEnhanced !== false;
+  let favoritesOnly = savedTrends.favoritesOnly === true;
+  const favoriteSet = new Set(loadFavorites());
+  let search = '';
+  const sortState = { field: 'pct', dir: -1 };
 
   function resolveIcon(slug) {
     const slugLower = slug.toLowerCase();
-    const iconFiles = catalog.iconFiles || {};
-    const entry = iconFiles[slugLower];
-    const svgName = entry?.svg || `${slugLower}.svg`;
-    const pngName = entry?.png || `${slugLower}.png`;
-    const svgUrl = assetPath(`assets/item_icons/${encodeURIComponent(svgName)}`);
-    const pngUrl = assetPath(`assets/item_icons/${encodeURIComponent(pngName)}`);
-    return { svgUrl, pngUrl };
+    const svgName = iconFiles[slugLower]?.svg || `${slugLower}.svg`;
+    const pngName = iconFiles[slugLower]?.png || `${slugLower}.png`;
+    return {
+      svgUrl: assetPath(`assets/item_icons/${encodeURIComponent(svgName)}`),
+      pngUrl: assetPath(`assets/item_icons/${encodeURIComponent(pngName)}`),
+    };
   }
 
-  let selectedWindow = 3;
-  let items = [];
-  let filteredItems = [];
-  let selectedCats = new Set();
-  let minRoiFilter = 0;
-  let minVolFilter = 0;
-  let arbFilterTimer;
-  let sortField = 'score';
-  let sortDir = -1;
-  let expandedRow = null;
-  let detailCache = {};
-  let isLoading = true;
-  const ROI_PRESETS = [{ value: 0, label: '0%' }, { value: 1, label: '1%' }, { value: 2, label: '2%' }, { value: 5, label: '5%' }, { value: 10, label: '10%' }, { value: 20, label: '20%' }, { value: 50, label: '50%' }];
-  const VOL_PRESETS = [{ value: 0, label: '0' }, { value: 1000, label: '1K' }, { value: 10000, label: '10K' }, { value: 100000, label: '100K' }, { value: 1000000, label: '1M' }];
-
-  const getArbField = (item, field) => {
-    if (field === 'roi') return item.roi?.p25 ?? 0;
-    if (field === 'profit') return item.profit?.p25 ?? 0;
-    if (field === 'askZ') return item.temporal?.askZ ?? 0;
-    if (field === 'bidZ') return item.temporal?.bidZ ?? 0;
-    return item[field] ?? 0;
-  };
-
-  const sortItems = () => {
-    filteredItems.sort((a, b) => {
-      const va = getArbField(a, sortField);
-      const vb = getArbField(b, sortField);
-      if (sortField === 'name' || sortField === 'slug') {
-        return sortDir * String(va).localeCompare(String(vb));
+function buildRows() {
+    const withData = [];
+    for (const item of items) {
+      if (!item.levels) continue;
+      if (favoritesOnly) {
+        if (!favoriteSet.has(String(item.slug).toLowerCase())) continue;
+      } else if (selectedCategories.size > 0) {
+        const catIdx = slugToCategory[item.slug];
+        if (typeof catIdx !== 'number' || !selectedCategories.has(catIdx)) continue;
       }
-      return sortDir * (va - vb);
-    });
-  };
-
-  function applyFilters() {
-    filteredItems = items.filter(item => {
-      if (selectedCats.size > 0) {
-        const itemCat = typeof slugToCat[item.slug] === 'number' ? slugToCat[item.slug] : (item.catIdx ?? -1);
-        if (!selectedCats.has(itemCat)) return false;
+      for (const [levelKey, windowMap] of Object.entries(item.levels)) {
+        const level = parseInt(levelKey, 10);
+        if (!showEnhanced && level > 0) continue;
+        const entry = windowMap[selectedWindow];
+        if (entry && typeof entry.pct === 'number' && Number.isFinite(entry.pct)) {
+          withData.push({ item, entry: { ...entry, level, vol1d: windowMap.vol1d, vol7d: windowMap.vol7d } });
+        }
       }
-      if (item.roi.p25 < minRoiFilter) return false;
-      if (item.vol24h < minVolFilter) return false;
-      return true;
-    });
-    sortItems();
+    }
+
+    return withData;
   }
 
-  function renderArbHeader() {
-    const windowButtons = ARB_WINDOW_PRESETS.map(o =>
-      `<button class="arb-window-pill ${o.days === selectedWindow ? 'active' : ''}" data-window="${o.days}">${o.label}</button>`
-    ).join('');
+  function getSortValue(x, field) {
+    const entry = x.entry;
+    switch (field) {
+      case 'name': return (x.item.name || slugToName[x.item.slug] || x.item.slug).toLowerCase();
+      case 'price': return entry.price;
+      case 'pct': return entry.pct;
+      case 'vol1d': return entry.vol1d ? entry.vol1d.vol : null;
+      case 'vol1dPct': return entry.vol1d ? entry.vol1d.pct : null;
+      case 'vol7d': return entry.vol7d ? entry.vol7d.vol : null;
+      case 'vol7dPct': return entry.vol7d ? entry.vol7d.pct : null;
+      default: return null;
+    }
+  }
+
+  function compareRows(a, b, field, dir) {
+    const va = getSortValue(a, field);
+    const vb = getSortValue(b, field);
+    if (field === 'name') {
+      return dir * String(va).localeCompare(String(vb));
+    }
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return dir * (va - vb);
+  }
+
+function renderTable(list) {
+    const sortedList = [...list].sort((a, b) => compareRows(a, b, sortState.field, sortState.dir));
+    const query = search.trim().toLowerCase();
+    const filtered = query
+      ? sortedList.filter((x) => (x.item.name || slugToName[x.item.slug] || x.item.slug).toLowerCase().includes(query))
+      : sortedList;
+    const limited = showAll ? filtered : filtered.slice(0, PANEL_LIMIT);
+    const rows = limited.map((x, i) => {
+      const { item, entry } = x;
+      const iconUrls = resolveIcon(item.slug);
+      const pctClass = entry.pct >= 0 ? 'trend-gain' : 'trend-loss';
+      const levelSuffix = entry.level > 0 ? ` <span class="trend-level">+${entry.level}</span>` : '';
+      return `
+        <tr>
+          <td class="trend-num trend-rank">${i + 1}</td>
+          <td class="trend-item-cell">
+            <img class="trend-icon" src="${iconUrls.svgUrl}" alt="" data-fallback-src="${iconUrls.pngUrl}" />
+            ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
+            <a href="${itemLink(item.slug)}">${escapeHtml(item.name || slugToName[item.slug] || item.slug)}${levelSuffix}</a>
+          </td>
+          <td class="trend-num">${formatTrendCoin(entry.price)}</td>
+          <td class="trend-num ${pctClass}">${formatTrendPct(entry.pct)}</td>
+          ${renderVolValCell(entry.vol1d)}
+          ${renderVolChangeCell(entry.vol1d)}
+          ${renderVolValCell(entry.vol7d)}
+          ${renderVolChangeCell(entry.vol7d)}
+        </tr>
+      `;
+    }).join('');
+
+    const body = rows
+      ? rows
+      : '<tr><td colspan="8" class="trend-empty">No movers found for the selected filters.</td></tr>';
+
+    function renderVolValCell(vol) {
+      if (!vol || typeof vol.vol !== 'number' || !Number.isFinite(vol.vol)) {
+        return '<td class="trend-num">—</td>';
+      }
+      return `<td class="trend-num">${formatCompactNumber(vol.vol)}</td>`;
+    }
+
+    function renderVolChangeCell(vol) {
+      if (!vol || typeof vol.pct !== 'number' || !Number.isFinite(vol.pct)) {
+        return '<td class="trend-num">—</td>';
+      }
+      const cls = vol.pct >= 0 ? 'trend-gain' : 'trend-loss';
+      return `<td class="trend-num"><span class="trend-vol-pct ${cls}">${formatTrendPct(vol.pct)}</span></td>`;
+    }
+
+    const sortArrow = (field) => (sortState.field === field ? (sortState.dir > 0 ? ' ▲' : ' ▼') : '');
+    const sortTh = (field, label) => `
+      <th class="trend-num trend-sort ${sortState.field === field ? 'active' : ''}" data-sort="${field}" title="Sort by ${label}">${label}${sortArrow(field)}</th>
+    `;
+
+    const moreBtn = filtered.length > PANEL_LIMIT
+      ? `<button class="trend-more-btn">${showAll ? 'Show less' : `Show all (${filtered.length})`}</button>`
+      : '';
+
+    return `
+      <section class="card trend-panel">
+        <div class="trend-panel-header">
+          <div>
+            <h2>All Movers</h2>
+            <p class="trend-subtitle">Sort by any column — click a header to toggle ascending / descending.</p>
+          </div>
+          ${moreBtn}
+        </div>
+        <div class="trend-table-wrap">
+          <table class="trend-table">
+            <colgroup>
+              <col class="trend-col-rank" />
+              <col class="trend-col-item" />
+              <col class="trend-col-price" />
+              <col class="trend-col-pct" />
+              <col class="trend-col-vol1d" />
+              <col class="trend-col-vol1dPct" />
+              <col class="trend-col-vol7d" />
+              <col class="trend-col-vol7dPct" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th class="trend-num">#</th>
+                <th><input class="trend-search" type="search" value="${escapeHtml(search)}" placeholder="Filter items..." autocomplete="off" aria-label="Filter items" /></th>
+                ${sortTh('price', 'Price')}
+                ${sortTh('pct', 'Change')}
+                ${sortTh('vol1d', 'Vol 1d')}
+                ${sortTh('vol1dPct', 'Δ 1d')}
+                ${sortTh('vol7d', 'Vol 7d')}
+                ${sortTh('vol7dPct', 'Δ 7d')}
+              </tr>
+            </thead>
+            <tbody>${body}</tbody>
+          </table>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderTrendPage() {
+    const backLink = `<nav class="group-nav outside-back trends-back-link">
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Home</a>
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}group">Group View</a>
+    </nav>`;
+    const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" />`;
+
+    if (status === 'error') {
+      renderShell(
+        root,
+        'Market Trends',
+        `${backLink}<div class="trend-loading">Unable to load trends data.</div>`,
+        'Item price movers across different time frames',
+        '',
+        logoHtml
+      );
+      return;
+    }
+
+if (status === 'loading') {
+      renderShell(
+        root,
+        'Market Trends',
+        `${backLink}<div class="trend-loading">Loading trends data...</div>`,
+        'Item price movers across different time frames',
+        '',
+        logoHtml
+      );
+      return;
+    }
+
+    if (status === 'stale') {
+      renderShell(
+        root,
+        'Market Trends',
+        `${backLink}<div class="trend-loading">Trends data is out of date. Please do a hard refresh (Ctrl+Shift+R) to load the latest data.</div>`,
+        'Item price movers across different time frames',
+        '',
+        logoHtml
+      );
+      return;
+    }
+
+const windowButtons = TREND_WINDOWS
+      .map((key) => `<button class="trend-window-pill ${key === selectedWindow ? 'active' : ''}" data-window="${key}">${key}</button>`)
+      .join('');
 
     const catButtons = [
-      `<button class="arb-filter-pill ${selectedCats.size === 0 ? 'active' : ''}" data-cat="all">All</button>`,
-      ...catFiles.map((c, i) => `<button class="arb-filter-pill ${selectedCats.has(i) ? 'active' : ''}" data-cat="${i}">${escapeHtml(c.label)}</button>`)
+      `<button class="filter-pill ${selectedCategories.size === 0 && !favoritesOnly ? 'active' : ''}" data-cat="all">All</button>`,
+      `<button class="filter-pill ${favoritesOnly ? 'active' : ''}" data-cat="fav">Favorites</button>`,
+      ...categories.map((c) => `<button class="filter-pill ${selectedCategories.has(c.id) ? 'active' : ''}" data-cat="${c.id}">${escapeHtml(c.label)}</button>`),
     ].join('');
 
-    const roiPresetBtns = ROI_PRESETS.map(p =>
-      `<button class="arb-preset-btn${minRoiFilter === p.value ? ' active' : ''}" data-target="roi" data-value="${p.value}">${p.label}</button>`
-    ).join('');
-    const volPresetBtns = VOL_PRESETS.map(p =>
-      `<button class="arb-preset-btn${minVolFilter === p.value ? ' active' : ''}" data-target="vol" data-value="${p.value}">${p.label}</button>`
-    ).join('');
+    const enhancedToggle = `
+      <label class="trend-switch">
+        <input type="checkbox" id="trend-enhanced-toggle" ${showEnhanced ? 'checked' : ''} />
+        <span class="trend-switch-track" aria-hidden="true"></span>
+        <span class="trend-switch-label">Enhanced Items</span>
+      </label>`;
 
-    return `
-      <div class="arb-controls">
-        <div class="arb-controls-row">
-          <label class="arb-label">Window</label>
-          <div class="button-row" id="arb-window-buttons">${windowButtons}</div>
-        </div>
-        <div class="arb-controls-row">
-          <label class="arb-label">Min ROI <input type="text" id="arb-min-roi" value="${minRoiFilter || ''}" class="arb-input" /><span class="arb-presets">${roiPresetBtns}</span></label>
-          <label class="arb-label">Min Vol <input type="text" id="arb-min-vol" value="${formatAbbrVolume(minVolFilter)}" class="arb-input" /><span class="arb-presets">${volPresetBtns}</span></label>
-          <span id="arb-count" class="arb-count">${filteredItems.length} / ${items.length} items</span>
-        </div>
-        <div class="arb-cat-filters" id="arb-cat-filters">${catButtons}</div>
-      </div>
-    `;
-  }
+    const rows = buildRows();
+    const windowLabel = TREND_WINDOW_LABELS[selectedWindow] || selectedWindow;
 
-  function renderArbTable() {
-    if (isLoading) {
-      return '<div class="arb-loading">Loading arbitrage data...</div>';
-    }
-    if (!filteredItems.length) {
-      return '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>';
-    }
-    const rows = renderArbTableRows();
-
-    return `
-      <div class="arb-table-wrap">
-        <table class="arb-table">
-          <thead>
-            <tr>
-              <th class="arb-sort" data-sort="name">Item</th>
-              <th class="arb-sort" data-sort="level">Lvl</th>
-              <th class="arb-sort" data-sort="spread" data-tip="Typical bid-ask gap (p25)">Spread</th>
-              <th class="arb-sort" data-sort="roi" data-tip="Conservative ROI: p25 flip profit / entry bid">p25 ROI</th>
-              <th class="arb-sort" data-sort="reliability" data-tip="1 - (stddev/mean). Higher = more consistent">Reliab.</th>
-              <th class="arb-sort" data-sort="vol24h" data-tip="Estimated 24h trade volume">Vol 24h</th>
-              <th class="arb-sort" data-sort="fillConfidence" data-tip="% of valid snapshots at or above the p25 profit level">p25+</th>
-              <th class="arb-sort" data-sort="score" data-tip="ROI × Reliability × p25+ (normalized)">Score</th>
-              <th data-tip="UTC hour with historically highest mean flip profit">Best</th>
-              <th class="arb-sort" data-sort="askZ" data-tip="Z-score: current ask vs its avg. Positive = premium sellers → good to sell">Ask Δ</th>
-              <th class="arb-sort" data-sort="bidZ" data-tip="Z-score: current bid vs its avg. Negative = discounted sellers → good to buy">Bid Δ</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    `;
-  }
-
-  function renderArbDetail(item) {
-    const linkHtml = `<a class="arb-item-link" href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">View full chart &rarr;</a>`;
-
-    const cached = detailCache[`${item.slug}::${item.level}`];
-    if (cached) {
-      return `
-        <div class="arb-detail">
-          <div class="arb-detail-grid">
-            <div class="arb-detail-card">
-              <h4>Profit Distribution</h4>
-              <div class="arb-stat-row"><span>p25 (conservative)</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
-              <div class="arb-stat-row"><span>p50 (median)</span><span>${formatArbCoin(item.profit.p50)}</span></div>
-              <div class="arb-stat-row"><span>p75 (optimistic)</span><span>${formatArbCoin(item.profit.p75)}</span></div>
-            </div>
-            <div class="arb-detail-card">
-              <h4>Step-Adjusted Prices</h4>
-              <div class="arb-stat-row"><span>Entry bid</span><span>${formatArbCoin(item.prices.entryBid)}</span></div>
-              <div class="arb-stat-row"><span>Exit ask</span><span>${formatArbCoin(item.prices.exitAsk)}</span></div>
-              <div class="arb-stat-row"><span>Market tax (2%)</span><span>${formatArbCoin(item.prices.tax)}</span></div>
-              <div class="arb-stat-row"><span>Net profit</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
-            </div>
-            <div class="arb-detail-card">
-              <h4>Market Health</h4>
-              <div class="arb-stat-row"><span>p25+ rate</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
-              <div class="arb-stat-row"><span>Reliability</span><span>${(item.reliability * 100).toFixed(0)}%</span></div>
-              <div class="arb-stat-row"><span>Best time</span><span>${item.bestHour || '-'}</span></div>
-              <div class="arb-stat-row"><span>Snapshots</span><span>${item.snapCount}</span></div>
-              ${renderTemporalDetail(item)}
-            </div>
-          </div>
-          <div class="arb-detail-chart-area" id="arb-detail-chart">${cached.chartHtml}</div>
-          ${linkHtml}
-        </div>
-      `;
-    }
-
-    return `
-      <div class="arb-detail">
-        <div class="arb-detail-grid">
-          <div class="arb-detail-card">
-            <h4>Profit Distribution</h4>
-            <div class="arb-stat-row"><span>p25 (conservative)</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
-            <div class="arb-stat-row"><span>p50 (median)</span><span>${formatArbCoin(item.profit.p50)}</span></div>
-            <div class="arb-stat-row"><span>p75 (optimistic)</span><span>${formatArbCoin(item.profit.p75)}</span></div>
-          </div>
-          <div class="arb-detail-card">
-            <h4>Step-Adjusted Prices</h4>
-            <div class="arb-stat-row"><span>Entry bid</span><span>${formatArbCoin(item.prices.entryBid)}</span></div>
-            <div class="arb-stat-row"><span>Exit ask</span><span>${formatArbCoin(item.prices.exitAsk)}</span></div>
-            <div class="arb-stat-row"><span>Market tax (2%)</span><span>${formatArbCoin(item.prices.tax)}</span></div>
-            <div class="arb-stat-row"><span>Net profit</span><span class="arb-profit">${formatArbCoin(item.profit.p25)}</span></div>
-          </div>
-          <div class="arb-detail-card">
-            <h4>Market Health</h4>
-            <div class="arb-stat-row"><span>p25+ rate</span><span>${(item.fillConfidence * 100).toFixed(0)}%</span></div>
-            <div class="arb-stat-row"><span>Reliability</span><span>${(item.reliability * 100).toFixed(0)}%</span></div>
-            <div class="arb-stat-row"><span>Best time</span><span>${item.bestHour || '-'}</span></div>
-            <div class="arb-stat-row"><span>Snapshots</span><span>${item.snapCount}</span></div>
-          </div>
-        </div>
-        <div class="arb-detail-chart-area" id="arb-detail-chart">Loading chart...</div>
-        ${linkHtml}
-      </div>
-    `;
-  }
-
-  function renderTemporalDetail(item) {
-    const t = item.temporal;
-    if (!t) return '';
-    const signalMap = { flip: '⇅ FLIP', buy: '↓ BUY', sell: '↑ SELL' };
-    const signalClass = t.signal ? ` arb-signal-${t.signal}` : '';
-    const signalLabel = t.signal ? (signalMap[t.signal] || t.signal) : '—';
-    return `
-      <div class="arb-stat-row"><span>Ask Δ (σ)</span><span class="${t.askZ > 0.5 ? 'arb-z-bull' : (t.askZ < -0.5 ? 'arb-z-bear' : '')}">${t.askZ.toFixed(2)}</span></div>
-      <div class="arb-stat-row"><span>Bid Δ (σ)</span><span class="${t.bidZ < -0.5 ? 'arb-z-bull' : (t.bidZ > 0.5 ? 'arb-z-bear' : '')}">${t.bidZ.toFixed(2)}</span></div>
-      <div class="arb-stat-row"><span>Spread Δ (σ)</span><span>${t.spreadZ.toFixed(2)}</span></div>
-      <div class="arb-stat-row"><span>Signal</span><span class="${signalClass}">${signalLabel}</span></div>
-    `;
-  }
-
-  function renderArbPage() {
-    applyFilters();
-
-    const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" />`;
+    saveTrendsFilters(selectedWindow, Array.from(selectedCategories), showEnhanced, favoritesOnly);
 
     renderShell(
       root,
-      'Arbitrage Scanner',
-      `<a class="minimal-back-link outside-back" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Back to items</a><div class="arb-warning">⚠️ Prototype — this data is for exploration only and should not be taken as financial truth.</div>${renderArbHeader()}${renderArbTable()}`,
-      'Bid-ask flips ranked by ROI × reliability × p25+',
+      'Market Trends',
+      `
+        ${backLink}
+        <div class="trends-controls">
+          <label class="trend-label">Time Frame</label>
+          <div class="button-row" id="trend-window-buttons">${windowButtons}</div>
+        </div>
+        <div class="category-filters" id="trend-category-filters">${catButtons}</div>
+        <div class="trends-enhanced-row">${enhancedToggle}</div>
+        ${renderTable(rows)}
+      `,
+      `Item price movers over the last ${windowLabel}`,
       '',
       logoHtml
     );
-
-    const countEl = document.getElementById('arb-count');
-    if (countEl) countEl.textContent = `${filteredItems.length} / ${items.length} items`;
-
-    if (expandedRow && !detailCache[expandedRow]) {
-      const expandedItem = filteredItems.find(i => `${i.slug}::${i.level}` === expandedRow);
-      if (expandedItem) {
-        loadDetailChart(expandedItem);
-      }
-    }
   }
 
-  function updateArbResults() {
-    applyFilters();
-
-    if (expandedRow) {
-      const stillVisible = filteredItems.some(i => `${i.slug}::${i.level}` === expandedRow);
-      if (!stillVisible) expandedRow = null;
-    }
-
-    const wrap = document.querySelector('.arb-table-wrap');
-    if (!filteredItems.length) {
-      if (wrap) {
-        setHTML(wrap, '<div class="empty-state">No tradeable opportunities found. Try adjusting your filters.</div>');
-      }
-    } else {
-      const hadEmptyState = wrap && !wrap.querySelector('.arb-table');
-      if (hadEmptyState || !wrap) {
-        if (wrap) {
-          setHTML(wrap, renderArbTable());
-        }
+async function loadTrends() {
+    try {
+      const data = await fetchJson(assetPath('data/public/trends.json'));
+      const rawItems = Array.isArray(data.items) ? data.items : [];
+      const hasLevels = rawItems.some((i) => i && i.levels);
+      if (!hasLevels) {
+        status = 'stale';
       } else {
-        const tbody = wrap.querySelector('.arb-table tbody');
-        if (tbody) {
-          setHTML(tbody, renderArbTableRows());
-        }
+        items = rawItems.filter((i) => i && i.levels);
+        status = 'ready';
       }
-    }
-
-    const countEl = document.getElementById('arb-count');
-    if (countEl) countEl.textContent = `${filteredItems.length} / ${items.length} items`;
-
-    if (expandedRow && !detailCache[expandedRow]) {
-      const expandedItem = filteredItems.find(i => `${i.slug}::${i.level}` === expandedRow);
-      if (expandedItem) {
-        loadDetailChart(expandedItem);
-      }
-    }
-  }
-
-  function renderArbTableRows() {
-    return filteredItems.map((item, idx) => {
-      const isExpanded = expandedRow === `${item.slug}::${item.level}`;
-      const iconUrls = resolveIcon(item.slug);
-      const thinClass = item.fillConfidence < 0.5 ? ' arb-thin' : '';
-
-      const temporal = item.temporal;
-      const askZStr = temporal ? temporal.askZ.toFixed(1) : '-';
-      const bidZStr = temporal ? temporal.bidZ.toFixed(1) : '-';
-      const askZClass = temporal && temporal.askZ > 0.5 ? ' arb-z-bull' : (temporal && temporal.askZ < -0.5 ? ' arb-z-bear' : '');
-      const bidZClass = temporal && temporal.bidZ < -0.5 ? ' arb-z-bull' : (temporal && temporal.bidZ > 0.5 ? ' arb-z-bear' : '');
-
-      const cols = [
-        `<td class="arb-item-cell"><img class="arb-icon" src="${iconUrls.svgUrl}" alt="" data-fallback-src="${iconUrls.pngUrl}" /><a href="${ROUTE_PREFIX}${encodeURIComponent(item.slug)}">${escapeHtml(item.name)}</a></td>`,
-        `<td class="arb-num">+${item.level}</td>`,
-        `<td class="arb-num">${formatArbCoin(item.spread)}</td>`,
-        `<td class="arb-num arb-profit">${item.roi.p25.toFixed(1)}%</td>`,
-        `<td class="arb-num">${(item.reliability * 100).toFixed(0)}%</td>`,
-        `<td class="arb-num">${formatArbCoin(item.vol24h)}</td>`,
-        `<td class="arb-num">${(item.fillConfidence * 100).toFixed(0)}%</td>`,
-        `<td class="arb-num arb-score">${item.score.toFixed(3)}</td>`,
-        `<td class="arb-num arb-muted">${item.bestHour || '-'}</td>`,
-        `<td class="arb-num${askZClass}">${askZStr}</td>`,
-        `<td class="arb-num${bidZClass}">${bidZStr}</td>`,
-      ];
-
-      const detailHtml = isExpanded ? renderArbDetail(item) : '';
-
-      return `<tr class="${isExpanded ? 'arb-expanded' : ''}${thinClass}" data-key="${item.slug}::${item.level}">${cols.join('')}</tr>${isExpanded ? `<tr class="arb-detail-row"><td colspan="11">${detailHtml}</td></tr>` : ''}`;
-    }).join('');
-  }
-
-  async function loadDetailChart(item) {
-    const key = `${item.slug}::${item.level}`;
-    if (detailCache[key]) return;
-
-    let itemData;
-    try {
-      itemData = normalizePublicItemData(await fetchJson(assetPath(`data/public/items/${encodeURIComponent(item.slug)}.json`)));
-    } catch {
-      const chartEl = document.getElementById('arb-detail-chart');
-      if (chartEl) setHTML(chartEl, '<div class="empty-state">Could not load item data.</div>');
-      return;
-    }
-
-    const levelData = itemData?.data?.[String(item.level)] || {};
-    const hourlySeries = levelData.hourly || levelData.h || [];
-    const points = windowPoints(hourlySeries, '7d');
-    const yValues = points.flatMap(p => [p.ask, p.bid]).filter(v => typeof v === 'number' && v > 0);
-    if (!yValues.length) {
-      const chartEl = document.getElementById('arb-detail-chart');
-      if (chartEl) setHTML(chartEl, '<div class="empty-state">No chart data available.</div>');
-      return;
-    }
-
-    const globalMin = Math.min(...yValues);
-    const globalMax = Math.max(...yValues);
-    const chart = buildChart(points, 960, 360, globalMin, globalMax, WINDOW_CONFIG['7d'], points);
-
-    detailCache[key] = { chartHtml: chart.html };
-
-    const chartEl = document.getElementById('arb-detail-chart');
-    if (chartEl) {
-      setHTML(chartEl, chart.html);
-    }
-  }
-
-  async function loadPreset(days) {
-    isLoading = true;
-    detailCache = {};
-    expandedRow = null;
-    renderArbPage();
-
-    try {
-      const arbData = await fetchJson(assetPath(`data/public/arbitrage-${days}d.json`));
-      items = arbData.items || [];
     } catch (error) {
-      items = [];
+      status = 'error';
     }
-
-    isLoading = false;
-    renderArbPage();
+    renderTrendPage();
   }
 
-  await loadPreset(selectedWindow);
+  await loadTrends();
 
   root.addEventListener('click', (event) => {
-    const presetBtn = event.target.closest('.arb-preset-btn');
-    if (presetBtn) {
-      const target = presetBtn.dataset.target;
-      const value = parseInt(presetBtn.dataset.value, 10);
-      if (target === 'roi') {
-        minRoiFilter = value;
-        const input = document.getElementById('arb-min-roi');
-        if (input) input.value = value || '';
-      } else if (target === 'vol') {
-        minVolFilter = value;
-        const input = document.getElementById('arb-min-vol');
-        if (input) input.value = formatAbbrVolume(value);
+    const windowPill = event.target.closest('.trend-window-pill');
+    if (windowPill) {
+      const newWindow = windowPill.dataset.window;
+      if (newWindow && newWindow !== selectedWindow) {
+        selectedWindow = newWindow;
+        renderTrendPage();
       }
-      document.querySelectorAll(`.arb-preset-btn[data-target="${target}"]`).forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === value);
-      });
-      clearTimeout(arbFilterTimer);
-      expandedRow = null;
-      updateArbResults();
       return;
     }
 
-    const sortTh = event.target.closest('th.arb-sort');
+if (event.target.closest('.trend-more-btn')) {
+      showAll = !showAll;
+      renderTrendPage();
+    }
+
+    const sortTh = event.target.closest('th.trend-sort');
     if (sortTh) {
       const field = sortTh.dataset.sort;
-      const map = {
-        name: 'name', slug: 'name', level: 'level', spread: 'spread',
-        roi: 'roi', reliability: 'reliability', vol24h: 'vol24h',
-        fillConfidence: 'fillConfidence', score: 'score'
-      };
-      const mappedField = map[field] || field;
-      if (sortField === mappedField) {
-        sortDir *= -1;
+      if (sortState.field === field) {
+        sortState.dir = -sortState.dir;
       } else {
-        sortField = mappedField;
-        sortDir = -1;
+        sortState.field = field;
+        sortState.dir = -1;
       }
-      renderArbPage();
+      renderTrendPage();
       return;
     }
 
-    const row = event.target.closest('tr[data-key]');
-    if (row && !event.target.closest('a')) {
-      const key = row.dataset.key;
-      expandedRow = expandedRow === key ? null : key;
-      renderArbPage();
-      return;
-    }
-
-    const pill = event.target.closest('.arb-filter-pill');
-    if (pill) {
-      const cat = pill.dataset.cat;
+    const catPill = event.target.closest('.filter-pill[data-cat]');
+    if (catPill) {
+      const cat = catPill.dataset.cat;
       if (cat === 'all') {
-        selectedCats.clear();
+        selectedCategories.clear();
+        favoritesOnly = false;
+      } else if (cat === 'fav') {
+        favoritesOnly = !favoritesOnly;
+        if (favoritesOnly) selectedCategories.clear();
       } else {
+        if (favoritesOnly) favoritesOnly = false;
         const catIdx = Number(cat);
-        if (selectedCats.has(catIdx)) {
-          selectedCats.delete(catIdx);
+        if (selectedCategories.has(catIdx)) {
+          selectedCategories.delete(catIdx);
         } else {
-          selectedCats.add(catIdx);
+          selectedCategories.add(catIdx);
         }
       }
-      expandedRow = null;
-      renderArbPage();
-      return;
+      renderTrendPage();
     }
 
-    const windowPill = event.target.closest('.arb-window-pill');
-    if (windowPill) {
-      const newWindow = parseInt(windowPill.dataset.window, 10);
-      if (newWindow !== selectedWindow) {
-        selectedWindow = newWindow;
-        loadPreset(selectedWindow);
-      }
+    const star = event.target.closest('.favorite-star');
+    if (star) {
+      event.preventDefault();
+      event.stopPropagation();
+      const slug = String(star.dataset.favSlug).toLowerCase();
+      const isFavorite = toggleFavorite(slug);
+      if (isFavorite) favoriteSet.add(slug);
+      else favoriteSet.delete(slug);
+      renderTrendPage();
+    }
+  });
+
+  root.addEventListener('change', (event) => {
+    if (event.target.id === 'trend-enhanced-toggle') {
+      showEnhanced = event.target.checked;
+      renderTrendPage();
     }
   });
 
   root.addEventListener('input', (event) => {
-    if (event.target.id === 'arb-min-roi') {
-      minRoiFilter = parseRoiInput(event.target.value);
-      document.querySelectorAll('.arb-preset-btn[data-target="roi"]').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === minRoiFilter);
-      });
-      expandedRow = null;
-      clearTimeout(arbFilterTimer);
-      arbFilterTimer = setTimeout(() => updateArbResults(), 400);
-    } else if (event.target.id === 'arb-min-vol') {
-      minVolFilter = parseVolumeInput(event.target.value);
-      document.querySelectorAll('.arb-preset-btn[data-target="vol"]').forEach(btn => {
-        btn.classList.toggle('active', parseInt(btn.dataset.value, 10) === minVolFilter);
-      });
-      expandedRow = null;
-      clearTimeout(arbFilterTimer);
-      arbFilterTimer = setTimeout(() => updateArbResults(), 400);
-    }
-  });
+    if (!event.target.classList.contains('trend-search')) return;
 
-  root.addEventListener('focusin', (event) => {
-    if (event.target.id === 'arb-min-vol') {
-      event.target.value = minVolFilter || '';
-    }
-  });
+    search = event.target.value;
+    renderTrendPage();
 
-  root.addEventListener('focusout', (event) => {
-    if (event.target.id === 'arb-min-vol') {
-      event.target.value = formatAbbrVolume(minVolFilter);
+    const input = root.querySelector('.trend-search');
+    if (input) {
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
     }
   });
 }
-
 main();

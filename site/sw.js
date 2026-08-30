@@ -1,4 +1,4 @@
-const ICON_CACHE_NAME = 'mwi-icon-cache-v1';
+const ICON_CACHE_NAME = 'mwi-icon-cache-v3';
 
 function getScopeBase() {
   return new URL('./', self.registration.scope).href;
@@ -12,22 +12,8 @@ function isIconRequest(requestUrl) {
   return requestUrl.origin === self.location.origin && requestUrl.pathname.includes('/assets/item_icons/');
 }
 
-function isArbitrageRequest(requestUrl) {
-  return requestUrl.origin === self.location.origin && /\/arbitrage(-\d+d)?\.json$/.test(requestUrl.pathname);
-}
-
-async function cacheArbitrageData(cache) {
-  const files = ['arbitrage.json', 'arbitrage-3d.json'];
-  for (const file of files) {
-    try {
-      const response = await fetch(getAssetUrl(`data/public/${file}`));
-      if (response.ok) {
-        await cache.put(getAssetUrl(`data/public/${file}`), response);
-      }
-    } catch (error) {
-      console.warn(`Failed to pre-cache ${file}:`, error);
-    }
-  }
+function isTrendsRequest(requestUrl) {
+  return requestUrl.origin === self.location.origin && /\/trends\.json$/.test(requestUrl.pathname);
 }
 
 async function cacheManifestIcons(cache) {
@@ -63,7 +49,6 @@ self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(ICON_CACHE_NAME);
     await cacheManifestIcons(cache);
-    await cacheArbitrageData(cache);
     await self.skipWaiting();
   })());
 });
@@ -84,12 +69,29 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
 
-  if (!isIconRequest(requestUrl) && !isArbitrageRequest(requestUrl) && event.request.destination !== 'image') {
+  if (!isIconRequest(requestUrl) && !isTrendsRequest(requestUrl) && event.request.destination !== 'image') {
     return;
   }
 
   event.respondWith((async () => {
     const cache = await caches.open(ICON_CACHE_NAME);
+
+    if (isTrendsRequest(requestUrl)) {
+      try {
+        const networkResponse = await fetch(event.request);
+        if (networkResponse.ok) {
+          cache.put(event.request, networkResponse.clone());
+        }
+        return networkResponse;
+      } catch (error) {
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return new Response('', { status: 504, statusText: 'Gateway Timeout' });
+      }
+    }
+
     const cachedResponse = await cache.match(event.request);
     if (cachedResponse) {
       return cachedResponse;
