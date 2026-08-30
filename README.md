@@ -39,7 +39,7 @@ main (code)
 ├── scripts/
 │   ├── aggregate.js           # Combine hourly files into daily OHLCV
 │   ├── analyze.js             # Build public data bundles and icon manifests
-│   ├── compute-arbitrage.js   # Compute flip/arbitrage opportunities
+│   ├── compute-trends.js      # Compute item price trends (% change over time frames)
 │   ├── fetch.js               # Fetch API, dedupe, write hourly file
 │   ├── prune.js               # Delete hourly files older than 16 days
 │   ├── serve.js               # Local static server
@@ -86,11 +86,11 @@ Combines `main` (code) and `data` (data) at build time.
 **Steps:**
 1. Check out `main`
 2. Overlay `data/` from the `data` branch
-3. Run `analyze.js` and `compute-arbitrage.js` to generate `data/public/`
+3. Run `analyze.js` and `compute-trends.js` to generate `data/public/`
 4. Assemble `_site/` from `site/` + `data/public/` + `data/daily/`
 5. Deploy to GitHub Pages
 
-The UI is item-first: the home page is a searchable item browser and item pages live at `/items/<item_slug>`.
+The UI is item-first: the home page is a searchable item browser, item pages live at `/items/<item_slug>`, a group comparison view lives at `/group`, and a price-trends table (gainers/losers by % change, sortable, with volume stats) lives at `/trends`.
 
 ## Data Format
 
@@ -163,12 +163,14 @@ Then generate the public data and serve:
 
 ```bash
 npm run analyze
+npm run trends
 npm run serve
 ```
 
 Open:
 - `http://localhost:4173/` for the item browser
 - `http://localhost:4173/items/cursed_bow` for an item detail page
+- `http://localhost:4173/trends` for the price-trends table
 
 Optional refresh commands:
 ```bash

@@ -35,7 +35,7 @@ jobs:
       - name: Build public analysis files
         run: |
           node scripts/analyze.js
-          node scripts/compute-arbitrage.js
+          node scripts/compute-trends.js
 
       - name: Prepare site artifact
         run: |
