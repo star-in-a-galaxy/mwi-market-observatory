@@ -3186,6 +3186,7 @@ function renderTable(list) {
           </table>
         </div>
         ${tableFooter}
+        <button id="trend-scroll-top" class="trend-scroll-top" aria-label="Scroll to top" title="Scroll to top">↑</button>
       </section>
     `;
   }
@@ -3267,7 +3268,6 @@ const windowButtons = TREND_WINDOWS
         <div class="category-filters" id="trend-category-filters">${catButtons}</div>
         <div class="trends-enhanced-row">${enhancedToggle}</div>
         ${renderTable(rows)}
-        <button id="trend-scroll-top" class="trend-scroll-top" aria-label="Scroll to top" title="Scroll to top">↑</button>
       `,
       `Item price movers over the last ${windowLabel}`,
       '',

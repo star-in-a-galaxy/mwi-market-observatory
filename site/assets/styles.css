@@ -524,6 +524,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 .trend-panel {
+  position: relative;
   min-width: 0;
 }
 
@@ -573,8 +574,8 @@ a { color: inherit; text-decoration: none; }
 
 .trend-scroll-top {
   position: fixed;
-  bottom: 1.25rem;
-  right: 1.25rem;
+  right: max(0.5rem, calc((100vw - 1160px) / 2 - 5rem));
+  bottom: 3.5rem;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -586,25 +587,24 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(8px);
-  transition: opacity 200ms ease, transform 200ms ease, background 200ms ease;
+  transition: opacity 200ms ease, background 200ms ease, color 200ms ease, border-color 200ms ease;
   z-index: 50;
   box-shadow: var(--shadow);
 }
 .trend-scroll-top.visible {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
 }
 .trend-scroll-top:hover {
   background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-brand) 100%);
+  border-color: transparent;
   color: #fff;
 }
 
 .scroll-top-fixed {
   position: fixed;
-  bottom: 1.25rem;
-  right: 1.25rem;
+  right: max(0.5rem, calc((100vw - 1160px) / 2 - 5rem));
+  bottom: 3.5rem;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -616,18 +616,17 @@ a { color: inherit; text-decoration: none; }
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(8px);
-  transition: opacity 200ms ease, transform 200ms ease, background 200ms ease;
+  transition: opacity 200ms ease, background 200ms ease, color 200ms ease, border-color 200ms ease;
   z-index: 50;
   box-shadow: var(--shadow);
 }
 .scroll-top-fixed.visible {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(0);
 }
 .scroll-top-fixed:hover {
   background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-brand) 100%);
+  border-color: transparent;
   color: #fff;
 }
 
