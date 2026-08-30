@@ -1161,6 +1161,7 @@ async function renderHome(root) {
         </div>
         <div id="item-list" class="item-grid"></div>
       </section>
+      <button id="home-scroll-top" class="scroll-top-fixed" aria-label="Scroll to top" title="Scroll to top">↑</button>
     `,
     'Browse the market history of any item in the game',
     '',
@@ -1172,6 +1173,16 @@ async function renderHome(root) {
   
   if (!search || !list) {
     return;
+  }
+
+  const homeScrollTop = document.getElementById('home-scroll-top');
+  if (homeScrollTop) {
+    window.addEventListener('scroll', () => {
+      homeScrollTop.classList.toggle('visible', window.scrollY > 300);
+    }, { passive: true });
+    homeScrollTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   }
 
   search.value = cachedFilters.searchQuery;
@@ -2993,7 +3004,7 @@ async function renderTrends(root) {
   let favoritesOnly = savedTrends.favoritesOnly === true;
   const favoriteSet = new Set(loadFavorites());
   let search = '';
-  const sortState = { field: 'pct', dir: -1 };
+  const sortState = { field: 'pctVwap', dir: -1 };
 
   function resolveIcon(slug) {
     const slugLower = slug.toLowerCase();
@@ -3019,7 +3030,8 @@ function buildRows() {
         const level = parseInt(levelKey, 10);
         if (!showEnhanced && level > 0) continue;
         const entry = windowMap[selectedWindow];
-        if (entry && typeof entry.pct === 'number' && Number.isFinite(entry.pct)) {
+        const hasBasis = entry && ['vwap', 'ask', 'bid'].some((b) => entry[b] && typeof entry[b].pct === 'number' && Number.isFinite(entry[b].pct));
+        if (hasBasis) {
           withData.push({ item, entry: { ...entry, level, vol1d: windowMap.vol1d, vol7d: windowMap.vol7d } });
         }
       }
@@ -3032,8 +3044,12 @@ function buildRows() {
     const entry = x.entry;
     switch (field) {
       case 'name': return (x.item.name || slugToName[x.item.slug] || x.item.slug).toLowerCase();
-      case 'price': return entry.price;
-      case 'pct': return entry.pct;
+      case 'priceVwap': return entry.vwap ? entry.vwap.price : null;
+      case 'pctVwap': return entry.vwap ? entry.vwap.pct : null;
+      case 'priceAsk': return entry.ask ? entry.ask.price : null;
+      case 'pctAsk': return entry.ask ? entry.ask.pct : null;
+      case 'priceBid': return entry.bid ? entry.bid.price : null;
+      case 'pctBid': return entry.bid ? entry.bid.pct : null;
       case 'vol1d': return entry.vol1d ? entry.vol1d.vol : null;
       case 'vol1dPct': return entry.vol1d ? entry.vol1d.pct : null;
       case 'vol7d': return entry.vol7d ? entry.vol7d.vol : null;
@@ -3064,7 +3080,6 @@ function renderTable(list) {
     const rows = limited.map((x, i) => {
       const { item, entry } = x;
       const iconUrls = resolveIcon(item.slug);
-      const pctClass = entry.pct >= 0 ? 'trend-gain' : 'trend-loss';
       const levelSuffix = entry.level > 0 ? ` <span class="trend-level">+${entry.level}</span>` : '';
       return `
         <tr>
@@ -3074,8 +3089,7 @@ function renderTable(list) {
             ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
             <a href="${itemLink(item.slug)}">${escapeHtml(item.name || slugToName[item.slug] || item.slug)}${levelSuffix}</a>
           </td>
-          <td class="trend-num">${formatTrendCoin(entry.price)}</td>
-          <td class="trend-num ${pctClass}">${formatTrendPct(entry.pct)}</td>
+          ${renderBasisCells(entry)}
           ${renderVolValCell(entry.vol1d)}
           ${renderVolChangeCell(entry.vol1d)}
           ${renderVolValCell(entry.vol7d)}
@@ -3086,7 +3100,18 @@ function renderTable(list) {
 
     const body = rows
       ? rows
-      : '<tr><td colspan="8" class="trend-empty">No movers found for the selected filters.</td></tr>';
+      : '<tr><td colspan="12" class="trend-empty">No movers found for the selected filters.</td></tr>';
+
+    function renderBasisCells(entry) {
+      return ['vwap', 'ask', 'bid'].map((b) => {
+        const data = entry[b];
+        if (!data || typeof data.pct !== 'number' || !Number.isFinite(data.pct)) {
+          return '<td class="trend-num">—</td><td class="trend-num">—</td>';
+        }
+        const pctClass = data.pct >= 0 ? 'trend-gain' : 'trend-loss';
+        return `<td class="trend-num">${formatTrendCoin(data.price)}</td><td class="trend-num ${pctClass}">${formatTrendPct(data.pct)}</td>`;
+      }).join('');
+    }
 
     function renderVolValCell(vol) {
       if (!vol || typeof vol.vol !== 'number' || !Number.isFinite(vol.vol)) {
@@ -3112,6 +3137,10 @@ function renderTable(list) {
       ? `<button class="trend-more-btn">${showAll ? 'Show less' : `Show all (${filtered.length})`}</button>`
       : '';
 
+    const tableFooter = moreBtn ? `
+      <div class="trend-table-footer">${moreBtn}</div>
+    ` : '';
+
     return `
       <section class="card trend-panel">
         <div class="trend-panel-header">
@@ -3126,8 +3155,12 @@ function renderTable(list) {
             <colgroup>
               <col class="trend-col-rank" />
               <col class="trend-col-item" />
-              <col class="trend-col-price" />
-              <col class="trend-col-pct" />
+              <col class="trend-col-price-vwap" />
+              <col class="trend-col-pct-vwap" />
+              <col class="trend-col-price-ask" />
+              <col class="trend-col-pct-ask" />
+              <col class="trend-col-price-bid" />
+              <col class="trend-col-pct-bid" />
               <col class="trend-col-vol1d" />
               <col class="trend-col-vol1dPct" />
               <col class="trend-col-vol7d" />
@@ -3137,8 +3170,12 @@ function renderTable(list) {
               <tr>
                 <th class="trend-num">#</th>
                 <th><input class="trend-search" type="search" value="${escapeHtml(search)}" placeholder="Filter items..." autocomplete="off" aria-label="Filter items" /></th>
-                ${sortTh('price', 'Price')}
-                ${sortTh('pct', 'Change')}
+                ${sortTh('priceVwap', 'Avg price')}
+                ${sortTh('pctVwap', 'Avg change')}
+                ${sortTh('priceAsk', 'Ask price')}
+                ${sortTh('pctAsk', 'Ask change')}
+                ${sortTh('priceBid', 'Bid price')}
+                ${sortTh('pctBid', 'Bid change')}
                 ${sortTh('vol1d', 'Vol 1d')}
                 ${sortTh('vol1dPct', 'Δ 1d')}
                 ${sortTh('vol7d', 'Vol 7d')}
@@ -3148,6 +3185,7 @@ function renderTable(list) {
             <tbody>${body}</tbody>
           </table>
         </div>
+        ${tableFooter}
       </section>
     `;
   }
@@ -3229,6 +3267,7 @@ const windowButtons = TREND_WINDOWS
         <div class="category-filters" id="trend-category-filters">${catButtons}</div>
         <div class="trends-enhanced-row">${enhancedToggle}</div>
         ${renderTable(rows)}
+        <button id="trend-scroll-top" class="trend-scroll-top" aria-label="Scroll to top" title="Scroll to top">↑</button>
       `,
       `Item price movers over the last ${windowLabel}`,
       '',
@@ -3241,7 +3280,7 @@ async function loadTrends() {
       const data = await fetchJson(assetPath('data/public/trends.json'));
       const rawItems = Array.isArray(data.items) ? data.items : [];
       const hasLevels = rawItems.some((i) => i && i.levels);
-      if (!hasLevels) {
+      if (data.v !== 3 || !hasLevels) {
         status = 'stale';
       } else {
         items = rawItems.filter((i) => i && i.levels);
@@ -3255,7 +3294,18 @@ async function loadTrends() {
 
   await loadTrends();
 
+  window.addEventListener('scroll', () => {
+    const btn = root.querySelector('#trend-scroll-top');
+    if (!btn) return;
+    btn.classList.toggle('visible', window.scrollY > 300);
+  }, { passive: true });
+
   root.addEventListener('click', (event) => {
+    if (event.target.closest('#trend-scroll-top')) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     const windowPill = event.target.closest('.trend-window-pill');
     if (windowPill) {
       const newWindow = windowPill.dataset.window;

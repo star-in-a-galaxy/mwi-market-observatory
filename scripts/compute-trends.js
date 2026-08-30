@@ -19,41 +19,32 @@ const WINDOWS = [
 
 const MIN_POINTS_IN_WINDOW = 3;
 
-function pickPrice(ask, bid) {
-  if (typeof ask === 'number' && ask > 0 && typeof bid === 'number' && bid > 0) {
-    return (ask + bid) / 2;
-  }
-  return null;
-}
-
 function parsePoint(point) {
-  let ts, ask, bid, vol;
+  let ts, ask, bid, vol, price;
   if (Array.isArray(point)) {
-    [ts, ask, bid, vol] = point;
+    [ts, ask, bid, vol, price] = point;
   } else if (point && typeof point === 'object') {
     ts = point.timestamp || point.t;
     ask = point.ask ?? point.a;
     bid = point.bid ?? point.b;
     vol = point.volume ?? point.v;
+    price = point.price ?? point.p;
   }
   if (typeof ts !== 'number' || ts <= 0) return null;
   return {
     ts,
-    ask,
-    bid,
+    ask: typeof ask === 'number' && ask > 0 ? ask : null,
+    bid: typeof bid === 'number' && bid > 0 ? bid : null,
     vol: typeof vol === 'number' && vol > 0 ? vol : 0,
-    price: pickPrice(ask, bid),
+    price: typeof price === 'number' && price > 0 ? price : null,
   };
 }
 
-function buildLevelSeries(levelData) {
-  const dailyRaw = levelData.d || levelData.daily || [];
-  const hourlyRaw = levelData.h || levelData.hourly || [];
-
+function dedupePoints(rawPoints) {
   const series = [];
-  for (const raw of [...dailyRaw, ...hourlyRaw]) {
+  for (const raw of rawPoints) {
     const point = parsePoint(raw);
-    if (!point || point.price == null) continue;
+    if (!point) continue;
     const last = series[series.length - 1];
     if (last && last.ts === point.ts) {
       series[series.length - 1] = point;
@@ -75,6 +66,26 @@ function buildLevelSeries(levelData) {
   }
 
   return deduped;
+}
+
+function buildRawSeries(levelData) {
+  const dailyRaw = levelData.d || levelData.daily || [];
+  const hourlyRaw = levelData.h || levelData.hourly || [];
+  return dedupePoints([...dailyRaw, ...hourlyRaw]);
+}
+
+function buildHourlySeries(levelData) {
+  const hourlyRaw = levelData.h || levelData.hourly || [];
+  return dedupePoints(hourlyRaw);
+}
+
+function priceSeries(raw, field) {
+  const out = [];
+  for (const p of raw) {
+    if (p[field] == null) continue;
+    out.push({ ts: p.ts, price: p[field] });
+  }
+  return out;
 }
 
 function windowChange(series, windowMs, globalNow) {
@@ -110,9 +121,55 @@ function windowChange(series, windowMs, globalNow) {
   return { pct, price: current.price, ts: current.ts };
 }
 
-function windowVolume(series, windowMs) {
+function vwapPoints(raw) {
+  const out = [];
+  for (const p of raw) {
+    if (p.price == null || p.vol <= 0) continue;
+    out.push({ ts: p.ts, price: p.price, vol: p.vol });
+  }
+  return out;
+}
+
+function windowVwapValue(points, startMs, endMs) {
+  let totalVol = 0;
+  let totalValue = 0;
+  for (const p of points) {
+    if (p.ts <= startMs) continue;
+    if (p.ts > endMs) break;
+    totalVol += p.vol;
+    totalValue += p.price * p.vol;
+  }
+  return totalVol > 0 ? totalValue / totalVol : null;
+}
+
+function windowVwapChange(points, windowMs) {
+  if (points.length < 2) return null;
+
+  const now = points[points.length - 1].ts;
+  const cutoff = now - windowMs;
+
+  let inWindow = 0;
+  for (let i = points.length - 1; i >= 0; i--) {
+    if (points[i].ts <= cutoff) break;
+    inWindow++;
+  }
+  if (inWindow < MIN_POINTS_IN_WINDOW) return null;
+
+  const current = windowVwapValue(points, cutoff, now);
+  if (current == null) return null;
+
+  const past = windowVwapValue(points, cutoff - windowMs, cutoff);
+  if (past == null || past <= 0) return null;
+
+  const pct = ((current - past) / past) * 100;
+  if (!Number.isFinite(pct)) return null;
+
+  return { pct, price: current };
+}
+
+function windowVolume(series, windowMs, globalNow) {
   if (series.length === 0) return 0;
-  const cutoff = series[series.length - 1].ts - windowMs;
+  const cutoff = globalNow - windowMs;
   let vol = 0;
   for (const point of series) {
     if (point.ts > cutoff) vol += point.vol;
@@ -187,28 +244,37 @@ function computeTrends() {
     for (const level of levels) {
       const levelData = data[level];
       if (!levelData) continue;
-      const series = buildLevelSeries(levelData);
-      if (series.length > 0 && series[series.length - 1].ts > latestDataTimestamp) {
-        latestDataTimestamp = series[series.length - 1].ts;
+      const raw = buildRawSeries(levelData);
+      const hourly = buildHourlySeries(levelData);
+      if (raw.length > 0 && raw[raw.length - 1].ts > latestDataTimestamp) {
+        latestDataTimestamp = raw[raw.length - 1].ts;
       }
-      if (series.length < 2) continue;
-      levelSeries[level] = series;
+      if (raw.length < 2) continue;
+      levelSeries[level] = { raw, hourly };
     }
 
     if (Object.keys(levelSeries).length === 0) continue;
 
     const levelsOut = {};
-    for (const [level, series] of Object.entries(levelSeries)) {
+    for (const [level, { raw, hourly }] of Object.entries(levelSeries)) {
+      const askSeries = priceSeries(raw, 'ask');
+      const bidSeries = priceSeries(raw, 'bid');
+      const vwapPts = vwapPoints(hourly);
+
       const windowOut = {};
       for (const window of WINDOWS) {
-        const change = windowChange(series, window.ms, latestDataTimestamp);
-        if (!change) continue;
+        const basisOut = {};
+        const ask = windowChange(askSeries, window.ms, latestDataTimestamp);
+        const bid = windowChange(bidSeries, window.ms, latestDataTimestamp);
+        const vwap = windowVwapChange(vwapPts, window.ms);
 
-        windowOut[window.key] = {
-          pct: Math.round(change.pct * 100) / 100,
-          price: Math.round(change.price),
-          vol: Math.round(windowVolume(series, window.ms)),
-        };
+        if (ask) basisOut.ask = { pct: Math.round(ask.pct * 100) / 100, price: Math.round(ask.price) };
+        if (bid) basisOut.bid = { pct: Math.round(bid.pct * 100) / 100, price: Math.round(bid.price) };
+        if (vwap) basisOut.vwap = { pct: Math.round(vwap.pct * 100) / 100, price: Math.round(vwap.price) };
+
+        if (Object.keys(basisOut).length > 0) {
+          windowOut[window.key] = Object.assign(basisOut, { vol: Math.round(windowVolume(raw, window.ms, latestDataTimestamp)) });
+        }
       }
       if (Object.keys(windowOut).length === 0) continue;
 
@@ -225,6 +291,7 @@ function computeTrends() {
 
   const output = {
     generatedAt: new Date(latestDataTimestamp || Date.now()).toISOString(),
+    v: 3,
     windows: WINDOWS.map((w) => ({ key: w.key, label: w.label, ms: w.ms })),
     itemCount: items.length,
     items,
