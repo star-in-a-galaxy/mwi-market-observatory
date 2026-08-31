@@ -39,9 +39,9 @@ function loadFilters() {
 
 const TRENDS_FILTER_KEY = 'mwi_trends_filters';
 
-function saveTrendsFilters(windowKey, categories, showEnhanced, favoritesOnly) {
+function saveTrendsFilters(windowKey, categories, showEnhanced, favoritesOnly, hiddenColumns) {
   try {
-    localStorage.setItem(TRENDS_FILTER_KEY, JSON.stringify({ window: windowKey, categories, showEnhanced, favoritesOnly }));
+    localStorage.setItem(TRENDS_FILTER_KEY, JSON.stringify({ window: windowKey, categories, showEnhanced, favoritesOnly, hiddenColumns }));
   } catch (e) {
     console.warn('Failed to save trends filter cache:', e);
   }
@@ -50,10 +50,10 @@ function saveTrendsFilters(windowKey, categories, showEnhanced, favoritesOnly) {
 function loadTrendsFilters() {
   try {
     const cached = localStorage.getItem(TRENDS_FILTER_KEY);
-    return cached ? JSON.parse(cached) : { window: '24h', categories: [], showEnhanced: true, favoritesOnly: false };
+    return cached ? JSON.parse(cached) : { window: '24h', categories: [], showEnhanced: true, favoritesOnly: false, hiddenColumns: [] };
   } catch (e) {
     console.warn('Failed to load trends filter cache:', e);
-    return { window: '24h', categories: [], showEnhanced: true, favoritesOnly: false };
+    return { window: '24h', categories: [], showEnhanced: true, favoritesOnly: false, hiddenColumns: [] };
   }
 }
 
@@ -2983,6 +2983,22 @@ const TREND_WINDOW_LABELS = {
   '30d': '30 Days',
 };
 
+const TREND_COLUMNS = [
+  { key: 'rank', label: '#', weight: 3, mandatory: true },
+  { key: 'item', label: 'Item', weight: 23, mandatory: true },
+  { key: 'priceVwap', label: 'Avg price', weight: 7, sort: 'priceVwap' },
+  { key: 'pctVwap', label: 'Avg change', weight: 9, sort: 'pctVwap' },
+  { key: 'priceAsk', label: 'Ask price', weight: 7, sort: 'priceAsk' },
+  { key: 'pctAsk', label: 'Ask change', weight: 9, sort: 'pctAsk' },
+  { key: 'priceBid', label: 'Bid price', weight: 7, sort: 'priceBid' },
+  { key: 'pctBid', label: 'Bid change', weight: 9, sort: 'pctBid' },
+  { key: 'spread', label: 'Spread %', weight: 9, sort: 'spread' },
+  { key: 'vol1d', label: 'Vol 1d', weight: 6, sort: 'vol1d' },
+  { key: 'vol1dPct', label: 'Δ 1d', weight: 7, sort: 'vol1dPct' },
+  { key: 'vol7d', label: 'Vol 7d', weight: 6, sort: 'vol7d' },
+  { key: 'vol7dPct', label: 'Δ 7d', weight: 7, sort: 'vol7dPct' },
+];
+
 async function renderTrends(root) {
   const catalog = await loadCatalog();
   const iconFiles = catalog.iconFiles || {};
@@ -3004,6 +3020,8 @@ async function renderTrends(root) {
   let favoritesOnly = savedTrends.favoritesOnly === true;
   const favoriteSet = new Set(loadFavorites());
   let search = '';
+  let hiddenColumns = new Set(Array.isArray(savedTrends.hiddenColumns) ? savedTrends.hiddenColumns : []);
+  let columnsOpen = false;
   const sortState = { field: 'pctVwap', dir: -1 };
 
   function resolveIcon(slug) {
@@ -3050,6 +3068,7 @@ function buildRows() {
       case 'pctAsk': return entry.ask ? entry.ask.pct : null;
       case 'priceBid': return entry.bid ? entry.bid.price : null;
       case 'pctBid': return entry.bid ? entry.bid.pct : null;
+      case 'spread': return entry.ask && entry.bid && entry.bid.price > 0 ? ((entry.ask.price - entry.bid.price) / entry.bid.price) * 100 : null;
       case 'vol1d': return entry.vol1d ? entry.vol1d.vol : null;
       case 'vol1dPct': return entry.vol1d ? entry.vol1d.pct : null;
       case 'vol7d': return entry.vol7d ? entry.vol7d.vol : null;
@@ -3077,65 +3096,112 @@ function renderTable(list) {
       ? sortedList.filter((x) => (x.item.name || slugToName[x.item.slug] || x.item.slug).toLowerCase().includes(query))
       : sortedList;
     const limited = showAll ? filtered : filtered.slice(0, PANEL_LIMIT);
+
+    const visibleCols = TREND_COLUMNS.filter((c) => c.mandatory || !hiddenColumns.has(c.key));
+    const totalWeight = visibleCols.reduce((acc, c) => acc + c.weight, 0);
+    const colWidth = (c) => `${(c.weight / totalWeight) * 100}%`;
+
+    const basisOf = { priceVwap: 'vwap', pctVwap: 'vwap', priceAsk: 'ask', pctAsk: 'ask', priceBid: 'bid', pctBid: 'bid' };
+
+    function renderCell(key, ctx) {
+      const { item, entry, iconUrls, levelSuffix, rank } = ctx;
+      switch (key) {
+        case 'rank':
+          return `<td class="trend-num trend-rank">${rank}</td>`;
+        case 'item':
+          return `<td class="trend-item-cell">
+            <img class="trend-icon" src="${iconUrls.svgUrl}" alt="" data-fallback-src="${iconUrls.pngUrl}" />
+            ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
+            <a href="${itemLink(item.slug)}">${escapeHtml(item.name || slugToName[item.slug] || item.slug)}${levelSuffix}</a>
+          </td>`;
+        case 'priceVwap':
+        case 'priceAsk':
+        case 'priceBid': {
+          const data = entry[basisOf[key]];
+          const val = data && typeof data.price === 'number' && Number.isFinite(data.price) ? formatTrendCoin(data.price) : '—';
+          return `<td class="trend-num">${val}</td>`;
+        }
+        case 'pctVwap':
+        case 'pctAsk':
+        case 'pctBid': {
+          const data = entry[basisOf[key]];
+          if (!data || typeof data.pct !== 'number' || !Number.isFinite(data.pct)) return '<td class="trend-num">—</td>';
+          const cls = data.pct >= 0 ? 'trend-gain' : 'trend-loss';
+          return `<td class="trend-num"><span class="${cls}">${formatTrendPct(data.pct)}</span></td>`;
+        }
+        case 'spread': {
+          const { ask, bid } = entry;
+          if (!ask || !bid || typeof ask.price !== 'number' || typeof bid.price !== 'number' || bid.price <= 0) return '<td class="trend-num">—</td>';
+          const spreadPct = ((ask.price - bid.price) / bid.price) * 100;
+          if (!Number.isFinite(spreadPct)) return '<td class="trend-num">—</td>';
+          const cls = spreadPct >= 0 ? 'trend-gain' : 'trend-loss';
+          return `<td class="trend-num"><span class="${cls}">${formatTrendPct(spreadPct)}</span></td>`;
+        }
+        case 'vol1d':
+        case 'vol7d': {
+          const vol = entry[key];
+          const val = vol && typeof vol.vol === 'number' && Number.isFinite(vol.vol) ? formatCompactNumber(vol.vol) : '—';
+          return `<td class="trend-num">${val}</td>`;
+        }
+        case 'vol1dPct':
+        case 'vol7dPct': {
+          const vol = entry[key === 'vol1dPct' ? 'vol1d' : 'vol7d'];
+          if (!vol || typeof vol.pct !== 'number' || !Number.isFinite(vol.pct)) return '<td class="trend-num">—</td>';
+          const cls = vol.pct >= 0 ? 'trend-gain' : 'trend-loss';
+          return `<td class="trend-num trend-cell-narrow"><span class="trend-vol-pct ${cls}">${formatTrendPct(vol.pct)}</span></td>`;
+        }
+        default:
+          return '<td class="trend-num">—</td>';
+      }
+    }
+
     const rows = limited.map((x, i) => {
       const { item, entry } = x;
       const iconUrls = resolveIcon(item.slug);
       const levelSuffix = entry.level > 0 ? ` <span class="trend-level">+${entry.level}</span>` : '';
-      return `
-        <tr>
-          <td class="trend-num trend-rank">${i + 1}</td>
-          <td class="trend-item-cell">
-            <img class="trend-icon" src="${iconUrls.svgUrl}" alt="" data-fallback-src="${iconUrls.pngUrl}" />
-            ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
-            <a href="${itemLink(item.slug)}">${escapeHtml(item.name || slugToName[item.slug] || item.slug)}${levelSuffix}</a>
-          </td>
-          ${renderBasisCells(entry)}
-          ${renderVolValCell(entry.vol1d)}
-          ${renderVolChangeCell(entry.vol1d)}
-          ${renderVolValCell(entry.vol7d)}
-          ${renderVolChangeCell(entry.vol7d)}
-        </tr>
-      `;
+      const cells = visibleCols.map((c) => renderCell(c.key, { item, entry, iconUrls, levelSuffix, rank: i + 1 }));
+      return `<tr>${cells.join('')}</tr>`;
     }).join('');
 
     const body = rows
       ? rows
-      : '<tr><td colspan="12" class="trend-empty">No movers found for the selected filters.</td></tr>';
-
-    function renderBasisCells(entry) {
-      return ['vwap', 'ask', 'bid'].map((b) => {
-        const data = entry[b];
-        if (!data || typeof data.pct !== 'number' || !Number.isFinite(data.pct)) {
-          return '<td class="trend-num">—</td><td class="trend-num">—</td>';
-        }
-        const pctClass = data.pct >= 0 ? 'trend-gain' : 'trend-loss';
-        return `<td class="trend-num">${formatTrendCoin(data.price)}</td><td class="trend-num ${pctClass}">${formatTrendPct(data.pct)}</td>`;
-      }).join('');
-    }
-
-    function renderVolValCell(vol) {
-      if (!vol || typeof vol.vol !== 'number' || !Number.isFinite(vol.vol)) {
-        return '<td class="trend-num">—</td>';
-      }
-      return `<td class="trend-num">${formatCompactNumber(vol.vol)}</td>`;
-    }
-
-    function renderVolChangeCell(vol) {
-      if (!vol || typeof vol.pct !== 'number' || !Number.isFinite(vol.pct)) {
-        return '<td class="trend-num">—</td>';
-      }
-      const cls = vol.pct >= 0 ? 'trend-gain' : 'trend-loss';
-      return `<td class="trend-num"><span class="trend-vol-pct ${cls}">${formatTrendPct(vol.pct)}</span></td>`;
-    }
+      : `<tr><td colspan="${visibleCols.length}" class="trend-empty">No movers found for the selected filters.</td></tr>`;
 
     const sortArrow = (field) => (sortState.field === field ? (sortState.dir > 0 ? ' ▲' : ' ▼') : '');
     const sortTh = (field, label) => `
       <th class="trend-num trend-sort ${sortState.field === field ? 'active' : ''}" data-sort="${field}" title="Sort by ${label}">${label}${sortArrow(field)}</th>
     `;
 
+    const headerCells = visibleCols.map((c) => {
+      if (c.key === 'rank') return '<th class="trend-num">#</th>';
+      if (c.key === 'item') return `<th><input class="trend-search" type="search" value="${escapeHtml(search)}" placeholder="Filter items..." autocomplete="off" aria-label="Filter items" /></th>`;
+      if (c.key === 'vol1dPct' || c.key === 'vol7dPct') {
+        return `<th class="trend-num trend-sort trend-cell-narrow ${sortState.field === c.sort ? 'active' : ''}" data-sort="${c.sort}" title="Sort by ${c.label}">${c.label}${sortArrow(c.sort)}</th>`;
+      }
+      return sortTh(c.sort, c.label);
+    }).join('');
+
+    const colHtml = visibleCols.map((c) => `<col class="trend-col-${c.key}" style="width: ${colWidth(c)}" />`).join('');
+
     const moreBtn = filtered.length > PANEL_LIMIT
       ? `<button class="trend-more-btn">${showAll ? 'Show less' : `Show all (${filtered.length})`}</button>`
       : '';
+
+    const columnsControl = `
+      <div class="trend-columns-wrap">
+        <button class="trend-columns-btn ${columnsOpen ? 'active' : ''}" id="trend-columns-btn" type="button">Select Displayed Columns ▾</button>
+        <div class="trend-columns-popover ${columnsOpen ? 'open' : ''}">
+          <div class="trend-columns-head">
+            <span>Show columns</span>
+            <button class="trend-columns-reset" id="trend-columns-reset" type="button">Reset</button>
+          </div>
+          ${TREND_COLUMNS.filter((c) => !c.mandatory).map((c) => `
+            <label class="trend-columns-item">
+              <input type="checkbox" data-col-key="${c.key}" ${hiddenColumns.has(c.key) ? '' : 'checked'} />
+              <span>${escapeHtml(c.label)}</span>
+            </label>`).join('')}
+        </div>
+      </div>`;
 
     const tableFooter = moreBtn ? `
       <div class="trend-table-footer">${moreBtn}</div>
@@ -3148,39 +3214,13 @@ function renderTable(list) {
             <h2>All Movers</h2>
             <p class="trend-subtitle">Sort by any column — click a header to toggle ascending / descending.</p>
           </div>
-          ${moreBtn}
+          <div class="trend-panel-actions">${moreBtn}${columnsControl}</div>
         </div>
         <div class="trend-table-wrap">
           <table class="trend-table">
-            <colgroup>
-              <col class="trend-col-rank" />
-              <col class="trend-col-item" />
-              <col class="trend-col-price-vwap" />
-              <col class="trend-col-pct-vwap" />
-              <col class="trend-col-price-ask" />
-              <col class="trend-col-pct-ask" />
-              <col class="trend-col-price-bid" />
-              <col class="trend-col-pct-bid" />
-              <col class="trend-col-vol1d" />
-              <col class="trend-col-vol1dPct" />
-              <col class="trend-col-vol7d" />
-              <col class="trend-col-vol7dPct" />
-            </colgroup>
+            <colgroup>${colHtml}</colgroup>
             <thead>
-              <tr>
-                <th class="trend-num">#</th>
-                <th><input class="trend-search" type="search" value="${escapeHtml(search)}" placeholder="Filter items..." autocomplete="off" aria-label="Filter items" /></th>
-                ${sortTh('priceVwap', 'Avg price')}
-                ${sortTh('pctVwap', 'Avg change')}
-                ${sortTh('priceAsk', 'Ask price')}
-                ${sortTh('pctAsk', 'Ask change')}
-                ${sortTh('priceBid', 'Bid price')}
-                ${sortTh('pctBid', 'Bid change')}
-                ${sortTh('vol1d', 'Vol 1d')}
-                ${sortTh('vol1dPct', 'Δ 1d')}
-                ${sortTh('vol7d', 'Vol 7d')}
-                ${sortTh('vol7dPct', 'Δ 7d')}
-              </tr>
+              <tr>${headerCells}</tr>
             </thead>
             <tbody>${body}</tbody>
           </table>
@@ -3254,7 +3294,7 @@ const windowButtons = TREND_WINDOWS
     const rows = buildRows();
     const windowLabel = TREND_WINDOW_LABELS[selectedWindow] || selectedWindow;
 
-    saveTrendsFilters(selectedWindow, Array.from(selectedCategories), showEnhanced, favoritesOnly);
+    saveTrendsFilters(selectedWindow, Array.from(selectedCategories), showEnhanced, favoritesOnly, Array.from(hiddenColumns));
 
     renderShell(
       root,
@@ -3294,6 +3334,13 @@ async function loadTrends() {
 
   await loadTrends();
 
+  document.addEventListener('click', (event) => {
+    if (!columnsOpen) return;
+    if (event.target.closest('.trend-columns-wrap')) return;
+    columnsOpen = false;
+    renderTrendPage();
+  });
+
   window.addEventListener('scroll', () => {
     const btn = root.querySelector('#trend-scroll-top');
     if (!btn) return;
@@ -3303,6 +3350,19 @@ async function loadTrends() {
   root.addEventListener('click', (event) => {
     if (event.target.closest('#trend-scroll-top')) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (event.target.closest('#trend-columns-btn')) {
+      columnsOpen = !columnsOpen;
+      renderTrendPage();
+      return;
+    }
+
+    if (event.target.closest('#trend-columns-reset')) {
+      hiddenColumns.clear();
+      saveTrendsFilters(selectedWindow, Array.from(selectedCategories), showEnhanced, favoritesOnly, Array.from(hiddenColumns));
+      renderTrendPage();
       return;
     }
 
@@ -3370,6 +3430,19 @@ if (event.target.closest('.trend-more-btn')) {
   root.addEventListener('change', (event) => {
     if (event.target.id === 'trend-enhanced-toggle') {
       showEnhanced = event.target.checked;
+      renderTrendPage();
+      return;
+    }
+
+    const colCheckbox = event.target.closest('.trend-columns-item input[data-col-key]');
+    if (colCheckbox) {
+      const key = colCheckbox.dataset.colKey;
+      if (colCheckbox.checked) {
+        hiddenColumns.delete(key);
+      } else {
+        hiddenColumns.add(key);
+      }
+      saveTrendsFilters(selectedWindow, Array.from(selectedCategories), showEnhanced, favoritesOnly, Array.from(hiddenColumns));
       renderTrendPage();
     }
   });

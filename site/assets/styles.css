@@ -466,8 +466,93 @@ a { color: inherit; text-decoration: none; }
 
 .trends-enhanced-row {
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
   margin: 0 0 1rem;
+}
+
+.trend-columns-wrap {
+  position: relative;
+}
+
+.trend-columns-btn {
+  border: 1px solid var(--stroke);
+  background: var(--bg-panel-light);
+  color: var(--text-primary);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: all 200ms ease;
+}
+.trend-columns-btn:hover,
+.trend-columns-btn.active {
+  border-color: var(--accent-cyan);
+  color: var(--text-primary);
+}
+
+.trend-columns-popover {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 60;
+  width: 220px;
+  padding: 0.75rem;
+  background: var(--bg-panel-light);
+  border: 1px solid var(--stroke);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  display: none;
+}
+.trend-columns-popover.open {
+  display: block;
+}
+
+.trend-columns-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.trend-columns-reset {
+  background: none;
+  border: none;
+  color: var(--accent-cyan);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+.trend-columns-reset:hover {
+  color: var(--text-primary);
+}
+
+.trend-columns-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.25rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  user-select: none;
+}
+.trend-columns-item:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 6px;
+}
+.trend-columns-item input {
+  accent-color: var(--accent-brand);
+  cursor: pointer;
 }
 
 .trend-switch {
@@ -534,6 +619,13 @@ a { color: inherit; text-decoration: none; }
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.85rem;
+}
+
+.trend-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .trend-panel-header h2 {
@@ -644,23 +736,8 @@ a { color: inherit; text-decoration: none; }
   font-size: 0.85rem;
 }
 
-.trend-col-rank { width: 3%; }
-.trend-col-item { width: 23%; }
-.trend-col-price-vwap { width: 7%; }
-.trend-col-pct-vwap { width: 9%; }
-.trend-col-price-ask { width: 7%; }
-.trend-col-pct-ask { width: 9%; }
-.trend-col-price-bid { width: 7%; }
-.trend-col-pct-bid { width: 9%; }
-.trend-col-vol1d { width: 6%; }
-.trend-col-vol1dPct { width: 7%; }
-.trend-col-vol7d { width: 6%; }
-.trend-col-vol7dPct { width: 7%; }
-
-.trend-table .trend-col-vol1dPct th,
-.trend-table .trend-col-vol1dPct td,
-.trend-table .trend-col-vol7dPct th,
-.trend-table .trend-col-vol7dPct td {
+.trend-table th.trend-cell-narrow,
+.trend-table td.trend-cell-narrow {
   padding-left: 0.2rem;
   padding-right: 0.2rem;
 }
