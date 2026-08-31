@@ -2,7 +2,7 @@
 // @name         MWI Market Observatory
 // @name:zh-CN   MWI 市场观察站
 // @namespace    mwi-market-observatory
-// @version      0.1.0
+// @version      0.1.1
 // @description  Show market price charts from the MWI Market Observatory in the marketplace and in item context menus.
 // @description:zh-CN 在市场及物品右键菜单中显示 MWI 市场观察站的价格图表。
 // @icon         https://star-in-a-galaxy.github.io/mwi-market-observatory/assets/logo.svg
