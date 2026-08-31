@@ -179,6 +179,10 @@ npm run aggregate -- --date=2026-05-06
 npm run prune
 ```
 
+## Disclaimer
+
+This is an unofficial, community-made tool. It is **not affiliated with or endorsed by** Milky Way Idle or its developers. Market data is provided as-is and may be delayed or inaccurate. Use at your own risk.
+
 ## License
 
 MIT

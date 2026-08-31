@@ -279,7 +279,7 @@ function escapeHtml(value) {
 
 function setHTML(el, html) {
   if (el && window.DOMPurify) {
-    el.innerHTML = DOMPurify.sanitize(html);
+    el.innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ['target'] });
   } else if (el) {
     el.innerHTML = html;
   }
@@ -890,6 +890,7 @@ function renderShell(root, title, content, subtitle = '', iconHtml = '', logoHtm
         <div>
           <h1>${escapeHtml(title)}</h1>
           <p class="status">${escapeHtml(subtitle)}</p>
+          <a class="hero-userscript-link" href="https://greasyfork.org/en/scripts/593813-mwi-market-observatory" target="_blank" rel="noopener noreferrer" title="MWI Market Observatory userscript on GreasyFork">📦 Browser userscript</a>
         </div>
       </div>
       ${logoHtml ? `<div class="hero-logo">${logoHtml}</div>` : ''}
