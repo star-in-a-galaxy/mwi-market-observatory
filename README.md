@@ -11,11 +11,13 @@ This repository automatically:
 - **Builds** public site data and icon manifests at build time
 - **Deploys** the static site to GitHub Pages
 - **Squashes** the data branch history so the repository stays small
+- **Archives** daily files to an append-only `daily` branch with dated, tagged commits
 
-The repository is split across **two branches** to keep history lean:
+The repository is split across **three branches** to keep history lean:
 
 - **`main`** holds the code only: `site/`, `scripts/`, workflows, config. Clean, small, meaningful history.
 - **`data`** holds the data only: `data/hourly/` (16-day window) and `data/daily/` (kept forever). Squashed to a single snapshot on every aggregate.
+- **`daily`** is an **append-only** branch: one dated commit per daily file, tagged `daily-YYYY-MM-DD`. The `data` branch is force-squashed and cannot carry dates; this branch never is, so the daily data has a verifiable, dated history.
 
 ## Site
 
@@ -33,7 +35,7 @@ https://www.milkywayidle.com/game_data/marketplace.json
 ```
 main (code)
 ├── .github/workflows/
-│   ├── aggregate.yml          # Daily aggregate + prune + squash
+│   ├── aggregate.yml          # Daily aggregate + prune + publish + squash
 │   ├── fetch.yml              # Fetches marketplace snapshots
 │   └── pages.yml              # Builds and deploys site
 ├── scripts/
@@ -42,6 +44,7 @@ main (code)
 │   ├── compute-trends.js      # Compute item price trends (% change over time frames)
 │   ├── fetch.js               # Fetch API, dedupe, write hourly file
 │   ├── prune.js               # Delete hourly files older than 16 days
+│   ├── publish-daily.js       # Append daily files to the daily branch
 │   ├── serve.js               # Local static server
 │   └── squash-data.js         # Collapse the data branch to one snapshot
 └── site/                      # The page source (index.html, assets/, ...)
@@ -50,6 +53,9 @@ data (data branch)
 └── data/
     ├── daily/                 # YYYY-MM-DD.json (kept forever)
     └── hourly/                # YYYY-MM-DD.json + YYYY-MM-DD/HH-MM.json (16 days)
+
+daily (append-only branch)
+└── data/daily/                # YYYY-MM-DD.json, one dated commit + tag per day
 ```
 
 `data/public/` is **derived** and not stored in the repo; it is regenerated at build time.
@@ -76,8 +82,11 @@ Checks out the `data` branch, overlays the code from `main`.
 2. Compute OHLCV for each item and enhancement level
 3. Write daily summary to `data/daily/YYYY-MM-DD.json`
 4. Prune hourly data older than 16 days
-5. Collapse the `data` branch to a single snapshot commit (`squash-data.js`)
-6. Force-push the `data` branch
+5. Publish yesterday's daily file to the append-only `daily` branch (`publish-daily.js`), then push it and its tags
+6. Collapse the `data` branch to a single snapshot commit (`squash-data.js`)
+7. Force-push the `data` branch
+
+Publishing runs before the `data` squash, so if it fails the job stops before `data` is force-pushed.
 
 ### pages.yml (Build And Deploy Pages)
 

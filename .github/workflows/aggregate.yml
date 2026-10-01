@@ -21,15 +21,24 @@ jobs:
           git fetch origin main
           git checkout FETCH_HEAD -- scripts package.json
           git reset
-      - run: node scripts/aggregate.js
-      - run: node scripts/prune.js
-      - name: Aggregate, squash data branch, and push
+      - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+      - name: Aggregate and prune
+        run: |
           git pull --rebase origin data || true
           node scripts/aggregate.js
           node scripts/prune.js
+      - name: Publish yesterday's daily file to append-only daily branch
+        run: |
+          node scripts/publish-daily.js
+          if git show-ref --verify --quiet refs/heads/daily; then
+            git push origin refs/heads/daily:refs/heads/daily
+            git push origin --tags
+          fi
+      - name: Squash data branch snapshot and push
+        run: |
           node scripts/squash-data.js
           git push --force origin data
       - name: Trigger pages deploy
