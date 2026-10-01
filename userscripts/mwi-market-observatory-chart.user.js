@@ -2,7 +2,7 @@
 // @name         MWI Market Observatory
 // @name:zh-CN   MWI 市场观察站
 // @namespace    mwi-market-observatory
-// @version      0.1.1
+// @version      0.1.2
 // @description  Show market price charts from the MWI Market Observatory in the marketplace and in item context menus.
 // @description:zh-CN 在市场及物品右键菜单中显示 MWI 市场观察站的价格图表。
 // @icon         https://star-in-a-galaxy.github.io/mwi-market-observatory/assets/logo.svg
@@ -15,8 +15,9 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM_getValue
 // @grant        GM_setValue
+// @grant        unsafeWindow
 // @connect      star-in-a-galaxy.github.io
-// @run-at       document-idle
+// @run-at       document-start
 // @updateURL    https://update.greasyfork.org/scripts/593813/MWI%20Market%20Observatory.meta.js
 // @downloadURL  https://update.greasyfork.org/scripts/593813/MWI%20Market%20Observatory.user.js
 // ==/UserScript==
@@ -69,6 +70,7 @@
   const POLL_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
   const CHART_WIDTH = 960;
   const CHART_HEIGHT = 400;
+  const TREND_THRESHOLD = 0.5; // min |%| for showing a trend arrow
 
   const WINDOW_CONFIG = {
     '1d': { label: '1 Day', hours: 24 },
@@ -211,7 +213,7 @@
       border-bottom: 1px solid rgba(255,255,255,0.06);
       flex-shrink: 0;
     }
-    .mwi-mo-stat { background: rgba(255,255,255,0.03); border-radius: 8px; padding: 6px 8px; text-align: center; }
+    .mwi-mo-stat { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 6px 8px; text-align: center; }
     .mwi-mo-stat-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: ${COLORS.textMuted}; }
     .mwi-mo-stat-value { display: block; font-weight: 700; font-variant-numeric: tabular-nums; }
 
@@ -241,6 +243,23 @@
       white-space: nowrap;
     }
     .mwi-mo-auto input { accent-color: #7c3aed; cursor: pointer; margin: 0; }
+
+    .mwi-mo-footer-settings { display: inline-flex; align-items: center; gap: 12px; }
+
+    .mwi-mo-mp-strip {
+      display: block;
+      width: 100%;
+      margin: 6px 0;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .mwi-mo-mp-strip .mwi-mo-stats { padding: 0; border-bottom: none; }
+    .mwi-mo-mp-strip:hover .mwi-mo-stat { border-color: ${COLORS.accentCyan}; }
+    .mwi-mo-stat-trend { display: block; font-size: 10px; font-weight: 600; margin-top: 1px; }
+    .mwi-mo-trend-up { color: #22c55e; }
+    .mwi-mo-trend-down { color: #ef4444; }
+    .mwi-mo-trend-flat { display: inline-block; width: 14px; border-top: 2px solid #eab308; vertical-align: middle; }
+    .mwi-mo-insufficient { font-size: 9px; color: ${COLORS.textMuted}; white-space: nowrap; }
 
     /* Context-menu injected button */
     .mwi-mo-menu-btn {
@@ -347,6 +366,51 @@
       return null;
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // GAME DATA (isTradable via initClientData WebSocket message)
+  // ═══════════════════════════════════════════════════════════════════
+  const tradableMap = new Map(); // slug -> boolean
+
+  function installWebSocketHook() {
+    if (typeof unsafeWindow === 'undefined' || !unsafeWindow.WebSocket) return;
+    const OriginalWebSocket = unsafeWindow.WebSocket;
+    if (OriginalWebSocket.__mwiMoHooked) return;
+
+    function HookedWebSocket(url, protocols) {
+      const socket = new OriginalWebSocket(url, protocols);
+      const urlStr = typeof url === 'string' ? url : String(url || '');
+      if (urlStr.includes('api.milkywayidle.com/ws') || urlStr.includes('api-test.milkywayidle.com/ws')) {
+        socket.addEventListener('message', (event) => {
+          if (typeof event.data !== 'string') return;
+          try {
+            const msg = JSON.parse(event.data);
+            const itemMap = msg && (msg.itemDetailMap || msg.item_detail_map);
+            if (itemMap && typeof itemMap === 'object') {
+              for (const [hrid, detail] of Object.entries(itemMap)) {
+                const slug = String(hrid).replace(/^\/items\//, '');
+                if (slug) tradableMap.set(slug, detail?.isTradable !== false);
+              }
+            }
+          } catch (err) { /* ignore non-JSON socket messages */ }
+        });
+      }
+      return socket;
+    }
+    HookedWebSocket.prototype = OriginalWebSocket.prototype;
+    Object.setPrototypeOf(HookedWebSocket, OriginalWebSocket);
+    HookedWebSocket.__mwiMoHooked = true;
+    try {
+      unsafeWindow.WebSocket = HookedWebSocket;
+      if (typeof window !== 'undefined' && window !== unsafeWindow) window.WebSocket = HookedWebSocket;
+    } catch (err) { /* ignore */ }
+  }
+
+  function isTradableForSlug(slug) {
+    return tradableMap.get(slug) !== false; // unknown => assume tradable
+  }
+
+  installWebSocketHook();
 
   // ═══════════════════════════════════════════════════════════════════
   // IDENTITY: slug / name / level extraction
@@ -974,6 +1038,170 @@
   }
 
   // ═══════════════════════════════════════════════════════════════════
+  // MARKETPLACE STATS STRIP
+  // ═══════════════════════════════════════════════════════════════════
+  function pctChange(cur, base) {
+    if (cur == null || base == null || base === 0) return null;
+    return ((cur - base) / base) * 100;
+  }
+
+  function computeStats(levelData) {
+    const hourly = levelData.hourly || [];
+    const daily = levelData.daily || [];
+    const vwap = levelData.vwap || {};
+    const hourMs = 60 * 60 * 1000;
+
+    const latest = hourly.length ? hourly[hourly.length - 1] : (daily.length ? daily[daily.length - 1] : null);
+    const now = latest && latest.timestamp ? latest.timestamp : Date.now();
+    const cutoff24 = now - 24 * hourMs;
+    const cutoff48 = now - 48 * hourMs;
+
+    let vol24 = 0, vol24Prev = 0;
+    let pvCur = 0, pvCurV = 0, pvPrev = 0, pvPrevV = 0;
+    for (const pt of hourly) {
+      if (pt.timestamp > cutoff24) {
+        vol24 += pt.v || 0;
+        if (pt.p > 0 && pt.v > 0) { pvCur += pt.p * pt.v; pvCurV += pt.v; }
+      } else if (pt.timestamp > cutoff48) {
+        vol24Prev += pt.v || 0;
+        if (pt.p > 0 && pt.v > 0) { pvPrev += pt.p * pt.v; pvPrevV += pt.v; }
+      }
+    }
+
+    const last7 = daily.slice(-7);
+    const prev7 = daily.slice(-14, -7);
+    const sumV = (arr) => arr.reduce((s, p) => s + (p.v || 0), 0);
+    const vol7d = last7.length ? sumV(last7) : null;
+    const vol7dPrev = prev7.length ? sumV(prev7) : null;
+
+    let pv7 = 0, pv7V = 0;
+    for (const pt of prev7) if (pt.p > 0 && pt.v > 0) { pv7 += pt.p * pt.v; pv7V += pt.v; }
+
+    const p1d = vwap.p1d || null;
+    const p7d = vwap.p7d || null;
+
+    return {
+      p1d,
+      p7d,
+      vol24h: vol24,
+      vol7d,
+      ask: latest ? latest.ask : null,
+      bid: latest ? latest.bid : null,
+      trends: {
+        p1d: pvCurV > 0 && pvPrevV > 0 ? pctChange(pvCur / pvCurV, pvPrev / pvPrevV) : null,
+        p7d: pv7V > 0 && p7d ? pctChange(p7d, pv7 / pv7V) : null,
+        vol24h: pctChange(vol24, vol24Prev),
+        vol7d: pctChange(vol7d, vol7dPrev),
+      },
+      askVs7d: latest && latest.ask != null && p7d > 0 ? pctChange(latest.ask, p7d) : null,
+      bidVs7d: latest && latest.bid != null && p7d > 0 ? pctChange(latest.bid, p7d) : null,
+    };
+  }
+
+  function insufficientHtml() {
+    return '<span class="mwi-mo-insufficient">Insufficient Data</span>';
+  }
+
+  function trendHtml(pct) {
+    if (pct == null || !Number.isFinite(pct)) return insufficientHtml();
+    if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="mwi-mo-trend-flat"></span>';
+    const arrow = pct > 0 ? '↑' : '↓';
+    const cls = pct > 0 ? 'mwi-mo-trend-up' : 'mwi-mo-trend-down';
+    return `<span class="${cls}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
+  }
+
+  function vsPctHtml(pct) {
+    if (pct == null || !Number.isFinite(pct)) return insufficientHtml();
+    if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="mwi-mo-trend-flat"></span>';
+    return ` <span class="${pct > 0 ? 'mwi-mo-trend-up' : 'mwi-mo-trend-down'}">${pct > 0 ? '+' : ''}${pct.toFixed(1)}% vs 7d</span>`;
+  }
+
+  function statCell(label, value, trend) {
+    const trendHtmlStr = trend ? `<span class="mwi-mo-stat-trend">${trend}</span>` : '';
+    return `<div class="mwi-mo-stat"><span class="mwi-mo-stat-label">${label}</span><span class="mwi-mo-stat-value">${value}</span>${trendHtmlStr}</div>`;
+  }
+
+  function statCellsHtml(stats) {
+    return [
+      statCell('Ask', formatNumber(stats.ask), vsPctHtml(stats.askVs7d)),
+      statCell('Bid', formatNumber(stats.bid), vsPctHtml(stats.bidVs7d)),
+      statCell('1d VWAP', formatNumber(stats.p1d), trendHtml(stats.trends.p1d)),
+      statCell('7d VWAP', formatNumber(stats.p7d), trendHtml(stats.trends.p7d)),
+      statCell('Vol 24h', formatNumber(stats.vol24h), trendHtml(stats.trends.vol24h)),
+      statCell('Vol 7d', formatNumber(stats.vol7d), trendHtml(stats.trends.vol7d)),
+    ].join('');
+  }
+
+  function buildMarketplaceStripHTML(stats) {
+    return `<div class="mwi-mo-stats">${statCellsHtml(stats)}</div>`;
+  }
+
+  let mpStrip = null;
+  let mpStripKey = null;
+
+  async function renderMarketplaceStrip(slug, level, name) {
+    const panel = document.querySelector('[class*="MarketplacePanel_currentItem"]');
+    if (!panel) return;
+    const orderBook = document.querySelector('[class*="MarketplacePanel_orderBook"]');
+    const key = `${slug}::${level}`;
+    const needsCreate = !mpStrip || !mpStrip.isConnected;
+    if (needsCreate) {
+      mpStrip = document.createElement('div');
+      mpStrip.className = 'mwi-mo-mp-strip';
+      mpStrip.title = 'Open market chart';
+      mpStrip.addEventListener('click', () => {
+        const s = mpStrip.dataset.slug;
+        if (s) openFor(s, mpStrip.dataset.level || '0', mpStrip.dataset.name || null);
+      });
+      try {
+        const navContainer = document.querySelector('[class*="MarketplacePanel_marketNavButtonContainer"]');
+        if (navContainer) {
+          navContainer.insertAdjacentElement('afterend', mpStrip);
+        } else if (orderBook) {
+          const listingButtons = orderBook.querySelector('[class*="MarketplacePanel_newListingButtonsContainer"]');
+          const orderBooks = orderBook.querySelector('[class*="MarketplacePanel_orderBooksContainer"]');
+          if (listingButtons) {
+            listingButtons.insertAdjacentElement('afterend', mpStrip);
+          } else if (orderBooks && orderBooks.parentElement) {
+            orderBooks.parentElement.insertBefore(mpStrip, orderBooks);
+          } else {
+            orderBook.appendChild(mpStrip);
+          }
+        } else {
+          panel.insertAdjacentElement('afterend', mpStrip);
+        }
+      } catch (err) {
+        return;
+      }
+    }
+    mpStrip.dataset.slug = slug;
+    mpStrip.dataset.level = level || '0';
+    mpStrip.dataset.name = name || '';
+    if (!needsCreate && key === mpStripKey) return;
+    mpStripKey = key;
+    try {
+      const itemData = await getBundle(slug);
+      const norm = normalizePublicItemData(itemData);
+      const lvls = norm.levels || ['0'];
+      let useLevel = level;
+      if (!lvls.includes(useLevel)) useLevel = lvls.includes('0') ? '0' : lvls[0];
+      const levelData = norm.data[useLevel] || {};
+      const stats = computeStats(levelData);
+      mpStrip.innerHTML = buildMarketplaceStripHTML(stats);
+    } catch (err) {
+      mpStrip.innerHTML = '';
+    }
+  }
+
+  function hideMarketplaceStrip() {
+    if (mpStrip) {
+      mpStrip.remove();
+      mpStrip = null;
+    }
+    mpStripKey = null;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
   // MODAL
   // ═══════════════════════════════════════════════════════════════════
   const modalState = {
@@ -990,6 +1218,7 @@
 
   // Persisted settings (tiny; bundles stay in-memory)
   let autoOpenMarketplace = GM_getValue('mwi_mo_auto_open', true);
+  let showContextMenuButton = GM_getValue('mwi_mo_show_menu_btn', true);
   let resizeMinH = 44;
 
   let modal = null;
@@ -1017,10 +1246,16 @@
       </div>
       <div class="mwi-mo-footer">
         <span class="mwi-mo-updated"></span>
-        <label class="mwi-mo-auto" title="Automatically open the chart when the marketplace selected item changes">
-          <input type="checkbox" class="mwi-mo-auto-toggle" />
-          Auto-open
-        </label>
+        <span class="mwi-mo-footer-settings">
+          <label class="mwi-mo-auto" title="Automatically open the chart when the marketplace selected item changes">
+            <input type="checkbox" class="mwi-mo-auto-toggle" />
+            Auto-open
+          </label>
+          <label class="mwi-mo-auto" title="Show the Market Chart button in item context menus">
+            <input type="checkbox" class="mwi-mo-menu-toggle" />
+            Menu button
+          </label>
+        </span>
         <span class="mwi-mo-brand">
           <a class="mwi-mo-link" target="_blank" rel="noopener noreferrer" href="${API_BASE}">Market Observatory</a>
         </span>
@@ -1037,6 +1272,13 @@
     autoToggle.addEventListener('change', () => {
       autoOpenMarketplace = autoToggle.checked;
       GM_setValue('mwi_mo_auto_open', autoOpenMarketplace);
+    });
+
+    const menuToggle = modal.querySelector('.mwi-mo-menu-toggle');
+    menuToggle.checked = showContextMenuButton;
+    menuToggle.addEventListener('change', () => {
+      showContextMenuButton = menuToggle.checked;
+      GM_setValue('mwi_mo_show_menu_btn', showContextMenuButton);
     });
 
     // window pills
@@ -1141,37 +1383,16 @@
     modal.classList.remove('mwi-mo-open');
   }
 
-  function getTrailingVolume(series, windowMs, mode) {
-    if (!Array.isArray(series) || series.length === 0) return null;
-    const latest = series[series.length - 1].timestamp;
-    if (typeof latest !== 'number' || !Number.isFinite(latest)) return null;
-    const cutoff = latest - windowMs;
-    const inWindow = series.filter((p) => p.timestamp >= cutoff);
-    if (mode === 'avg') {
-      const vals = inWindow.map((p) => p.v).filter((v) => typeof v === 'number' && v > 0);
-      return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
-    }
-    return Math.round(inWindow.reduce((s, p) => s + (typeof p.v === 'number' && p.v > 0 ? p.v : 0), 0));
-  }
-
   function renderStats(levelData) {
     const stats = modal.querySelector('.mwi-mo-stats');
     const level = levelData || {};
-    const hourlySeries = level.hourly || [];
-    const dailySeries = level.daily || [];
-    const points = currentPoints();
-    const latest = points[points.length - 1] || null;
-    const vwap = level.vwap || { p1d: null, p7d: null };
-    const vol24h = getTrailingVolume(hourlySeries, 24 * 60 * 60 * 1000, 'sum');
-    const vol7dAvg = getTrailingVolume(dailySeries, 7 * 24 * 60 * 60 * 1000, 'avg');
-    stats.innerHTML = latest ? `
-      <div class="mwi-mo-stat"><span class="mwi-mo-stat-label">Ask</span><span class="mwi-mo-stat-value">${formatNumber(latest.a)}</span></div>
-      <div class="mwi-mo-stat"><span class="mwi-mo-stat-label">Bid</span><span class="mwi-mo-stat-value">${formatNumber(latest.b)}</span></div>
-      <div class="mwi-mo-stat"><span class="mwi-mo-stat-label">1d VWAP</span><span class="mwi-mo-stat-value">${formatNumber(vwap.p1d)}</span></div>
-      <div class="mwi-mo-stat"><span class="mwi-mo-stat-label">7d VWAP</span><span class="mwi-mo-stat-value">${formatNumber(vwap.p7d)}</span></div>
-      <div class="mwi-mo-stat"><span class="mwi-mo-stat-label">Vol 24h</span><span class="mwi-mo-stat-value">${formatNumber(vol24h)}</span></div>
-      <div class="mwi-mo-stat"><span class="mwi-mo-stat-label">Vol 7d avg</span><span class="mwi-mo-stat-value">${formatNumber(vol7dAvg)}</span></div>
-    ` : '<div class="mwi-mo-error">No data available.</div>';
+    const hasData = (level.hourly && level.hourly.length) || (level.daily && level.daily.length);
+    if (!hasData) {
+      stats.innerHTML = '<div class="mwi-mo-error">No data available.</div>';
+      return;
+    }
+    const cs = computeStats(level);
+    stats.innerHTML = statCellsHtml(cs);
   }
 
   function usesDailySeries(windowKey) {
@@ -1371,26 +1592,39 @@
 
   function handleMarketplace() {
     const panel = document.querySelector('[class*="MarketplacePanel_currentItem"]');
-    if (!panel) return;
+    if (!panel) {
+      hideMarketplaceStrip();
+      lastMarketplaceKey = null;
+      return;
+    }
     const slug = slugFromSprite(panel);
     if (!slug) return;
     const level = levelFromRoot(panel);
     const name = panel.querySelector('svg[aria-label]')?.getAttribute('aria-label') || null;
     injectMarketplaceChart(panel);
     const key = `${slug}::${level}`;
-    if (autoOpenMarketplace && key !== lastMarketplaceKey) {
+    if (key !== lastMarketplaceKey) {
       lastMarketplaceKey = key;
-      openFor(slug, level, name);
+      if (autoOpenMarketplace) openFor(slug, level, name);
     }
+    renderMarketplaceStrip(slug, level, name);
   }
 
-  let menuInjectTimer = null;
-  function handleContextMenu() {
+  async function handleContextMenu() {
     const menu = document.querySelector('[class*="Item_actionMenu"]');
     if (!menu) return;
     if (menu.querySelector('.mwi-mo-menu-btn')) return;
+    if (!showContextMenuButton) return;
     const name = nameFromRoot(menu);
     if (!name) return;
+    let slug = null;
+    try {
+      slug = await nameToSlug(name);
+    } catch (err) {
+      return;
+    }
+    if (!slug || !isTradableForSlug(slug)) return;
+    const level = levelFromRoot(menu);
     const btn = document.createElement('button');
     btn.className = 'mwi-mo-menu-btn mwi-mo-btn';
     btn.textContent = '📈 Market Chart';
@@ -1400,14 +1634,6 @@
       e.preventDefault();
       e.stopPropagation();
       try {
-        const slug = await nameToSlug(name);
-        if (!slug) {
-          const el = ensureModal();
-          el.classList.add('mwi-mo-open');
-          el.querySelector('.mwi-mo-chart').innerHTML = `<div class="mwi-mo-error">Could not resolve "${escapeHtml(name)}" to an observatory item.</div>`;
-          return;
-        }
-        const level = levelFromRoot(menu);
         await openFor(slug, level, name);
       } catch (err) {
         console.error('[MWI Market Chart] open failed:', err);
