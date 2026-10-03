@@ -155,6 +155,54 @@ function loadHourlySnapshots() {
   return snapshots;
 }
 
+function loadMarketValuesDaily() {
+  const dir = path.join('data', 'market_values_daily');
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((file) => /^\d{4}-\d{2}-\d{2}\.json$/.test(file))
+    .sort()
+    .map((file) => readJson(path.join(dir, file)));
+}
+
+// { slug: [v0, v1, ...] } -> { "/items/<slug>": { "0": v0, ... } } (positive only)
+function expandMarketItemValues(marketItemValues) {
+  const items = {};
+  if (!marketItemValues || typeof marketItemValues !== 'object') return items;
+
+  for (const slug of Object.keys(marketItemValues)) {
+    const values = marketItemValues[slug];
+    if (!Array.isArray(values)) continue;
+    const levels = {};
+    for (let level = 0; level < values.length; level++) {
+      if (values[level] > 0) levels[String(level)] = values[level];
+    }
+    if (Object.keys(levels).length > 0) items[`/items/${slug}`] = levels;
+  }
+  return items;
+}
+
+function loadLatestMarketValues() {
+  const dir = path.join('data', 'market_values_hourly');
+  if (!fs.existsSync(dir)) return null;
+
+  const files = fs
+    .readdirSync(dir)
+    .filter((file) => /^\d{4}-\d{2}-\d{2}\.json$/.test(file))
+    .sort();
+  if (files.length === 0) return null;
+
+  const latest = readJson(path.join(dir, files[files.length - 1]));
+  const keys = Object.keys(latest.snapshots || {}).sort();
+  if (keys.length === 0) return null;
+
+  const snapshot = latest.snapshots[keys[keys.length - 1]];
+  return {
+    at: new Date(snapshot.marketValuesVersion).toISOString(),
+    items: expandMarketItemValues(snapshot.marketItemValues),
+  };
+}
+
 function loadItemIconFiles() {
   const iconDir = path.join('site', 'assets', 'item_icons');
   const iconFiles = {};
@@ -295,6 +343,28 @@ async function analyze() {
     }
   }
 
+  // Market values (fair/median prices), separate stream from the order data
+  const marketValuesDaily = loadMarketValuesDaily();
+  const marketValuesCurrent = loadLatestMarketValues();
+  const marketValuesSeries = new Map(); // itemId -> level -> [[ts, value], ...]
+  for (const file of marketValuesDaily) {
+    const ts = Date.parse(file.date);
+    for (const [itemId, levels] of Object.entries(file.items || {})) {
+      if (!marketValuesSeries.has(itemId)) marketValuesSeries.set(itemId, new Map());
+      const byLevel = marketValuesSeries.get(itemId);
+      for (const [level, entry] of Object.entries(levels || {})) {
+        const close = typeof entry === 'number' ? entry : entry?.c;
+        if (typeof close !== 'number') continue;
+        if (!byLevel.has(level)) byLevel.set(level, []);
+        byLevel.get(level).push([ts, close]);
+      }
+    }
+  }
+  for (const [itemId, byLevel] of marketValuesSeries) {
+    const bundle = ensureBundle(bundles, itemId);
+    for (const level of byLevel.keys()) ensureLevel(bundle, level);
+  }
+
   const generatedAt = latestHourly || new Date().toISOString();
 
   for (const bundle of bundles.values()) {
@@ -361,15 +431,19 @@ async function analyze() {
     const data = {};
 
     for (const [level, series] of bundle.levels.entries()) {
+      const currentLevel = marketValuesCurrent?.items?.[bundle.itemId];
       data[level] = {
         d: getTrailingDailySeries(series.daily).map(serializeSeriesPoint),
         h: series.hourly.map(serializeSeriesPoint),
         vwap: series.vwap,
+        mv: currentLevel?.[level] ?? null,
+        mvd: marketValuesSeries.get(bundle.itemId)?.get(level) || [],
       };
     }
 
     writePromises.push(writeJsonAsync(path.join(publicDir, 'items', `${bundle.slug}.json`), {
       generatedAt,
+      marketValuesAt: marketValuesCurrent?.at || null,
       v: 2,
       slug: bundle.slug,
       itemId: bundle.itemId,

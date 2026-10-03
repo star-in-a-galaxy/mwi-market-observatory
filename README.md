@@ -16,7 +16,7 @@ This repository automatically:
 The repository is split across **three branches** to keep history lean:
 
 - **`main`** holds the code only: `site/`, `scripts/`, workflows, config. Clean, small, meaningful history.
-- **`data`** holds the data only: `data/hourly/` (16-day window) and `data/daily/` (kept forever). Squashed to a single snapshot on every aggregate.
+- **`data`** holds the data only: `data/hourly/` + `data/market_values_hourly/` (16-day windows) and `data/daily/` + `data/market_values_daily/` (kept forever). Squashed to a single snapshot on every aggregate.
 - **`daily`** is an **append-only** branch: one dated commit per daily file, tagged `daily-YYYY-MM-DD`. The `data` branch is force-squashed and cannot carry dates; this branch never is, so the daily data has a verifiable, dated history.
 
 ## Site
@@ -25,9 +25,10 @@ The website is available at [https://star-in-a-galaxy.github.io/mwi-market-obser
 
 ## Data Source
 
-Data is fetched from the public MWI marketplace API:
+Data is fetched from two public MWI endpoints:
 ```
-https://www.milkywayidle.com/game_data/marketplace.json
+https://www.milkywayidle.com/game_data/marketplace.json    # order book snapshots (ask/bid/volume)
+https://www.milkywayidle.com/game_data/market_values.json  # fair/median values per item+level
 ```
 
 ## Repository Structure
@@ -39,10 +40,10 @@ main (code)
 │   ├── fetch.yml              # Fetches marketplace snapshots
 │   └── pages.yml              # Builds and deploys site
 ├── scripts/
-│   ├── aggregate.js           # Combine hourly files into daily OHLCV
+│   ├── aggregate.js           # Hourly -> daily OHLCV + market values
 │   ├── analyze.js             # Build public data bundles and icon manifests
 │   ├── compute-trends.js      # Compute item price trends (% change over time frames)
-│   ├── fetch.js               # Fetch API, dedupe, write hourly file
+│   ├── fetch.js               # Fetch marketplace + market values, dedupe, write hourly
 │   ├── prune.js               # Delete hourly files older than 16 days
 │   ├── publish-daily.js       # Append daily files to the daily branch
 │   ├── serve.js               # Local static server
@@ -51,11 +52,15 @@ main (code)
 
 data (data branch)
 └── data/
-    ├── daily/                 # YYYY-MM-DD.json (kept forever)
-    └── hourly/                # YYYY-MM-DD.json + YYYY-MM-DD/HH-MM.json (16 days)
+    ├── daily/                 # OHLCV, YYYY-MM-DD.json (kept forever)
+    ├── hourly/                # YYYY-MM-DD.json + YYYY-MM-DD/HH-MM.json (16 days)
+    ├── market_values_daily/   # Fair values, YYYY-MM-DD.json (kept forever)
+    └── market_values_hourly/  # Fair values, YYYY-MM-DD.json + YYYY-MM-DD/HH-MM.json (16 days)
 
 daily (append-only branch)
-└── data/daily/                # YYYY-MM-DD.json, one dated commit + tag per day
+└── data/
+    ├── daily/                 # OHLCV, one dated commit + tag per day
+    └── market_values_daily/   # Fair values, one dated commit + tag per day
 ```
 
 `data/public/` is **derived** and not stored in the repo; it is regenerated at build time.
@@ -67,9 +72,9 @@ daily (append-only branch)
 Checks out the `data` branch, overlays the code from `main`, and runs `fetch.js`.
 
 **Steps:**
-1. Fetch marketplace data from the API
-2. Deduplicate by API timestamp (skip if data hasn't changed)
-3. Write hourly snapshot to `data/hourly/`
+1. Fetch marketplace data + market values from the APIs
+2. Deduplicate (marketplace by API timestamp; market values by `marketValuesVersion`)
+3. Write hourly snapshots to `data/hourly/` and `data/market_values_hourly/`
 4. Commit and push to the `data` branch if data changed
 5. Trigger a pages deploy **only if** new data was committed
 
@@ -79,10 +84,10 @@ Checks out the `data` branch, overlays the code from `main`.
 
 **Steps:**
 1. Read all hourly files from yesterday
-2. Compute OHLCV for each item and enhancement level
-3. Write daily summary to `data/daily/YYYY-MM-DD.json`
-4. Prune hourly data older than 16 days
-5. Publish yesterday's daily file to the append-only `daily` branch (`publish-daily.js`), then push it and its tags
+2. Compute OHLCV for each item and enhancement level → `data/daily/YYYY-MM-DD.json`
+3. Roll the day's last market values into `data/market_values_daily/YYYY-MM-DD.json`
+4. Prune hourly data older than 16 days (`hourly/` and `market_values_hourly/`)
+5. Publish yesterday's daily files to the append-only `daily` branch (`publish-daily.js`), then push it and its tags
 6. Collapse the `data` branch to a single snapshot commit (`squash-data.js`)
 7. Force-push the `data` branch
 
@@ -155,6 +160,28 @@ The UI is item-first: the home page is a searchable item browser, item pages liv
 - `ca` = close ask
 - `cb` = close bid
 - `v` = volume
+
+### Market Values (Fair Prices)
+
+`data/market_values_daily/YYYY-MM-DD.json` (permanent) and `data/market_values_hourly/…` (16 days):
+```json
+{
+  "date": "2026-10-03",
+  "marketValuesVersion": 1791018300057,
+  "marketValuesAt": "2026-10-03T09:05:00.057Z",
+  "items": {
+    "/items/cedar_water_staff": {
+      "0": { "o": 108200, "h": 108300, "l": 108000, "c": 108100 },
+      "7": { "o": 2307000, "h": 2307000, "l": 2306000, "c": 2307000 }
+    }
+  }
+}
+```
+
+The game's fair/median value per item and enhancement level (`marketValuesVersion` is the source
+timestamp). The daily file is the day's open/high/low/close (`o`/`h`/`l`/`c`) across the hourly
+snapshots. These are folded into each public item bundle as `mv` (latest close) and `mvd`
+(daily close series) per level.
 
 ## Local Testing
 

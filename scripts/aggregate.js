@@ -155,6 +155,103 @@ function aggregate(dateStr) {
   return true;
 }
 
+function loadMarketValueSnapshots(dateStr) {
+  const consolidatedFile = path.join('data', 'market_values_hourly', `${dateStr}.json`);
+  if (fs.existsSync(consolidatedFile)) {
+    const data = JSON.parse(fs.readFileSync(consolidatedFile, 'utf8'));
+    const snapshots = data.snapshots || {};
+    const keys = Object.keys(snapshots).sort();
+    return keys.map((k) => snapshots[k]);
+  }
+
+  const valuesDir = path.join('data', 'market_values_hourly', dateStr);
+  if (fs.existsSync(valuesDir)) {
+    const files = fs.readdirSync(valuesDir).sort();
+    return files.map((file) => JSON.parse(fs.readFileSync(path.join(valuesDir, file), 'utf8')));
+  }
+
+  return null;
+}
+
+// { slug: [v0, v1, ...] } -> { "/items/<slug>": { "0": v0, ... } } (positive only)
+function expandMarketItemValues(marketItemValues) {
+  const items = {};
+  if (!marketItemValues || typeof marketItemValues !== 'object') return items;
+
+  for (const slug of Object.keys(marketItemValues)) {
+    const values = marketItemValues[slug];
+    if (!Array.isArray(values)) continue;
+    const levels = {};
+    for (let level = 0; level < values.length; level++) {
+      if (values[level] > 0) levels[String(level)] = values[level];
+    }
+    if (Object.keys(levels).length > 0) items[`/items/${slug}`] = levels;
+  }
+  return items;
+}
+
+function aggregateMarketValues(dateStr) {
+  const snapshots = loadMarketValueSnapshots(dateStr);
+  if (!snapshots || snapshots.length === 0) {
+    console.log(`[aggregate] No market values for ${dateStr}, skipping`);
+    return false;
+  }
+
+  // Open/high/low/close of the fair value across the day's snapshots, per item+level.
+  const items = {};
+  for (const snapshot of snapshots) {
+    const expanded = expandMarketItemValues(snapshot.marketItemValues);
+    for (const [itemId, levels] of Object.entries(expanded)) {
+      if (!items[itemId]) items[itemId] = {};
+      const target = items[itemId];
+
+      for (const [level, value] of Object.entries(levels)) {
+        const entry = target[level];
+        if (!entry) {
+          target[level] = { o: value, h: value, l: value, c: value };
+        } else {
+          if (value > entry.h) entry.h = value;
+          if (value < entry.l) entry.l = value;
+          entry.c = value;
+        }
+      }
+    }
+  }
+
+  const last = snapshots[snapshots.length - 1];
+  const result = {
+    date: dateStr,
+    marketValuesVersion: last.marketValuesVersion,
+    marketValuesAt: new Date(last.marketValuesVersion).toISOString(),
+    items
+  };
+
+  const dailyFile = path.join('data', 'market_values_daily', `${dateStr}.json`);
+  fs.mkdirSync(path.dirname(dailyFile), { recursive: true });
+  fs.writeFileSync(dailyFile, JSON.stringify(result, null, 2));
+  console.log(`[aggregate] Wrote ${dailyFile}`);
+  return true;
+}
+
+function getAllDatesWithMarketValues() {
+  const dir = path.join('data', 'market_values_hourly');
+  if (!fs.existsSync(dir)) return [];
+
+  const dates = [];
+  for (const file of fs.readdirSync(dir)) {
+    if (file.endsWith('.json')) {
+      const dateStr = file.replace('.json', '');
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) dates.push(dateStr);
+    } else {
+      const fullPath = path.join(dir, file);
+      if (fs.statSync(fullPath).isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(file)) {
+        dates.push(file);
+      }
+    }
+  }
+  return dates.sort().reverse();
+}
+
 function getAllDatesWithHourlyData() {
   const hourlyDir = path.join('data', 'hourly');
   if (!fs.existsSync(hourlyDir)) return [];
@@ -182,26 +279,32 @@ function getAllDatesWithHourlyData() {
 
 function aggregateAllBackwards() {
   const dates = getAllDatesWithHourlyData();
+
   if (dates.length === 0) {
     console.log('[aggregate] No hourly data found');
-    return;
-  }
+  } else {
+    console.log(`[aggregate] Found ${dates.length} dates with hourly data, processing backwards...`);
 
-  console.log(`[aggregate] Found ${dates.length} dates with hourly data, processing backwards...`);
+    let successCount = 0;
+    let skipCount = 0;
 
-  let successCount = 0;
-  let skipCount = 0;
-
-  for (const dateStr of dates) {
-    const result = aggregate(dateStr);
-    if (result) {
-      successCount++;
-    } else {
-      skipCount++;
+    for (const dateStr of dates) {
+      const result = aggregate(dateStr);
+      if (result) {
+        successCount++;
+      } else {
+        skipCount++;
+      }
     }
+
+    console.log(`[aggregate] Done! Processed: ${successCount}, Skipped: ${skipCount}`);
   }
 
-  console.log(`[aggregate] Done! Processed: ${successCount}, Skipped: ${skipCount}`);
+  const valueDates = getAllDatesWithMarketValues();
+  console.log(`[aggregate] Found ${valueDates.length} dates with market values`);
+  for (const dateStr of valueDates) {
+    aggregateMarketValues(dateStr);
+  }
 }
 
 const args = process.argv.slice(2);
@@ -210,4 +313,5 @@ if (args.includes('--all-backwards')) {
 } else {
   const dateStr = args[0]?.match(/--date=(.+)/) ? args[0].match(/--date=(.+)/)[1] : getYesterdayStr();
   aggregate(dateStr);
+  aggregateMarketValues(dateStr);
 }
