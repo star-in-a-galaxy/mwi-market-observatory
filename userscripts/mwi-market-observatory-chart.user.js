@@ -2,7 +2,7 @@
 // @name         MWI Market Observatory
 // @name:zh-CN   MWI 市场观察站
 // @namespace    mwi-market-observatory
-// @version      0.1.2
+// @version      0.1.3
 // @description  Show market price charts from the MWI Market Observatory in the marketplace and in item context menus.
 // @description:zh-CN 在市场及物品右键菜单中显示 MWI 市场观察站的价格图表。
 // @icon         https://star-in-a-galaxy.github.io/mwi-market-observatory/assets/logo.svg
@@ -158,11 +158,59 @@
       cursor: move;
       user-select: none;
       flex-shrink: 0;
+      position: relative;
     }
     .mwi-mo-item-icon { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
     .mwi-mo-title { font-weight: 700; font-size: 15px; }
     .mwi-mo-title .mwi-mo-lvl { color: ${COLORS.textMuted}; font-weight: 600; }
     .mwi-mo-header-actions { display: flex; gap: 6px; flex-shrink: 0; margin-left: auto; }
+
+    .mwi-mo-title { cursor: pointer; }
+    .mwi-mo-title:hover { color: ${COLORS.accentCyan}; }
+    .mwi-mo-search {
+      flex: 1;
+      min-width: 0;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 6px;
+      color: #e8ecf3;
+      font-size: 13px;
+      font-family: inherit;
+      padding: 4px 8px;
+      outline: none;
+      user-select: text;
+    }
+    .mwi-mo-search-results {
+      position: absolute;
+      top: 100%;
+      left: 8px;
+      right: 8px;
+      margin-top: 4px;
+      max-height: 260px;
+      overflow-y: auto;
+      background: ${COLORS.bgDark};
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      z-index: 20;
+    }
+    .mwi-mo-search-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 6px 8px;
+      background: none;
+      border: none;
+      color: #e8ecf3;
+      font-size: 13px;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .mwi-mo-search-item:hover { background: rgba(255,255,255,0.08); }
+    .mwi-mo-search-item img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+    .mwi-mo-search-empty { padding: 8px; color: ${COLORS.textMuted}; font-size: 12px; }
     .mwi-mo-btn {
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.14);
@@ -204,6 +252,16 @@
       border-color: transparent;
       color: #fff;
     }
+
+    .mwi-mo-switch { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; cursor: pointer; user-select: none; font-size: 11px; color: ${COLORS.textMuted}; }
+    .mwi-mo-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .mwi-mo-switch-slider { position: relative; width: 30px; height: 16px; border-radius: 999px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s ease; }
+    .mwi-mo-switch-slider::after { content: ''; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: transform 0.2s ease; }
+    .mwi-mo-switch input:checked + .mwi-mo-switch-slider { background: ${COLORS.accentCyan}; border-color: ${COLORS.accentCyan}; }
+    .mwi-mo-switch input:checked + .mwi-mo-switch-slider::after { transform: translateX(14px); }
+    .mwi-mo-switch-label { transition: opacity 0.2s ease; }
+    .mwi-mo-switch:has(input:checked) .mwi-mo-switch-label.left { opacity: 0.45; }
+    .mwi-mo-switch:has(input:not(:checked)) .mwi-mo-switch-label.right { opacity: 0.45; }
 
     .mwi-mo-stats {
       display: grid;
@@ -255,6 +313,19 @@
     }
     .mwi-mo-mp-strip .mwi-mo-stats { padding: 0; border-bottom: none; }
     .mwi-mo-mp-strip:hover .mwi-mo-stat { border-color: ${COLORS.accentCyan}; }
+    .mwi-mo-strip-bar { display: flex; align-items: center; justify-content: flex-start; gap: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: ${COLORS.textMuted}; padding: 2px 0 4px; }
+    .mwi-mo-strip-toggle {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 6px;
+      color: ${COLORS.textMuted};
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+      padding: 3px 9px;
+      font-family: inherit;
+    }
+    .mwi-mo-strip-toggle:hover { color: ${COLORS.accentCyan}; border-color: ${COLORS.accentCyan}; }
     .mwi-mo-stat-trend { display: block; font-size: 10px; font-weight: 600; margin-top: 1px; }
     .mwi-mo-trend-up { color: #22c55e; }
     .mwi-mo-trend-down { color: #ef4444; }
@@ -340,6 +411,15 @@
     indexCache.data = data;
     indexCache.fetchedAt = Date.now();
     return data;
+  }
+
+  function getDataAnchorTs(index) {
+    const candidates = [index?.generatedAt, index?.source?.hourlyRange?.end, index?.source?.dailyRange?.end];
+    for (const candidate of candidates) {
+      const ts = typeof candidate === 'number' ? candidate : Date.parse(candidate);
+      if (Number.isFinite(ts) && ts > 0) return ts;
+    }
+    return Date.now();
   }
 
   // Single-slot bundle cache: only the currently open item is held.
@@ -642,16 +722,18 @@
     return result;
   }
 
-  function windowPoints(points, windowKey) {
+  function windowPoints(points, windowKey, anchorTs) {
     if (!points.length) return [];
     const config = WINDOW_CONFIG[windowKey];
     if (!config) return points;
     const timestamps = points
       .map((p) => p.timestamp)
       .filter((ts) => typeof ts === 'number' && Number.isFinite(ts) && ts > 0);
-    if (!timestamps.length) return points.slice(-config.hours);
-    const latest = Math.max(...timestamps);
-    const windowStart = latest - (config.hours * 60 * 60 * 1000);
+    const anchor = typeof anchorTs === 'number' && anchorTs > 0
+      ? anchorTs
+      : (timestamps.length ? Math.max(...timestamps) : null);
+    if (anchor == null) return points.slice(-config.hours);
+    const windowStart = anchor - (config.hours * 60 * 60 * 1000);
     return points.filter((p) => typeof p.timestamp === 'number' && p.timestamp >= windowStart);
   }
 
@@ -725,14 +807,14 @@
     });
   }
 
-  function buildChart(points, width, height, fixedMinValue, fixedMaxValue, windowConfig) {
+  function buildChart(points, width, height, fixedMinValue, fixedMaxValue, windowConfig, anchorTs, bucketMs, smooth) {
     const errorReturn = (msg) => ({
       html: `<div class="mwi-mo-error">${msg}</div>`,
       pointPositions: [],
       pointData: [],
     });
 
-    if (!points.length) return errorReturn('No chart data available for this selection yet.');
+    if (!points.length) return errorReturn('No data in this time window.');
     const yValues = points.flatMap((p) => [p.ask, p.bid, p.p]).filter((v) => typeof v === 'number' && Number.isFinite(v) && v > 0);
     if (!yValues.length) return errorReturn('No usable ask or bid values available for this selection yet.');
 
@@ -749,22 +831,18 @@
     const innerHeight = height - padding.top - padding.bottom;
 
     const halfHourMs = 30 * 60 * 1000;
-    let latestTimestamp = null, windowStart = null, scaleX;
+    const gapMs = typeof bucketMs === 'number' && bucketMs > 0 ? bucketMs * 1.5 : null;
+    let windowStart = null;
+    let scaleX;
 
-    if (windowConfig) {
+    if (windowConfig && typeof anchorTs === 'number' && anchorTs > 0) {
       const windowMs = windowConfig.hours * 60 * 60 * 1000;
-      const timestamps = points.map((p) => p.timestamp).filter((ts) => typeof ts === 'number' && ts > 0);
-      if (timestamps.length > 0) {
-        latestTimestamp = Math.max(...timestamps);
-        windowStart = latestTimestamp - windowMs;
-        scaleX = (point) => {
-          if (!point || typeof point.timestamp !== 'number') return padding.left;
-          const displayTs = windowConfig.hours <= 24 ? Math.round(point.timestamp / halfHourMs) * halfHourMs : point.timestamp;
-          return padding.left + ((displayTs - windowStart) / windowMs) * innerWidth;
-        };
-      } else {
-        scaleX = (_, index) => padding.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
-      }
+      windowStart = anchorTs - windowMs;
+      scaleX = (point) => {
+        if (!point || typeof point.timestamp !== 'number') return padding.left;
+        const displayTs = windowConfig.hours <= 24 ? Math.round(point.timestamp / halfHourMs) * halfHourMs : point.timestamp;
+        return padding.left + ((displayTs - windowStart) / windowMs) * innerWidth;
+      };
     } else {
       scaleX = (_, index) => padding.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
     }
@@ -784,60 +862,98 @@
       if (getEffectivePrice(points[i].ask) != null || getEffectivePrice(points[i].bid) != null) validPriceIndices.push(i);
     }
 
-    let firstPriceX = padding.left;
-    let lastPriceX = width - padding.right;
-    let leftHalfStep = innerWidth * 0.125;
-    let rightHalfStep = innerWidth * 0.125;
-
-    if (validPriceIndices.length > 0) {
-      const firstIdx = validPriceIndices[0];
-      const lastIdx = validPriceIndices[validPriceIndices.length - 1];
-      firstPriceX = pointPositions[firstIdx].x;
-      lastPriceX = pointPositions[lastIdx].x;
-      if (validPriceIndices.length > 1) {
-        const secondIdx = validPriceIndices[1];
-        const prevIdx = validPriceIndices[validPriceIndices.length - 2];
-        leftHalfStep = Math.max(0, (pointPositions[secondIdx].x - firstPriceX) / 2);
-        rightHalfStep = Math.max(0, (lastPriceX - pointPositions[prevIdx].x) / 2);
+    const lineSegments = (accessor) => {
+      const idxs = [];
+      for (let i = 0; i < points.length; i++) {
+        if (accessor(points[i]) != null) idxs.push(i);
       }
-    }
+      const solid = [];
+      const dashed = [];
+      let current = [];
+      for (let k = 0; k < idxs.length; k++) {
+        const i = idxs[k];
+        if (k > 0) {
+          const prev = idxs[k - 1];
+          const prevTs = points[prev]?.timestamp;
+          const currTs = points[i]?.timestamp;
+          const timeGap = typeof prevTs === 'number' && typeof currTs === 'number' ? currTs - prevTs : 0;
+          const hasMissingPoints = i - prev > 1;
+          if (hasMissingPoints || (gapMs != null && timeGap > gapMs)) {
+            if (current.length > 0) { solid.push(current); current = []; }
+            dashed.push([prev, i]);
+          }
+        }
+        current.push(i);
+      }
+      if (current.length > 0) solid.push(current);
+      return { solid, dashed, all: idxs.length ? [idxs] : [] };
+    };
 
-    const leftShift = Math.max(0, (firstPriceX - leftHalfStep) - padding.left);
-    if (leftShift > 0) {
-      for (let i = 0; i < pointPositions.length; i++) pointPositions[i].x -= leftShift;
-      firstPriceX -= leftShift;
-      lastPriceX -= leftShift;
-    }
+    // Monotone cubic interpolation (Fritsch-Carlson): smooth, never overshoots.
+    const smoothSegmentPath = (seg, accessor) => {
+      const pts = seg.map((i) => ({ x: pointPositions[i].x, y: scaleY(accessor(points[i])) }));
+      const n = pts.length;
+      if (n === 0) return '';
+      if (n === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+      if (n === 2) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
+      const delta = [];
+      for (let k = 0; k < n - 1; k++) {
+        const h = pts[k + 1].x - pts[k].x;
+        delta.push(h !== 0 ? (pts[k + 1].y - pts[k].y) / h : 0);
+      }
+      const m = new Array(n);
+      m[0] = delta[0];
+      m[n - 1] = delta[n - 2];
+      for (let k = 1; k < n - 1; k++) m[k] = delta[k - 1] * delta[k] <= 0 ? 0 : (delta[k - 1] + delta[k]) / 2;
+      for (let k = 0; k < n - 1; k++) {
+        if (delta[k] === 0) { m[k] = 0; m[k + 1] = 0; continue; }
+        const a = m[k] / delta[k];
+        const b = m[k + 1] / delta[k];
+        const s = a * a + b * b;
+        if (s > 9) { const tau = 3 / Math.sqrt(s); m[k] = tau * a * delta[k]; m[k + 1] = tau * b * delta[k]; }
+      }
+      let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+      for (let k = 0; k < n - 1; k++) {
+        const h = pts[k + 1].x - pts[k].x;
+        const c1x = pts[k].x + h / 3;
+        const c1y = pts[k].y + (m[k] * h) / 3;
+        const c2x = pts[k + 1].x - h / 3;
+        const c2y = pts[k + 1].y - (m[k + 1] * h) / 3;
+        d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${pts[k + 1].x.toFixed(1)} ${pts[k + 1].y.toFixed(1)}`;
+      }
+      return d;
+    };
 
-    const chartStartX = firstPriceX - leftHalfStep;
-    const chartEndX = lastPriceX + rightHalfStep;
-
-    const toPath = (accessor) => points
-      .map((point, index) => (accessor(point) != null ? `${index === 0 ? 'M' : 'L'} ${pointPositions[index].x.toFixed(1)} ${scaleY(accessor(point)).toFixed(1)}` : ''))
-      .filter(Boolean)
+    const straightSegmentPath = (seg, accessor) => seg
+      .map((i, k) => `${k === 0 ? 'M' : 'L'} ${pointPositions[i].x.toFixed(1)} ${scaleY(accessor(points[i])).toFixed(1)}`)
       .join(' ');
 
-    const toAreaPath = (accessor) => {
-      const validIndices = [];
-      for (let i = 0; i < points.length; i++) if (accessor(points[i]) != null) validIndices.push(i);
-      if (validIndices.length === 0) return '';
-      let pathStr = toPath(accessor);
-      const lastIdx = validIndices[validIndices.length - 1];
-      const firstIdx = validIndices[0];
-      const bottomY = padding.top + innerHeight;
-      pathStr += ` L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)}`;
-      pathStr += ` L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
-      return pathStr;
-    };
+    const segmentLine = (seg, accessor) => smooth ? smoothSegmentPath(seg, accessor) : straightSegmentPath(seg, accessor);
+
+    const segmentPath = (segments, accessor) => segments.map((seg) => segmentLine(seg, accessor)).join(' ');
+
+    const segmentArea = (segments, accessor) => segments
+      .filter((seg) => seg.length > 1)
+      .map((seg) => {
+        const line = segmentLine(seg, accessor);
+        const firstIdx = seg[0];
+        const lastIdx = seg[seg.length - 1];
+        const bottomY = padding.top + innerHeight;
+        return `${line} L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)} L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
+      })
+      .join(' ');
+
+    const askLine = lineSegments((point) => getEffectivePrice(point.ask));
+    const bidLine = lineSegments((point) => getEffectivePrice(point.bid));
 
     const grid = [];
     const priceTicks = generatePriceTicks(paddedMin, paddedMax);
+    const gridLeftX = padding.left;
+    const gridRightX = width - padding.right;
     for (const tickValue of priceTicks) {
       const y = padding.top + (1 - (tickValue - paddedMin) / span) * innerHeight;
-      grid.push(`<line x1="${firstPriceX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${lastPriceX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid" />`);
-      grid.push(`<text x="${(chartStartX - 12).toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>`);
-      grid.push(`<line x1="${chartStartX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${firstPriceX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid-extended" stroke-dasharray="4 4" opacity="0.4" />`);
-      grid.push(`<line x1="${lastPriceX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${chartEndX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid-extended" stroke-dasharray="4 4" opacity="0.4" />`);
+      grid.push(`<line x1="${gridLeftX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${gridRightX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid" />`);
+      grid.push(`<text x="${(gridLeftX - 12).toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>`);
     }
 
     const isIntraday = windowConfig && windowConfig.hours <= 24;
@@ -847,15 +963,30 @@
       const pos = pointPositions[index];
       const fullLabel = point.label || point.t || '';
       let displayLabel = fullLabel;
-      if (fullLabel.includes(',')) {
-        displayLabel = isIntraday ? fullLabel.split(',')[1].trim() : fullLabel.split(',')[0].trim();
+      if (isIntraday) {
+        displayLabel = fullLabel.includes(',') ? fullLabel.split(',')[1].trim() : fullLabel;
+      } else if (typeof point.timestamp === 'number' && typeof bucketMs === 'number' && bucketMs > 0) {
+        const endTs = point.timestamp + bucketMs - 1;
+        displayLabel = formatDayLabel(new Date(endTs).toISOString().split('T')[0]);
+      } else if (displayLabel.includes(' - ')) {
+        displayLabel = displayLabel.split(' - ')[1].trim();
       }
       if (displayLabel === lastDisplayedLabel) return '';
       if (pos.x - lastLabelX < 60) return '';
       lastDisplayedLabel = displayLabel;
       lastLabelX = pos.x;
       return `<text x="${pos.x.toFixed(1)}" y="${height - 6}" text-anchor="middle" class="chart-label">${escapeHtml(displayLabel)}</text>`;
-    }).filter(Boolean).join('');
+    }).filter(Boolean);
+
+    const rightEdgeX = width - padding.right;
+    if (windowConfig && typeof anchorTs === 'number' && anchorTs > 0 && rightEdgeX - lastLabelX >= 60) {
+      const anchorDate = new Date(anchorTs);
+      const anchorLabel = isIntraday
+        ? formatHourLabel(anchorDate.toISOString())
+        : formatDayLabel(anchorDate.toISOString().split('T')[0]);
+      xAxis.push(`<text x="${rightEdgeX.toFixed(1)}" y="${height - 6}" text-anchor="end" class="chart-label">${escapeHtml(anchorLabel)}</text>`);
+    }
+    const xAxisSvg = xAxis.join('');
 
     // Volume bars
     const volumes = points.map((p) => p.v || 0).filter((v) => v > 0);
@@ -872,7 +1003,7 @@
       else multiplier = 10;
       return multiplier * magnitude;
     };
-    const volStep = getVolumeTickStep(maxVolume);
+    const volStep = Math.max(1, getVolumeTickStep(maxVolume));
     const maxVolumeForScale = Math.ceil(maxVolume / volStep) * volStep;
     const tickHeightPx = innerHeight / (span / tickStep);
     const volumeBarMaxHeight = tickHeightPx * 1.5;
@@ -914,10 +1045,22 @@
     }).join('');
 
     const smaPeriod = 5;
+    const smaWindowMs = typeof bucketMs === 'number' && bucketMs > 0 ? bucketMs * (smaPeriod - 1) : null;
     const volumeTrend = points.map((pt, i) => {
-      let sum = 0, count = 0;
-      for (let j = Math.max(0, i - smaPeriod + 1); j <= i; j++) { sum += points[j]?.v || 0; count++; }
-      return count > 0 ? sum / count : 0;
+      if (smaWindowMs == null) {
+        let sum = 0, count = 0;
+        for (let j = Math.max(0, i - smaPeriod + 1); j <= i; j++) { sum += points[j]?.v || 0; count++; }
+        return count > 0 ? sum / count : 0;
+      }
+      const end = pt?.timestamp;
+      if (typeof end !== 'number') return 0;
+      let sum = 0;
+      for (let j = i; j >= 0; j--) {
+        const tj = points[j]?.timestamp;
+        if (typeof tj !== 'number' || end - tj > smaWindowMs) break;
+        sum += points[j]?.v || 0;
+      }
+      return sum / smaPeriod;
     });
     const scaleVolumeY = (vol) => volumeBaseY - (vol / maxVolumeForScale) * volumeBarMaxHeight;
     const volumeTrendPathStr = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${pointPositions[i].x.toFixed(1)} ${scaleVolumeY(volumeTrend[i]).toFixed(1)}`).join(' ');
@@ -961,31 +1104,10 @@
     const askExtensions = toExtensionPaths((point) => getEffectivePrice(point.ask));
     const bidExtensions = toExtensionPaths((point) => getEffectivePrice(point.bid));
 
-    const validVpIdxs = [];
-    for (let i = 0; i < points.length; i++) if (points[i]?.p > 0) validVpIdxs.push(i);
-    const vpSolidSegs = [];
-    const vpDottedSegs = [];
-    for (let vi = 0; vi < validVpIdxs.length; vi++) {
-      const i = validVpIdxs[vi];
-      const x = pointPositions[i].x;
-      const y = scaleY(points[i].p).toFixed(1);
-      const prevConsecutive = vi > 0 && validVpIdxs[vi - 1] === i - 1;
-      vpSolidSegs.push(`${prevConsecutive ? 'L' : 'M'} ${x.toFixed(1)} ${y}`);
-    }
-    for (let vi = 0; vi < validVpIdxs.length - 1; vi++) {
-      const leftIdx = validVpIdxs[vi];
-      const rightIdx = validVpIdxs[vi + 1];
-      if (rightIdx - leftIdx > 1) {
-        const leftX = pointPositions[leftIdx].x;
-        const leftY = scaleY(points[leftIdx].p).toFixed(1);
-        const lastNullIdx = rightIdx - 1;
-        const lastNullX = pointPositions[lastNullIdx].x;
-        vpDottedSegs.push(`M ${leftX.toFixed(1)} ${leftY} L ${lastNullX.toFixed(1)} ${leftY}`);
-      }
-    }
+    const vpLine = lineSegments((point) => (typeof point.p === 'number' && point.p > 0 ? point.p : null));
     const vpExtensions = toExtensionPaths((point) => typeof point.p === 'number' && point.p > 0 ? point.p : null);
-    const vpLineSvg = vpSolidSegs.length ? `<path d="${vpSolidSegs.join(' ')}" class="chart-line chart-line-vp" />` : '';
-    const vpDottedSvg = vpDottedSegs.length ? `<path d="${vpDottedSegs.join(' ')}" class="chart-line chart-line-vp" stroke-dasharray="4 4" stroke-width="2" opacity="0.5" fill="none" />` : '';
+    const vpLineSvg = vpLine.solid.length ? `<path d="${segmentPath(vpLine.solid, (point) => point.p)}" class="chart-line chart-line-vp" />` : '';
+    const vpDottedSvg = vpLine.dashed.length ? `<path d="${segmentPath(vpLine.dashed, (point) => point.p)}" class="chart-line chart-line-vp" stroke-dasharray="4 4" stroke-width="2" opacity="0.5" fill="none" />` : '';
 
     const markers = pointPositions.map((point) => {
       const askCircle = point?.askY != null ? `<circle cx="${point.x.toFixed(1)}" cy="${point.askY.toFixed(1)}" r="2.8" class="chart-point chart-point-ask" />` : '';
@@ -1008,10 +1130,12 @@
               </linearGradient>
             </defs>
             ${grid.join('')}
-            <path d="${toAreaPath((p) => getEffectivePrice(p.ask))}" class="chart-area chart-area-ask" fill="url(#mwi-mo-ask-fill)" />
-            <path d="${toAreaPath((p) => getEffectivePrice(p.bid))}" class="chart-area chart-area-bid" fill="url(#mwi-mo-bid-fill)" />
-            <path d="${toPath((p) => getEffectivePrice(p.ask))}" class="chart-line chart-line-ask" />
-            <path d="${toPath((p) => getEffectivePrice(p.bid))}" class="chart-line chart-line-bid" />
+            <path d="${segmentArea(askLine.all, (p) => getEffectivePrice(p.ask))}" class="chart-area chart-area-ask" fill="url(#mwi-mo-ask-fill)" />
+            <path d="${segmentArea(bidLine.all, (p) => getEffectivePrice(p.bid))}" class="chart-area chart-area-bid" fill="url(#mwi-mo-bid-fill)" />
+            <path d="${segmentPath(askLine.solid, (p) => getEffectivePrice(p.ask))}" class="chart-line chart-line-ask" />
+            <path d="${segmentPath(askLine.dashed, (p) => getEffectivePrice(p.ask))}" class="chart-line chart-line-ask" stroke-dasharray="4 4" opacity="0.5" fill="none" />
+            <path d="${segmentPath(bidLine.solid, (p) => getEffectivePrice(p.bid))}" class="chart-line chart-line-bid" />
+            <path d="${segmentPath(bidLine.dashed, (p) => getEffectivePrice(p.bid))}" class="chart-line chart-line-bid" stroke-dasharray="4 4" opacity="0.5" fill="none" />
             ${askExtensions.left ? `<path d="${askExtensions.left}" class="chart-line chart-line-ask" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
             ${askExtensions.right ? `<path d="${askExtensions.right}" class="chart-line chart-line-ask" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
             ${bidExtensions.left ? `<path d="${bidExtensions.left}" class="chart-line chart-line-bid" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
@@ -1024,7 +1148,7 @@
             ${volumeTrendSvg}
             ${volumeAxis}
             ${markers}
-            ${xAxis}
+            ${xAxisSvg}
           </svg>
           <div id="mwi-mo-hover" class="chart-hover is-hidden"></div>
           <div id="mwi-mo-guide" class="chart-guide is-hidden"></div>
@@ -1045,14 +1169,16 @@
     return ((cur - base) / base) * 100;
   }
 
-  function computeStats(levelData) {
+  function computeStats(levelData, anchorTs) {
     const hourly = levelData.hourly || [];
     const daily = levelData.daily || [];
     const vwap = levelData.vwap || {};
     const hourMs = 60 * 60 * 1000;
 
     const latest = hourly.length ? hourly[hourly.length - 1] : (daily.length ? daily[daily.length - 1] : null);
-    const now = latest && latest.timestamp ? latest.timestamp : Date.now();
+    const now = typeof anchorTs === 'number' && anchorTs > 0
+      ? anchorTs
+      : (latest && latest.timestamp ? latest.timestamp : Date.now());
     const cutoff24 = now - 24 * hourMs;
     const cutoff48 = now - 48 * hourMs;
 
@@ -1068,8 +1194,10 @@
       }
     }
 
-    const last7 = daily.slice(-7);
-    const prev7 = daily.slice(-14, -7);
+    const cutoff7d = now - 7 * 24 * hourMs;
+    const cutoff14d = now - 14 * 24 * hourMs;
+    const last7 = daily.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff7d);
+    const prev7 = daily.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff14d && p.timestamp <= cutoff7d);
     const sumV = (arr) => arr.reduce((s, p) => s + (p.v || 0), 0);
     const vol7d = last7.length ? sumV(last7) : null;
     const vol7dPrev = prev7.length ? sumV(prev7) : null;
@@ -1132,8 +1260,14 @@
     ].join('');
   }
 
-  function buildMarketplaceStripHTML(stats) {
-    return `<div class="mwi-mo-stats">${statCellsHtml(stats)}</div>`;
+  function buildMarketplaceStripHTML(stats, collapsed) {
+    return `
+      <div class="mwi-mo-strip-bar">
+        <button class="mwi-mo-strip-toggle" type="button" title="Show/hide quick overview">${collapsed ? '▸' : '▾'}</button>
+        <span class="mwi-mo-strip-label">Quick overview</span>
+      </div>
+      <div class="mwi-mo-stats"${collapsed ? ' style="display:none"' : ''}>${statCellsHtml(stats)}</div>
+    `;
   }
 
   let mpStrip = null;
@@ -1149,7 +1283,17 @@
       mpStrip = document.createElement('div');
       mpStrip.className = 'mwi-mo-mp-strip';
       mpStrip.title = 'Open market chart';
-      mpStrip.addEventListener('click', () => {
+      mpStrip.addEventListener('click', (e) => {
+        if (e.target.closest('.mwi-mo-strip-toggle')) {
+          e.stopPropagation();
+          stripCollapsed = !stripCollapsed;
+          GM_setValue('mwi_mo_strip_collapsed', stripCollapsed);
+          const statsEl = mpStrip.querySelector('.mwi-mo-stats');
+          const btn = mpStrip.querySelector('.mwi-mo-strip-toggle');
+          if (statsEl) statsEl.style.display = stripCollapsed ? 'none' : '';
+          if (btn) btn.textContent = stripCollapsed ? '▸' : '▾';
+          return;
+        }
         const s = mpStrip.dataset.slug;
         if (s) openFor(s, mpStrip.dataset.level || '0', mpStrip.dataset.name || null);
       });
@@ -1186,8 +1330,8 @@
       let useLevel = level;
       if (!lvls.includes(useLevel)) useLevel = lvls.includes('0') ? '0' : lvls[0];
       const levelData = norm.data[useLevel] || {};
-      const stats = computeStats(levelData);
-      mpStrip.innerHTML = buildMarketplaceStripHTML(stats);
+      const stats = computeStats(levelData, getDataAnchorTs(await getIndex()));
+      mpStrip.innerHTML = buildMarketplaceStripHTML(stats, stripCollapsed);
     } catch (err) {
       mpStrip.innerHTML = '';
     }
@@ -1211,6 +1355,7 @@
     window: '7d',
     itemData: null,
     iconUrl: null,
+    anchorTs: null,
     pos: GM_getValue('mwi_mo_pos', null),
     size: GM_getValue('mwi_mo_size', null),
     dragging: false,
@@ -1219,9 +1364,32 @@
   // Persisted settings (tiny; bundles stay in-memory)
   let autoOpenMarketplace = GM_getValue('mwi_mo_auto_open', true);
   let showContextMenuButton = GM_getValue('mwi_mo_show_menu_btn', true);
+  let smoothLines = GM_getValue('mwi_mo_smooth', false);
+  let stripCollapsed = GM_getValue('mwi_mo_strip_collapsed', false);
   let resizeMinH = 44;
 
   let modal = null;
+
+  async function renderSearchResults(query) {
+    const resultsEl = modal && modal.querySelector('.mwi-mo-search-results');
+    if (!resultsEl) return;
+    const index = await getIndex();
+    const q = (query || '').trim().toLowerCase();
+    const items = (index.items || [])
+      .filter((it) => !q || (it.name || '').toLowerCase().includes(q) || (it.slug || '').toLowerCase().includes(q))
+      .slice(0, 40);
+
+    if (!items.length) {
+      resultsEl.innerHTML = '<div class="mwi-mo-search-empty">No matches</div>';
+    } else {
+      resultsEl.innerHTML = items.map((it) => {
+        const file = ((index.iconFiles || {})[it.slug] || {}).svg || `${it.slug}.svg`;
+        const url = `${API_BASE}/assets/item_icons/${encodeURIComponent(file)}`;
+        return `<button class="mwi-mo-search-item" data-slug="${escapeHtml(it.slug)}" data-name="${escapeHtml(it.name || '')}"><img src="${escapeHtml(url)}" alt="" /><span>${escapeHtml(it.name || it.slug)}</span></button>`;
+      }).join('');
+    }
+    resultsEl.style.display = '';
+  }
 
   function ensureModal() {
     if (modal && modal.isConnected) return modal;
@@ -1230,7 +1398,9 @@
     modal.innerHTML = `
       <div class="mwi-mo-header">
         <img class="mwi-mo-item-icon" alt="" />
-        <span class="mwi-mo-title"></span>
+        <span class="mwi-mo-title" title="Click to search for an item"></span>
+        <input class="mwi-mo-search" type="text" placeholder="Search item..." style="display:none" />
+        <div class="mwi-mo-search-results" style="display:none"></div>
         <div class="mwi-mo-header-actions">
           <button class="mwi-mo-btn mwi-mo-refresh" title="Refresh data">↻</button>
           <button class="mwi-mo-btn mwi-mo-close" title="Close">✕</button>
@@ -1240,6 +1410,12 @@
         <div class="mwi-mo-controls">
           <div class="mwi-mo-pills mwi-mo-levels"></div>
           <div class="mwi-mo-pills mwi-mo-windows"></div>
+          <label class="mwi-mo-switch" title="Toggle smooth / straight lines">
+            <span class="mwi-mo-switch-label left">Straight</span>
+            <input type="checkbox" class="mwi-mo-smooth-toggle" />
+            <span class="mwi-mo-switch-slider"></span>
+            <span class="mwi-mo-switch-label right">Smooth</span>
+          </label>
         </div>
         <div class="mwi-mo-stats"></div>
         <div class="mwi-mo-chart"></div>
@@ -1281,6 +1457,42 @@
       GM_setValue('mwi_mo_show_menu_btn', showContextMenuButton);
     });
 
+    const smoothToggle = modal.querySelector('.mwi-mo-smooth-toggle');
+    smoothToggle.checked = smoothLines;
+    smoothToggle.addEventListener('change', () => {
+      smoothLines = smoothToggle.checked;
+      GM_setValue('mwi_mo_smooth', smoothLines);
+      renderChart();
+    });
+
+    // item search
+    const titleEl = modal.querySelector('.mwi-mo-title');
+    const searchEl = modal.querySelector('.mwi-mo-search');
+    const resultsEl = modal.querySelector('.mwi-mo-search-results');
+    const closeSearch = () => {
+      searchEl.style.display = 'none';
+      resultsEl.style.display = 'none';
+      titleEl.style.display = '';
+    };
+    titleEl.addEventListener('click', () => {
+      titleEl.style.display = 'none';
+      searchEl.style.display = '';
+      searchEl.value = '';
+      renderSearchResults('');
+      searchEl.focus();
+    });
+    searchEl.addEventListener('input', () => renderSearchResults(searchEl.value));
+    searchEl.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearch(); });
+    searchEl.addEventListener('blur', () => setTimeout(closeSearch, 150));
+    resultsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.mwi-mo-search-item');
+      if (!btn) return;
+      const slug = btn.getAttribute('data-slug');
+      const name = btn.getAttribute('data-name');
+      closeSearch();
+      openFor(slug, '0', name);
+    });
+
     // window pills
     modal.querySelector('.mwi-mo-windows').addEventListener('click', (e) => {
       const pill = e.target.closest('.mwi-mo-pill');
@@ -1299,7 +1511,7 @@
     // drag
     const header = modal.querySelector('.mwi-mo-header');
     header.addEventListener('mousedown', (e) => {
-      if (e.target.closest('button')) return;
+      if (e.target.closest('button, input, .mwi-mo-title, .mwi-mo-search-results')) return;
       modalState.dragging = true;
       const rect = modal.getBoundingClientRect();
       const offsetX = e.clientX - rect.left;
@@ -1391,7 +1603,7 @@
       stats.innerHTML = '<div class="mwi-mo-error">No data available.</div>';
       return;
     }
-    const cs = computeStats(level);
+    const cs = computeStats(level, modalState.anchorTs);
     stats.innerHTML = statCellsHtml(cs);
   }
 
@@ -1407,7 +1619,7 @@
       const hourlySeries = levelData.hourly || [];
       if (dailySeries.length > 0 && hourlySeries.length > 0) {
         const bucketMs = displayBucketMsForWindow(modalState.window);
-        const now = Date.now();
+        const now = modalState.anchorTs || Date.now();
         const todayStart = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000);
         const lastBucketStart = Math.floor(todayStart / bucketMs) * bucketMs;
         const dailyBeforeBucket = dailySeries.filter((p) => p?.timestamp && p.timestamp < lastBucketStart);
@@ -1419,7 +1631,7 @@
   }
 
   function currentPoints() {
-    return aggregateDisplaySeries(windowPoints(currentSeries(), modalState.window), modalState.window);
+    return aggregateDisplaySeries(windowPoints(currentSeries(), modalState.window, modalState.anchorTs), modalState.window);
   }
 
   function renderChart() {
@@ -1428,7 +1640,7 @@
     const yValues = points.flatMap((p) => [p.ask, p.bid]).filter((v) => typeof v === 'number' && Number.isFinite(v) && v > 0);
     const globalMin = yValues.length ? Math.min(...yValues) : null;
     const globalMax = yValues.length ? Math.max(...yValues) : null;
-    const chart = buildChart(points, CHART_WIDTH, CHART_HEIGHT, globalMin, globalMax, WINDOW_CONFIG[modalState.window]);
+    const chart = buildChart(points, CHART_WIDTH, CHART_HEIGHT, globalMin, globalMax, WINDOW_CONFIG[modalState.window], modalState.anchorTs, displayBucketMsForWindow(modalState.window), smoothLines);
     chartEl.innerHTML = chart.html;
 
     const cachedPosData = chart.pointPositions || [];
@@ -1539,6 +1751,7 @@
     try {
       const itemData = await getBundle(modalState.slug, force);
       modalState.itemData = normalizePublicItemData(itemData);
+      modalState.anchorTs = getDataAnchorTs(await getIndex());
       const levels = modalState.itemData.levels || ['0'];
       if (!levels.includes(modalState.level)) modalState.level = levels.includes('0') ? '0' : levels[0];
       modalState.iconUrl = await resolveItemIconUrl(modalState.slug);

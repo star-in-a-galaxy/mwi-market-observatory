@@ -311,16 +311,17 @@ async function analyze() {
         .map(p => ({ ts: p.timestamp, p: p.p, v: p.v }));
 
       if (timedPoints.length > 0) {
-        const latestTs = timedPoints[timedPoints.length - 1].ts;
+        const anchorTs = Date.parse(generatedAt) || timedPoints[timedPoints.length - 1].ts;
         const windows = { p1d: 24 * 3600 * 1000, p3d: 72 * 3600 * 1000, p7d: 7 * 24 * 3600 * 1000 };
 
         for (const [key, windowMs] of Object.entries(windows)) {
-          const cutoff = latestTs - windowMs;
+          const cutoff = anchorTs - windowMs;
           let totalVol = 0;
           let totalValue = 0;
           for (let i = timedPoints.length - 1; i >= 0; i--) {
             const p = timedPoints[i];
             if (p.ts <= cutoff) break;
+            if (p.ts > anchorTs) continue;
             totalVol += p.v;
             totalValue += p.p * p.v;
           }

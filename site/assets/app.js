@@ -244,25 +244,28 @@ function normalizePublicItemData(rawItemData) {
   };
 }
 
-function getTrailingVolume(series, windowMs, mode = 'sum') {
+function getTrailingVolume(series, windowMs, mode = 'sum', anchorTs = null) {
   if (!Array.isArray(series) || series.length === 0) {
     return null;
   }
 
-  const latestTimestamp = series[series.length - 1]?.timestamp;
-  if (typeof latestTimestamp !== 'number' || !Number.isFinite(latestTimestamp)) {
+  const seriesLatest = series[series.length - 1]?.timestamp;
+  const anchor = typeof anchorTs === 'number' && Number.isFinite(anchorTs) && anchorTs > 0
+    ? anchorTs
+    : seriesLatest;
+
+  if (typeof anchor !== 'number' || !Number.isFinite(anchor)) {
     return null;
   }
 
-  const cutoff = latestTimestamp - windowMs;
-  const relevantPoints = series.filter((point) => typeof point?.timestamp === 'number' && point.timestamp > cutoff);
-  if (!relevantPoints.length) {
-    return null;
-  }
+  const cutoff = anchor - windowMs;
+  const relevantPoints = series.filter((point) => typeof point?.timestamp === 'number' && point.timestamp > cutoff && point.timestamp <= anchor);
 
   const volumeSum = relevantPoints.reduce((sum, point) => sum + (typeof point.v === 'number' && point.v > 0 ? point.v : 0), 0);
+
   if (mode === 'avg') {
-    return Math.round(volumeSum / relevantPoints.length);
+    const days = Math.max(1, windowMs / (24 * 60 * 60 * 1000));
+    return Math.round(volumeSum / days);
   }
 
   return volumeSum;
@@ -474,7 +477,7 @@ function generatePriceTicks(paddedMin, paddedMax) {
   return result;
 }
 
-function buildChart(points, width = 960, height = 360, fixedMinValue = null, fixedMaxValue = null, windowConfig = null, fullSeries = null) {
+function buildChart(points, width = 960, height = 360, fixedMinValue = null, fixedMaxValue = null, windowConfig = null, anchorTs = null, bucketMs = null, smooth = true) {
   const errorReturn = (msg) => ({
     html: `<div class="empty-state">${msg}</div>`,
     pointPositions: [],
@@ -484,7 +487,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   });
 
   if (!points.length) {
-    return errorReturn('No chart data is available for this selection yet.');
+    return errorReturn('No data in this time window.');
   }
 
   const yValues = points.flatMap((point) => [point.ask, point.bid, point.p]).filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0);
@@ -505,32 +508,21 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   const innerHeight = height - padding.top - padding.bottom;
 
   const halfHourMs = 30 * 60 * 1000;
-  let latestTimestamp = null;
+  const gapMs = typeof bucketMs === 'number' && bucketMs > 0 ? bucketMs * 1.5 : null;
   let windowStart = null;
   let scaleX;
 
-  if (windowConfig && fullSeries && fullSeries.length > 0) {
-    const windowMs = windowConfig.hours * 60 * 60 * 1000; 
-    const timestamps = fullSeries
-      .map((p) => p.timestamp)
-      .filter((ts) => typeof ts === 'number' && ts > 0);
-    
-    if (timestamps.length > 0) {
-      latestTimestamp = Math.max(...timestamps);
-      windowStart = latestTimestamp - windowMs; 
-      
-      scaleX = (point, index) => {
-        if (!point || typeof point.timestamp !== 'number') return padding.left;
-        const displayTimestamp = windowConfig.hours <= 24
-          ? Math.round(point.timestamp / halfHourMs) * halfHourMs
-          : point.timestamp;
-        const timeOffset = displayTimestamp - windowStart;
-        const position = (timeOffset / windowMs) * innerWidth; 
-        return padding.left + position;
-      };
-    } else {
-      scaleX = (_, index) => padding.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
-    }
+  if (windowConfig && typeof anchorTs === 'number' && anchorTs > 0) {
+    const windowMs = windowConfig.hours * 60 * 60 * 1000;
+    windowStart = anchorTs - windowMs;
+
+    scaleX = (point, index) => {
+      if (!point || typeof point.timestamp !== 'number') return padding.left;
+      const displayTimestamp = windowConfig.hours <= 24
+        ? Math.round(point.timestamp / halfHourMs) * halfHourMs
+        : point.timestamp;
+      return padding.left + ((displayTimestamp - windowStart) / windowMs) * innerWidth;
+    };
   } else {
     scaleX = (_, index) => padding.left + (points.length === 1 ? innerWidth / 2 : (index / (points.length - 1)) * innerWidth);
   }
@@ -552,87 +544,145 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     }
   }
 
-  let firstPriceX = padding.left;
-  let lastPriceX = width - padding.right;
-  let leftHalfStep = innerWidth * 0.125;
-  let rightHalfStep = innerWidth * 0.125;
 
-  if (validPriceIndices.length > 0) {
-    const firstIdx = validPriceIndices[0];
-    const lastIdx = validPriceIndices[validPriceIndices.length - 1];
-    firstPriceX = pointPositions[firstIdx].x;
-    lastPriceX = pointPositions[lastIdx].x;
-
-    if (validPriceIndices.length > 1) {
-      const secondIdx = validPriceIndices[1];
-      const prevIdx = validPriceIndices[validPriceIndices.length - 2];
-      leftHalfStep = Math.max(0, (pointPositions[secondIdx].x - firstPriceX) / 2);
-      rightHalfStep = Math.max(0, (lastPriceX - pointPositions[prevIdx].x) / 2);
+  // Solid within contiguous stretches; dashed connectors bridge gaps where the
+  // item has no data. `all` is the fully connected path (used for the area fill).
+  const lineSegments = (accessor) => {
+    const idxs = [];
+    for (let i = 0; i < points.length; i++) {
+      if (accessor(points[i]) != null) idxs.push(i);
     }
-  }
 
-  // Shift all plotted points left so the left extension starts at the chart start.
-  const leftShift = Math.max(0, (firstPriceX - leftHalfStep) - padding.left);
-  if (leftShift > 0) {
-    for (let i = 0; i < pointPositions.length; i++) {
-      pointPositions[i].x -= leftShift;
+    const solid = [];
+    const dashed = [];
+    let current = [];
+
+    for (let k = 0; k < idxs.length; k++) {
+      const i = idxs[k];
+      if (k > 0) {
+        const prev = idxs[k - 1];
+        const prevTs = points[prev]?.timestamp;
+        const currTs = points[i]?.timestamp;
+        const timeGap = typeof prevTs === 'number' && typeof currTs === 'number' ? currTs - prevTs : 0;
+        const hasMissingPoints = i - prev > 1;
+        if (hasMissingPoints || (gapMs != null && timeGap > gapMs)) {
+          if (current.length > 0) {
+            solid.push(current);
+            current = [];
+          }
+          dashed.push([prev, i]);
+        }
+      }
+      current.push(i);
     }
-    firstPriceX -= leftShift;
-    lastPriceX -= leftShift;
-  }
+    if (current.length > 0) solid.push(current);
 
-  const chartStartX = firstPriceX - leftHalfStep;
-  const chartEndX = lastPriceX + rightHalfStep;
-
-  const toPath = (accessor) => {
-    const pathSegments = points.map((point, index) => accessor(point) != null ? `${index === 0 ? 'M' : 'L'} ${pointPositions[index].x.toFixed(1)} ${scaleY(accessor(point)).toFixed(1)}` : '').filter(Boolean);
-    return pathSegments.join(' ');
+    return { solid, dashed, all: idxs.length ? [idxs] : [] };
   };
 
-  const toAreaPath = (accessor) => {
-    const validIndices = [];
-    for (let i = 0; i < points.length; i++) if (accessor(points[i]) != null) validIndices.push(i);
-    if (validIndices.length === 0) return '';
-    
-    let pathStr = toPath(accessor);
-    const lastIdx = validIndices[validIndices.length - 1];
-    const firstIdx = validIndices[0];
-    const bottomY = padding.top + innerHeight;
-    
-    pathStr += ` L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)}`;
-    pathStr += ` L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
-    
-    return pathStr;
+  // Monotone cubic interpolation (Fritsch-Carlson): smooth, but never
+  // overshoots the real data points.
+  const smoothSegmentPath = (seg, accessor) => {
+    const pts = seg.map((i) => ({ x: pointPositions[i].x, y: scaleY(accessor(points[i])) }));
+    const n = pts.length;
+    if (n === 0) return '';
+    if (n === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    if (n === 2) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
+
+    const delta = [];
+    for (let k = 0; k < n - 1; k++) {
+      const h = pts[k + 1].x - pts[k].x;
+      delta.push(h !== 0 ? (pts[k + 1].y - pts[k].y) / h : 0);
+    }
+
+    const m = new Array(n);
+    m[0] = delta[0];
+    m[n - 1] = delta[n - 2];
+    for (let k = 1; k < n - 1; k++) {
+      m[k] = delta[k - 1] * delta[k] <= 0 ? 0 : (delta[k - 1] + delta[k]) / 2;
+    }
+    for (let k = 0; k < n - 1; k++) {
+      if (delta[k] === 0) {
+        m[k] = 0;
+        m[k + 1] = 0;
+        continue;
+      }
+      const a = m[k] / delta[k];
+      const b = m[k + 1] / delta[k];
+      const s = a * a + b * b;
+      if (s > 9) {
+        const tau = 3 / Math.sqrt(s);
+        m[k] = tau * a * delta[k];
+        m[k + 1] = tau * b * delta[k];
+      }
+    }
+
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let k = 0; k < n - 1; k++) {
+      const h = pts[k + 1].x - pts[k].x;
+      const c1x = pts[k].x + h / 3;
+      const c1y = pts[k].y + (m[k] * h) / 3;
+      const c2x = pts[k + 1].x - h / 3;
+      const c2y = pts[k + 1].y - (m[k + 1] * h) / 3;
+      d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${pts[k + 1].x.toFixed(1)} ${pts[k + 1].y.toFixed(1)}`;
+    }
+    return d;
   };
+
+  const straightSegmentPath = (seg, accessor) => seg
+    .map((i, k) => `${k === 0 ? 'M' : 'L'} ${pointPositions[i].x.toFixed(1)} ${scaleY(accessor(points[i])).toFixed(1)}`)
+    .join(' ');
+
+  const segmentLine = (seg, accessor) => smooth ? smoothSegmentPath(seg, accessor) : straightSegmentPath(seg, accessor);
+
+  const segmentPath = (segments, accessor) => segments
+    .map((seg) => segmentLine(seg, accessor))
+    .join(' ');
+
+  const segmentArea = (segments, accessor) => segments
+    .filter((seg) => seg.length > 1)
+    .map((seg) => {
+      const line = segmentLine(seg, accessor);
+      const firstIdx = seg[0];
+      const lastIdx = seg[seg.length - 1];
+      const bottomY = padding.top + innerHeight;
+      return `${line} L ${pointPositions[lastIdx].x.toFixed(1)} ${bottomY.toFixed(1)} L ${pointPositions[firstIdx].x.toFixed(1)} ${bottomY.toFixed(1)} Z`;
+    })
+    .join(' ');
+
+  const askLine = lineSegments((point) => getEffectivePrice(point.ask));
+  const bidLine = lineSegments((point) => getEffectivePrice(point.bid));
 
   const grid = [];
   const priceTicks = generatePriceTicks(paddedMin, paddedMax);
+  const gridLeftX = padding.left;
+  const gridRightX = width - padding.right;
 
   for (const tickValue of priceTicks) {
     const y = padding.top + (1 - (tickValue - paddedMin) / span) * innerHeight;
     grid.push(`
-      <line x1="${firstPriceX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${lastPriceX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid" />
-      <text x="${(chartStartX - 12).toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>
-    `);
-    grid.push(`
-      <line x1="${chartStartX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${firstPriceX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid-extended" stroke-dasharray="4 4" opacity="0.4" />
-      <line x1="${lastPriceX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${chartEndX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid-extended" stroke-dasharray="4 4" opacity="0.4" />
+      <line x1="${gridLeftX.toFixed(1)}" y1="${y.toFixed(1)}" x2="${gridRightX.toFixed(1)}" y2="${y.toFixed(1)}" class="chart-grid" />
+      <text x="${(gridLeftX - 12).toFixed(1)}" y="${(y + 4).toFixed(1)}" text-anchor="end" class="chart-label chart-label-y">${formatCompactNumber(tickValue)}</text>
     `);
   }
 
   const isIntraday = windowConfig && windowConfig.hours <= 24;
   let lastLabelX = -100;
   let lastDisplayedLabel = null;
-  
+
   const xAxis = points.map((point, index) => {
     const pos = pointPositions[index];
     const fullLabel = point.label || point.t || '';
-    
+
     let displayLabel = fullLabel;
-    if (fullLabel.includes(',')) {
-      displayLabel = isIntraday 
-        ? fullLabel.split(',')[1].trim() 
-        : fullLabel.split(',')[0].trim();
+    if (isIntraday) {
+      displayLabel = fullLabel.includes(',') ? fullLabel.split(',')[1].trim() : fullLabel;
+    } else if (typeof point.timestamp === 'number' && typeof bucketMs === 'number' && bucketMs > 0) {
+      // Label by the bucket's end, not its start.
+      const endTs = point.timestamp + bucketMs - 1;
+      displayLabel = formatDayLabel(new Date(endTs).toISOString().split('T')[0]);
+    } else if (displayLabel.includes(' - ')) {
+      displayLabel = displayLabel.split(' - ')[1].trim();
     }
     
     if (displayLabel === lastDisplayedLabel) return '';
@@ -642,7 +692,19 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     lastLabelX = pos.x;
     
     return `<text x="${pos.x.toFixed(1)}" y="${height - 6}" text-anchor="middle" class="chart-label">${escapeHtml(displayLabel)}</text>`;
-  }).filter(Boolean).join('');
+  }).filter(Boolean);
+
+  // Always label the right edge with the anchor (dataset's current) date.
+  const rightEdgeX = width - padding.right;
+  if (windowConfig && typeof anchorTs === 'number' && anchorTs > 0 && rightEdgeX - lastLabelX >= 60) {
+    const anchorDate = new Date(anchorTs);
+    const anchorLabel = isIntraday
+      ? formatHourLabel(anchorDate.toISOString())
+      : formatDayLabel(anchorDate.toISOString().split('T')[0]);
+    xAxis.push(`<text x="${rightEdgeX.toFixed(1)}" y="${height - 6}" text-anchor="end" class="chart-label">${escapeHtml(anchorLabel)}</text>`);
+  }
+
+  const xAxisSvg = xAxis.join('');
 
 
   // ----------------------------------------------------------------------
@@ -666,7 +728,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     return multiplier * magnitude;
   };
 
-  const volStep = getVolumeTickStep(maxVolume);
+  const volStep = Math.max(1, getVolumeTickStep(maxVolume));
   const maxVolumeForScale = Math.ceil(maxVolume / volStep) * volStep;
   
   const tickHeightPx = innerHeight / (span / tickStep);
@@ -718,18 +780,35 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   // Volume Trendline (5-Period Simple Moving Average)
   // ----------------------------------------------------------------------
   const smaPeriod = 5;
+  // Average over the last smaPeriod *time* buckets. Buckets with no data are
+  // absent from `points`, so we walk by timestamp and count them as 0 volume.
+  const smaWindowMs = typeof bucketMs === 'number' && bucketMs > 0 ? bucketMs * (smaPeriod - 1) : null;
   const volumeTrend = points.map((pt, i) => {
-    let sum = 0;
-    let count = 0;
-    for (let j = Math.max(0, i - smaPeriod + 1); j <= i; j++) {
-       sum += points[j]?.v || 0;
-       count++;
+    if (smaWindowMs == null) {
+      let sum = 0;
+      let count = 0;
+      for (let j = Math.max(0, i - smaPeriod + 1); j <= i; j++) {
+        sum += points[j]?.v || 0;
+        count++;
+      }
+      return count > 0 ? sum / count : 0;
     }
-    return count > 0 ? sum / count : 0;
+
+    const end = pt?.timestamp;
+    if (typeof end !== 'number') return 0;
+    let sum = 0;
+    for (let j = i; j >= 0; j--) {
+      const tj = points[j]?.timestamp;
+      if (typeof tj !== 'number' || end - tj > smaWindowMs) break;
+      sum += points[j]?.v || 0;
+    }
+    return sum / smaPeriod;
   });
 
   const scaleVolumeY = (vol) => volumeBaseY - (vol / maxVolumeForScale) * volumeBarMaxHeight;
-  const volumeTrendPathStr = points.map((_, i) => `${i === 0 ? 'M' : 'L'} ${pointPositions[i].x.toFixed(1)} ${scaleVolumeY(volumeTrend[i]).toFixed(1)}`).join(' ');
+  const volumeTrendPathStr = points
+    .map((_, i) => `${i === 0 ? 'M' : 'L'} ${pointPositions[i].x.toFixed(1)} ${scaleVolumeY(volumeTrend[i]).toFixed(1)}`)
+    .join(' ');
 
   const volumeTrendSvg = volumeTrend.some(v => v > 0) 
     ? `<path d="${volumeTrendPathStr}" fill="none" stroke="#f39c12" stroke-width="1.5" opacity="0.9" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 4" />` 
@@ -794,41 +873,14 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
   // ----------------------------------------------------------------------
   // Volume Weighted Average Price (VP) Line
   // ----------------------------------------------------------------------
-  const validVpIdxs = [];
-  for (let i = 0; i < points.length; i++) {
-    if (points[i]?.p > 0) validVpIdxs.push(i);
-  }
-
-  const vpSolidSegs = [];
-  const vpDottedSegs = [];
-
-  for (let vi = 0; vi < validVpIdxs.length; vi++) {
-    const i = validVpIdxs[vi];
-    const x = pointPositions[i].x;
-    const y = scaleY(points[i].p).toFixed(1);
-    const prevConsecutive = vi > 0 && validVpIdxs[vi - 1] === i - 1;
-    vpSolidSegs.push(`${prevConsecutive ? 'L' : 'M'} ${x.toFixed(1)} ${y}`);
-  }
-
-  for (let vi = 0; vi < validVpIdxs.length - 1; vi++) {
-    const leftIdx = validVpIdxs[vi];
-    const rightIdx = validVpIdxs[vi + 1];
-    if (rightIdx - leftIdx > 1) {
-      const leftX = pointPositions[leftIdx].x;
-      const leftY = scaleY(points[leftIdx].p).toFixed(1);
-      const lastNullIdx = rightIdx - 1;
-      const lastNullX = pointPositions[lastNullIdx].x;
-      vpDottedSegs.push(`M ${leftX.toFixed(1)} ${leftY} L ${lastNullX.toFixed(1)} ${leftY}`);
-    }
-  }
-
+  const vpLine = lineSegments((point) => (typeof point.p === 'number' && point.p > 0 ? point.p : null));
   const vpExtensions = toExtensionPaths((point) => typeof point.p === 'number' && point.p > 0 ? point.p : null);
 
-  const vpLineSvg = vpSolidSegs.length
-    ? `<path d="${vpSolidSegs.join(' ')}" class="chart-line chart-line-vp" />`
+  const vpLineSvg = vpLine.solid.length
+    ? `<path d="${segmentPath(vpLine.solid, (point) => point.p)}" class="chart-line chart-line-vp" />`
     : '';
-  const vpDottedSvg = vpDottedSegs.length
-    ? `<path d="${vpDottedSegs.join(' ')}" class="chart-line chart-line-vp" stroke-dasharray="4 4" stroke-width="2" opacity="0.5" fill="none" />`
+  const vpDottedSvg = vpLine.dashed.length
+    ? `<path d="${segmentPath(vpLine.dashed, (point) => point.p)}" class="chart-line chart-line-vp" stroke-dasharray="4 4" stroke-width="2" opacity="0.5" fill="none" />`
     : '';
 
   const markers = pointPositions.map((point) => {
@@ -852,10 +904,12 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
           </linearGradient>
         </defs>
         ${grid.join('')}
-        <path d="${toAreaPath((point) => getEffectivePrice(point.ask))}" class="chart-area chart-area-ask" fill="url(#ask-fill)" />
-        <path d="${toAreaPath((point) => getEffectivePrice(point.bid))}" class="chart-area chart-area-bid" fill="url(#bid-fill)" />
-        <path d="${toPath((point) => getEffectivePrice(point.ask))}" class="chart-line chart-line-ask" />
-        <path d="${toPath((point) => getEffectivePrice(point.bid))}" class="chart-line chart-line-bid" />
+        <path d="${segmentArea(askLine.all, (point) => getEffectivePrice(point.ask))}" class="chart-area chart-area-ask" fill="url(#ask-fill)" />
+        <path d="${segmentArea(bidLine.all, (point) => getEffectivePrice(point.bid))}" class="chart-area chart-area-bid" fill="url(#bid-fill)" />
+        <path d="${segmentPath(askLine.solid, (point) => getEffectivePrice(point.ask))}" class="chart-line chart-line-ask" />
+        <path d="${segmentPath(askLine.dashed, (point) => getEffectivePrice(point.ask))}" class="chart-line chart-line-ask" stroke-dasharray="4 4" opacity="0.5" fill="none" />
+        <path d="${segmentPath(bidLine.solid, (point) => getEffectivePrice(point.bid))}" class="chart-line chart-line-bid" />
+        <path d="${segmentPath(bidLine.dashed, (point) => getEffectivePrice(point.bid))}" class="chart-line chart-line-bid" stroke-dasharray="4 4" opacity="0.5" fill="none" />
         ${askExtensions.left ? `<path d="${askExtensions.left}" class="chart-line chart-line-ask" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
         ${askExtensions.right ? `<path d="${askExtensions.right}" class="chart-line chart-line-ask" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
         ${bidExtensions.left ? `<path d="${bidExtensions.left}" class="chart-line chart-line-bid" stroke-dasharray="3 3" stroke-width="2" opacity="0.3" fill="none" />` : ''}
@@ -868,7 +922,7 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
         ${volumeTrendSvg}
         ${volumeAxis}
         ${markers}
-        ${xAxis}
+        ${xAxisSvg}
       </svg>
       <div id="chart-hover" class="chart-hover is-hidden" aria-live="polite"></div>
       <div id="chart-guide" class="chart-guide is-hidden"></div>
@@ -949,6 +1003,33 @@ async function loadCatalog() {
 
   G_CATALOG_CACHE = { items: [], iconFiles: {} };
   return G_CATALOG_CACHE;
+}
+
+// Single "current time" anchor for all time-windowed views: the dataset's own
+// latest timestamp, so the right edge of every window is the same instant
+// regardless of how sparse an individual item's history is.
+function getDataAnchorTs(catalog) {
+  const candidates = [
+    catalog?.generatedAt,
+    catalog?.source?.hourlyRange?.end,
+    catalog?.source?.dailyRange?.end,
+  ];
+  for (const candidate of candidates) {
+    const ts = typeof candidate === 'number' ? candidate : Date.parse(candidate);
+    if (Number.isFinite(ts) && ts > 0) {
+      return ts;
+    }
+  }
+  return Date.now();
+}
+
+function loadSmoothPreference() {
+  try {
+    const value = localStorage.getItem('mwi-smooth-lines');
+    return value === '1';
+  } catch {
+    return false;
+  }
 }
 
 function sortItemsByRefineAndSuffix(items) {
@@ -1276,7 +1357,7 @@ document.addEventListener('click', (event) => {
   star.setAttribute('title', isFavorite ? 'Remove from favorites' : 'Add to favorites');
 });
 
-function windowPoints(points, windowKey) {
+function windowPoints(points, windowKey, anchorTs = null) {
   if (!points.length) {
     return [];
   }
@@ -1289,12 +1370,15 @@ function windowPoints(points, windowKey) {
     .map((point) => point.timestamp)
     .filter((timestamp) => typeof timestamp === 'number' && Number.isFinite(timestamp) && timestamp > 0);
 
-  if (!timestamps.length) {
+  const anchor = typeof anchorTs === 'number' && anchorTs > 0
+    ? anchorTs
+    : (timestamps.length ? Math.max(...timestamps) : null);
+
+  if (anchor == null) {
     return points.slice(-config.hours);
   }
 
-  const latestTimestamp = Math.max(...timestamps);
-  const windowStart = latestTimestamp - (config.hours * 60 * 60 * 1000);
+  const windowStart = anchor - (config.hours * 60 * 60 * 1000);
   return points.filter((point) => typeof point.timestamp === 'number' && point.timestamp >= windowStart);
 }
 
@@ -1307,6 +1391,8 @@ function getDataGapWarningHtml() {
 
 async function renderItem(root, slug) {
   const catalog = await loadCatalog();
+  const anchorTs = getDataAnchorTs(catalog);
+  let smoothLines = loadSmoothPreference();
   const itemMeta = (catalog.items || []).find((item) => item.slug === slug);
   const itemName = itemMeta?.name || slugToTitle(slug);
 
@@ -1448,7 +1534,7 @@ async function renderItem(root, slug) {
       const hourlySeries = levelData.hourly || [];
       if (dailySeries.length > 0 && hourlySeries.length > 0) {
         const bucketMs = displayBucketMsForWindow(selectedWindow);
-        const now = Date.now();
+        const now = anchorTs;
         const todayStart = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000);
         const lastBucketStart = Math.floor(todayStart / bucketMs) * bucketMs;
         
@@ -1466,46 +1552,24 @@ async function renderItem(root, slug) {
 
   const currentPoints = () => {
     const series = currentSeries();
-    return aggregateDisplaySeries(windowPoints(series, selectedWindow), selectedWindow);
+    return aggregateDisplaySeries(windowPoints(series, selectedWindow, anchorTs), selectedWindow);
   };
 
   const getCoverageInfo = () => {
     const requiredHours = WINDOW_CONFIG[selectedWindow]?.hours || 0;
-    const sourceSeries = currentSeries();
-    const timestamps = sourceSeries
-      .map((point) => point?.timestamp)
-      .filter((ts) => typeof ts === 'number' && Number.isFinite(ts) && ts > 0)
-      .sort((left, right) => left - right);
+    const bucketMs = displayBucketMsForWindow(selectedWindow) || (60 * 60 * 1000);
+    const requiredBuckets = requiredHours > 0
+      ? Math.max(1, Math.round((requiredHours * 60 * 60 * 1000) / bucketMs))
+      : 0;
+    const availableBuckets = currentPoints().length;
 
-    if (!requiredHours || !timestamps.length) {
-      return {
-        isInsufficient: false,
-        availableHours: 0,
-        requiredHours,
-      };
-    }
-
-    let stepMs = 0;
-    for (let i = 1; i < timestamps.length; i++) {
-      const diff = timestamps[i] - timestamps[i - 1];
-      if (diff > 0) {
-        stepMs = stepMs === 0 ? diff : Math.min(stepMs, diff);
-      }
-    }
-
-    // If only one point exists, treat one sampling interval as available width.
-    if (stepMs <= 0) {
-      stepMs = usesDailySeries(selectedWindow) ? (24 * 60 * 60 * 1000) : (60 * 60 * 1000);
-    }
-
-    const earliestTs = timestamps[0];
-    const latestTs = timestamps[timestamps.length - 1];
-    const availableMs = Math.max(0, (latestTs - earliestTs) + stepMs);
-    const requiredMs = requiredHours * 60 * 60 * 1000;
-
+    // Compare bucket coverage, not time span: daily points never span the whole
+    // window exactly, which previously made fully-covered ranges look "short".
     return {
-      isInsufficient: availableMs < requiredMs,
-      availableHours: availableMs / (60 * 60 * 1000),
+      isInsufficient: requiredBuckets > 0 && availableBuckets < requiredBuckets * 0.9,
+      availableBuckets,
+      requiredBuckets,
+      availableHours: (availableBuckets * bucketMs) / (60 * 60 * 1000),
       requiredHours,
     };
   };
@@ -1524,7 +1588,7 @@ async function renderItem(root, slug) {
     if (!chart) return;
     
     const windowConfig = WINDOW_CONFIG[selectedWindow];
-    const chartData = buildChart(points, 960, 400, globalRange.min, globalRange.max, windowConfig, points);
+    const chartData = buildChart(points, 960, 400, globalRange.min, globalRange.max, windowConfig, anchorTs, displayBucketMsForWindow(selectedWindow), smoothLines);
     setHTML(chart, chartData.html);
     
     const cachedPosData = chartData.pointPositions || [];
@@ -1596,8 +1660,8 @@ async function renderItem(root, slug) {
     const dailySeries = currentLevel.daily || [];
     const latestHourly = hourlySeries.at(-1) || null;
     const latestDaily = dailySeries.at(-1) || null;
-    const hourlyVolume24h = getTrailingVolume(hourlySeries, 24 * 60 * 60 * 1000, 'sum');
-    const dailyVolume7dAvg = getTrailingVolume(dailySeries, 7 * 24 * 60 * 60 * 1000, 'avg');
+    const hourlyVolume24h = getTrailingVolume(hourlySeries, 24 * 60 * 60 * 1000, 'sum', anchorTs);
+    const dailyVolume7dAvg = getTrailingVolume(dailySeries, 7 * 24 * 60 * 60 * 1000, 'avg', anchorTs);
 
     if (stats) {
       const vwap = currentLevel.vwap || { p1d: null, p7d: null };
@@ -1626,9 +1690,10 @@ async function renderItem(root, slug) {
     if (chartWarning) {
       const coverageInfo = getCoverageInfo();
       if (points.length && coverageInfo.isInsufficient) {
-        const availableDays = (coverageInfo.availableHours / 24).toFixed(1);
-        const requiredDays = (coverageInfo.requiredHours / 24).toFixed(0);
-        chartWarning.textContent = `Warning: this range shows only ${availableDays} days of data.`;
+        const pct = coverageInfo.requiredBuckets > 0
+          ? Math.round((coverageInfo.availableBuckets / coverageInfo.requiredBuckets) * 100)
+          : 0;
+        chartWarning.textContent = `Only ${pct}% of this range has data for this item.`;
         chartWarning.classList.remove('is-hidden');
       } else {
         chartWarning.classList.add('is-hidden');
@@ -1702,6 +1767,12 @@ async function renderItem(root, slug) {
             <div class="legend-item"><span class="legend-dash ask"></span> Ask</div>
             <div class="legend-item"><span class="legend-dash bid"></span> Bid</div>
             <div class="legend-item"><span class="legend-dash vp"></span> Volume Weighted Average Price (VWAP)</div>
+            <label class="switch" title="Toggle smooth / straight lines">
+              <span class="switch-label straight">Straight</span>
+              <input type="checkbox" id="smooth-toggle" ${smoothLines ? 'checked' : ''} />
+              <span class="switch-slider"></span>
+              <span class="switch-label smooth">Smooth</span>
+            </label>
           </div>
           <p id="chart-warning" class="chart-warning is-hidden"></p>
           <div id="data-gap-warning" class="data-gap-warning is-hidden"></div>
@@ -1718,6 +1789,15 @@ async function renderItem(root, slug) {
 
   updateView();
   syncLevelURL();
+
+  const smoothToggle = document.getElementById('smooth-toggle');
+  if (smoothToggle) {
+    smoothToggle.addEventListener('change', () => {
+      smoothLines = smoothToggle.checked;
+      try { localStorage.setItem('mwi-smooth-lines', smoothLines ? '1' : '0'); } catch { /* ignore */ }
+      renderChartInteractive();
+    });
+  }
 
   const rootElement = document.getElementById('app');
   rootElement.addEventListener('click', (event) => {
@@ -2804,6 +2884,7 @@ async function renderGroup(root) {
   async function renderCellChart(idx) {
     const cell = state.cells[idx];
     if (!cell || !cell.slug) return;
+    const anchorTs = getDataAnchorTs(catalog);
     const cellEl = root.querySelector(`.group-cell[data-cell-index="${idx}"]`);
     if (!cellEl) return;
     const chartWrap = cellEl.querySelector('.group-cell-chart-wrap .chart-wrap');
@@ -2830,7 +2911,7 @@ async function renderGroup(root) {
         const hs = levelData.hourly || [];
         if (ds.length > 0 && hs.length > 0) {
           const bucketMs = displayBucketMsForWindow(groupWindow);
-          const now = Date.now();
+          const now = anchorTs;
           const todayStart = Math.floor(now / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000);
           const lastBucketStart = Math.floor(todayStart / bucketMs) * bucketMs;
           const dailyBefore = ds.filter((p) => p?.timestamp && p.timestamp < lastBucketStart);
@@ -2840,7 +2921,7 @@ async function renderGroup(root) {
         } else { series = usesDaily ? (levelData.daily || []) : (levelData.hourly || []); }
       } else { series = usesDaily ? (levelData.daily || []) : (levelData.hourly || []); }
 
-      const windowed = windowPoints(series, groupWindow);
+      const windowed = windowPoints(series, groupWindow, anchorTs);
       const points = aggregateDisplaySeries(windowed, groupWindow);
 
       if (!points || points.length === 0) {
@@ -2862,7 +2943,7 @@ async function renderGroup(root) {
         ).join(''));
       }
 
-      const chartData = buildChart(points, 960, 400, null, null, WINDOW_CONFIG[groupWindow], points);
+      const chartData = buildChart(points, 960, 400, null, null, WINDOW_CONFIG[groupWindow], anchorTs, displayBucketMsForWindow(groupWindow));
       setHTML(chartWrap, chartData.html);
 
       const guideEl = document.createElement('div');
