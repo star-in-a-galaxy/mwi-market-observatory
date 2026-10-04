@@ -2,7 +2,7 @@
 // @name         MWI Market Observatory
 // @name:zh-CN   MWI 市场观察站
 // @namespace    mwi-market-observatory
-// @version      0.1.3
+// @version      0.1.4
 // @description  Show market price charts from the MWI Market Observatory in the marketplace and in item context menus.
 // @description:zh-CN 在市场及物品右键菜单中显示 MWI 市场观察站的价格图表。
 // @icon         https://star-in-a-galaxy.github.io/mwi-market-observatory/assets/logo.svg
@@ -70,7 +70,8 @@
   const POLL_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
   const CHART_WIDTH = 960;
   const CHART_HEIGHT = 400;
-  const TREND_THRESHOLD = 0.5; // min |%| for showing a trend arrow
+  const TREND_THRESHOLD = 0.05; // only ~0 counts as "no change"
+  const MILD_TREND_THRESHOLD = 0.5; // below this, show the change in yellow
 
   const WINDOW_CONFIG = {
     '1d': { label: '1 Day', hours: 24 },
@@ -329,7 +330,9 @@
     .mwi-mo-stat-trend { display: block; font-size: 10px; font-weight: 600; margin-top: 1px; }
     .mwi-mo-trend-up { color: #22c55e; }
     .mwi-mo-trend-down { color: #ef4444; }
-    .mwi-mo-trend-flat { display: inline-block; width: 14px; border-top: 2px solid #eab308; vertical-align: middle; }
+    .mwi-mo-trend-flat { color: ${COLORS.textMuted}; }
+    .mwi-mo-trend-mild { color: #e6c84d; }
+    .mwi-mo-trend-arrow { font-weight: 700; font-size: 1.2em; }
     .mwi-mo-insufficient { font-size: 9px; color: ${COLORS.textMuted}; white-space: nowrap; }
 
     /* Context-menu injected button */
@@ -984,7 +987,9 @@
       const anchorLabel = isIntraday
         ? formatHourLabel(anchorDate.toISOString())
         : formatDayLabel(anchorDate.toISOString().split('T')[0]);
-      xAxis.push(`<text x="${rightEdgeX.toFixed(1)}" y="${height - 6}" text-anchor="end" class="chart-label">${escapeHtml(anchorLabel)}</text>`);
+      if (anchorLabel !== lastDisplayedLabel) {
+        xAxis.push(`<text x="${rightEdgeX.toFixed(1)}" y="${height - 6}" text-anchor="end" class="chart-label">${escapeHtml(anchorLabel)}</text>`);
+      }
     }
     const xAxisSvg = xAxis.join('');
 
@@ -1205,6 +1210,15 @@
     let pv7 = 0, pv7V = 0;
     for (const pt of prev7) if (pt.p > 0 && pt.v > 0) { pv7 += pt.p * pt.v; pv7V += pt.v; }
 
+    // Ask/bid reference ~7 days ago (nearest available point).
+    const refTarget = now - 7 * 24 * hourMs;
+    let refAsk = null, refBid = null, refDiff = Infinity;
+    for (const pt of [...hourly, ...daily]) {
+      if (typeof pt.timestamp !== 'number' || pt.ask == null) continue;
+      const d = Math.abs(pt.timestamp - refTarget);
+      if (d < refDiff) { refDiff = d; refAsk = pt.ask; refBid = pt.bid; }
+    }
+
     const p1d = vwap.p1d || null;
     const p7d = vwap.p7d || null;
 
@@ -1221,8 +1235,8 @@
         vol24h: pctChange(vol24, vol24Prev),
         vol7d: pctChange(vol7d, vol7dPrev),
       },
-      askVs7d: latest && latest.ask != null && p7d > 0 ? pctChange(latest.ask, p7d) : null,
-      bidVs7d: latest && latest.bid != null && p7d > 0 ? pctChange(latest.bid, p7d) : null,
+      askVs7d: latest && latest.ask != null && refAsk != null ? pctChange(latest.ask, refAsk) : null,
+      bidVs7d: latest && latest.bid != null && refBid != null ? pctChange(latest.bid, refBid) : null,
     };
   }
 
@@ -1230,18 +1244,22 @@
     return '<span class="mwi-mo-insufficient">Insufficient Data</span>';
   }
 
+  function trendArrowHtml(pct) {
+    return `<span class="mwi-mo-trend-arrow">${pct > 0 ? '\u2191' : '\u2193'}</span>`;
+  }
+
   function trendHtml(pct) {
     if (pct == null || !Number.isFinite(pct)) return insufficientHtml();
-    if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="mwi-mo-trend-flat"></span>';
-    const arrow = pct > 0 ? '↑' : '↓';
-    const cls = pct > 0 ? 'mwi-mo-trend-up' : 'mwi-mo-trend-down';
-    return `<span class="${cls}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
+    if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="mwi-mo-trend-flat">no change</span>';
+    const cls = Math.abs(pct) < MILD_TREND_THRESHOLD ? 'mwi-mo-trend-mild' : (pct > 0 ? 'mwi-mo-trend-up' : 'mwi-mo-trend-down');
+    return `<span class="${cls}">${trendArrowHtml(pct)} ${Math.abs(pct).toFixed(1)}%</span>`;
   }
 
   function vsPctHtml(pct) {
     if (pct == null || !Number.isFinite(pct)) return insufficientHtml();
-    if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="mwi-mo-trend-flat"></span>';
-    return ` <span class="${pct > 0 ? 'mwi-mo-trend-up' : 'mwi-mo-trend-down'}">${pct > 0 ? '+' : ''}${pct.toFixed(1)}% vs 7d</span>`;
+    if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="mwi-mo-trend-flat">no change</span>';
+    const cls = Math.abs(pct) < MILD_TREND_THRESHOLD ? 'mwi-mo-trend-mild' : (pct > 0 ? 'mwi-mo-trend-up' : 'mwi-mo-trend-down');
+    return ` <span class="${cls}">${trendArrowHtml(pct)} ${Math.abs(pct).toFixed(1)}% vs 7d</span>`;
   }
 
   function statCell(label, value, trend) {

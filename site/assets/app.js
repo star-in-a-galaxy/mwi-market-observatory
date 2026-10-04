@@ -271,6 +271,32 @@ function getTrailingVolume(series, windowMs, mode = 'sum', anchorTs = null) {
   return volumeSum;
 }
 
+const TREND_THRESHOLD = 0.05; // only ~0 counts as "no change"
+const MILD_TREND_THRESHOLD = 0.5; // below this, show the change in yellow
+
+function pctChange(cur, base) {
+  if (cur == null || base == null || base === 0) return null;
+  return ((cur - base) / base) * 100;
+}
+
+function trendArrowHtml(pct) {
+  return `<span class="stat-trend-arrow">${pct > 0 ? '\u2191' : '\u2193'}</span>`;
+}
+
+function trendHtml(pct) {
+  if (pct == null || !Number.isFinite(pct)) return '<span class="stat-trend stat-trend-flat">-</span>';
+  if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="stat-trend stat-trend-flat">no change</span>';
+  const cls = Math.abs(pct) < MILD_TREND_THRESHOLD ? 'stat-trend-mild' : (pct > 0 ? 'stat-trend-up' : 'stat-trend-down');
+  return `<span class="stat-trend ${cls}">${trendArrowHtml(pct)} ${Math.abs(pct).toFixed(1)}%</span>`;
+}
+
+function vsTrendHtml(pct) {
+  if (pct == null || !Number.isFinite(pct)) return '<span class="stat-trend stat-trend-flat">-</span>';
+  if (Math.abs(pct) < TREND_THRESHOLD) return '<span class="stat-trend stat-trend-flat">no change</span>';
+  const cls = Math.abs(pct) < MILD_TREND_THRESHOLD ? 'stat-trend-mild' : (pct > 0 ? 'stat-trend-up' : 'stat-trend-down');
+  return `<span class="stat-trend ${cls}">${trendArrowHtml(pct)} ${Math.abs(pct).toFixed(1)}% vs 7d</span>`;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -701,7 +727,9 @@ function buildChart(points, width = 960, height = 360, fixedMinValue = null, fix
     const anchorLabel = isIntraday
       ? formatHourLabel(anchorDate.toISOString())
       : formatDayLabel(anchorDate.toISOString().split('T')[0]);
-    xAxis.push(`<text x="${rightEdgeX.toFixed(1)}" y="${height - 6}" text-anchor="end" class="chart-label">${escapeHtml(anchorLabel)}</text>`);
+    if (anchorLabel !== lastDisplayedLabel) {
+      xAxis.push(`<text x="${rightEdgeX.toFixed(1)}" y="${height - 6}" text-anchor="end" class="chart-label">${escapeHtml(anchorLabel)}</text>`);
+    }
   }
 
   const xAxisSvg = xAxis.join('');
@@ -1032,6 +1060,12 @@ function loadSmoothPreference() {
   }
 }
 
+function saveSmoothPreference(value) {
+  try {
+    localStorage.setItem('mwi-smooth-lines', value ? '1' : '0');
+  } catch { /* ignore */ }
+}
+
 function sortItemsByRefineAndSuffix(items) {
   return [...items].sort((a, b) => {
     const nameA = (a.name || slugToTitle(a.slug)).trim();
@@ -1117,6 +1151,7 @@ async function loadCategories() {
 }
 
 async function renderHome(root) {
+  root.className = 'shell shell-medium';
   const catalog = await loadCatalog();
   const items = catalog.items || [];
 
@@ -1660,18 +1695,55 @@ async function renderItem(root, slug) {
     const dailySeries = currentLevel.daily || [];
     const latestHourly = hourlySeries.at(-1) || null;
     const latestDaily = dailySeries.at(-1) || null;
-    const hourlyVolume24h = getTrailingVolume(hourlySeries, 24 * 60 * 60 * 1000, 'sum', anchorTs);
-    const dailyVolume7dAvg = getTrailingVolume(dailySeries, 7 * 24 * 60 * 60 * 1000, 'avg', anchorTs);
+    const hourMs = 60 * 60 * 1000;
+    const cutoff24 = anchorTs - 24 * hourMs;
+    const cutoff48 = anchorTs - 48 * hourMs;
+    const cutoff7d = anchorTs - 7 * 24 * hourMs;
+    const cutoff14d = anchorTs - 14 * 24 * hourMs;
+
+    let vol24 = 0, vol24Prev = 0, pvCur = 0, pvCurV = 0, pvPrev = 0, pvPrevV = 0;
+    for (const pt of hourlySeries) {
+      if (pt.timestamp > cutoff24) {
+        vol24 += pt.v || 0;
+        if (pt.p > 0 && pt.v > 0) { pvCur += pt.p * pt.v; pvCurV += pt.v; }
+      } else if (pt.timestamp > cutoff48) {
+        vol24Prev += pt.v || 0;
+        if (pt.p > 0 && pt.v > 0) { pvPrev += pt.p * pt.v; pvPrevV += pt.v; }
+      }
+    }
+    const last7 = dailySeries.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff7d);
+    const prev7 = dailySeries.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff14d && p.timestamp <= cutoff7d);
+    const sumVolume = (arr) => arr.reduce((sum, p) => sum + (p.v || 0), 0);
+    const vol7d = last7.length ? sumVolume(last7) : 0;
+    const vol7dPrev = prev7.length ? sumVolume(prev7) : 0;
+    let pv7 = 0, pv7V = 0;
+    for (const pt of prev7) if (pt.p > 0 && pt.v > 0) { pv7 += pt.p * pt.v; pv7V += pt.v; }
+
+    // Ask/bid reference ~7 days ago (nearest available point).
+    const refTargetTs = anchorTs - 7 * 24 * hourMs;
+    let refAsk = null, refBid = null, refDiff = Infinity;
+    for (const pt of [...dailySeries, ...hourlySeries]) {
+      if (typeof pt.timestamp !== 'number' || pt.a == null) continue;
+      const diff = Math.abs(pt.timestamp - refTargetTs);
+      if (diff < refDiff) { refDiff = diff; refAsk = pt.a; refBid = pt.b; }
+    }
 
     if (stats) {
       const vwap = currentLevel.vwap || { p1d: null, p7d: null };
+      const trendP1d = pvCurV > 0 && pvPrevV > 0 ? pctChange(pvCur / pvCurV, pvPrev / pvPrevV) : null;
+      const trendP7d = pv7V > 0 && vwap.p7d ? pctChange(vwap.p7d, pv7 / pv7V) : null;
+      const trendVol24h = pctChange(vol24, vol24Prev);
+      const trendVol7d = pctChange(vol7d, vol7dPrev);
+      const askVs7d = latest && latest.a != null && refAsk != null ? pctChange(latest.a, refAsk) : null;
+      const bidVs7d = latest && latest.b != null && refBid != null ? pctChange(latest.b, refBid) : null;
+
       setHTML(stats, latest ? `
-        <div><span class="stat-label">Ask</span><strong>${formatNumber(latest.a)}</strong></div>
-        <div><span class="stat-label">Bid</span><strong>${formatNumber(latest.b)}</strong></div>
-        <div><span class="stat-label">1d VWAP</span><strong>${formatNumber(vwap.p1d)}</strong></div>
-        <div><span class="stat-label">7d VWAP</span><strong>${formatNumber(vwap.p7d)}</strong></div>
-        <div><span class="stat-label">Volume (24h)</span><strong>${formatNumber(hourlyVolume24h)}</strong></div>
-        <div><span class="stat-label">Volume (7d avg)</span><strong>${formatNumber(dailyVolume7dAvg)}</strong></div>
+        <div><span class="stat-label">Ask</span><strong>${formatNumber(latest.a)}</strong>${vsTrendHtml(askVs7d)}</div>
+        <div><span class="stat-label">Bid</span><strong>${formatNumber(latest.b)}</strong>${vsTrendHtml(bidVs7d)}</div>
+        <div><span class="stat-label">1d VWAP</span><strong>${formatNumber(vwap.p1d)}</strong>${trendHtml(trendP1d)}</div>
+        <div><span class="stat-label">7d VWAP</span><strong>${formatNumber(vwap.p7d)}</strong>${trendHtml(trendP7d)}</div>
+        <div><span class="stat-label">Volume (24h)</span><strong>${formatNumber(vol24)}</strong>${trendHtml(trendVol24h)}</div>
+        <div><span class="stat-label">Volume (7d)</span><strong>${formatNumber(vol7d)}</strong>${trendHtml(trendVol7d)}</div>
       ` : '<div class="empty-state">No data available.</div>');
     }
 
@@ -1820,6 +1892,61 @@ async function renderGroup(root) {
   let itemCache = {};
   let groupWindow = '15d';
   let currentPresetIndex = -1;
+  let groupSmooth = loadSmoothPreference();
+
+  const COLS_KEY = 'mwi_group_cols';
+  const MAX_COLS = 3;
+  const MIN_CELL_WIDTH = 480;
+
+  function loadColsPref() {
+    try {
+      const n = parseInt(localStorage.getItem(COLS_KEY) || '', 10);
+      return Number.isFinite(n) && n >= 1 ? n : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveColsPref(n) {
+    try { localStorage.setItem(COLS_KEY, String(n)); } catch (e) { /* ignore */ }
+  }
+
+  function maxPossibleCols() {
+    const grid = root.querySelector('.group-grid');
+    if (!grid) return 1;
+    const width = grid.clientWidth;
+    const gap = parseFloat(getComputedStyle(grid).columnGap) || 12;
+    const fit = Math.floor((width + gap) / (MIN_CELL_WIDTH + gap));
+    return Math.max(1, Math.min(MAX_COLS, fit));
+  }
+
+  function effectiveCols() {
+    const max = maxPossibleCols();
+    const pref = loadColsPref();
+    return pref ? Math.min(pref, max) : max;
+  }
+
+  function renderColsButtons() {
+    const max = maxPossibleCols();
+    const current = effectiveCols();
+    let html = '<span class="group-cols-label">Columns</span>';
+    for (let n = 1; n <= MAX_COLS; n++) {
+      const disabled = n > max;
+      const attrs = disabled
+        ? ` disabled title="Not enough screen width for ${n} columns"`
+        : '';
+      html += `<button class="pill group-col-pill${n === current ? ' active' : ''}" data-cols="${n}"${attrs}>${n}</button>`;
+    }
+    return html;
+  }
+
+  function applyCols() {
+    const grid = root.querySelector('.group-grid');
+    if (!grid) return;
+    grid.style.gridTemplateColumns = `repeat(${effectiveCols()}, minmax(0, 1fr))`;
+    const colsEl = root.querySelector('[data-role="cols"]');
+    if (colsEl) setHTML(colsEl, renderColsButtons());
+  }
 
   function loadGroupState() {
     try {
@@ -1838,6 +1965,7 @@ async function renderGroup(root) {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify(state));
     } catch (e) { /* ignore */ }
+    updateOverwriteButton();
   }
 
   function loadPresets() {
@@ -1902,6 +2030,44 @@ async function renderGroup(root) {
     } else {
       el.classList.add('is-hidden');
     }
+    updateOverwriteButton();
+  }
+
+  function cellsEqual(a, b) {
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if ((a[i].slug || null) !== (b[i].slug || null)) return false;
+      if (String(a[i].level ?? '') !== String(b[i].level ?? '')) return false;
+    }
+    return true;
+  }
+
+  function presetDirty() {
+    const presets = loadPresets();
+    const preset = currentPresetIndex >= 0 && currentPresetIndex < presets.length ? presets[currentPresetIndex] : null;
+    if (!preset) return false;
+    const sameCells = cellsEqual(capturePresetCells(), preset.cells || []);
+    const sameWindow = (groupWindow || '15d') === (preset.window || '15d');
+    return !(sameCells && sameWindow);
+  }
+
+  function updateOverwriteButton() {
+    const btn = root.querySelector('.group-overwrite-btn');
+    if (!btn || btn.classList.contains('is-saved')) return;
+    btn.disabled = !presetDirty();
+  }
+
+  function showOverwriteSaved() {
+    const btn = root.querySelector('.group-overwrite-btn');
+    if (!btn) return;
+    btn.classList.add('is-saved');
+    btn.textContent = '\u2713 Saved';
+    clearTimeout(btn._savedTimer);
+    btn._savedTimer = setTimeout(() => {
+      btn.classList.remove('is-saved');
+      btn.textContent = 'Overwrite';
+      updateOverwriteButton();
+    }, 1500);
   }
 
   function renderPresetsHTML() {
@@ -1998,7 +2164,10 @@ async function renderGroup(root) {
     const dragIcon = '<svg width="16" height="20" viewBox="0 0 16 20" fill="none"><circle cx="5" cy="3" r="1.5" fill="currentColor"/><circle cx="11" cy="3" r="1.5" fill="currentColor"/><circle cx="5" cy="10" r="1.5" fill="currentColor"/><circle cx="11" cy="10" r="1.5" fill="currentColor"/><circle cx="5" cy="17" r="1.5" fill="currentColor"/><circle cx="11" cy="17" r="1.5" fill="currentColor"/></svg>';
     return `
       <div class="group-cell" data-cell-index="${index}">
-        <span class="cell-drag-handle" draggable="true" data-cell-index="${index}" title="Drag to reorder">${dragIcon}</span>
+        <div class="group-cell-header">
+          <span class="cell-drag-handle" draggable="true" data-cell-index="${index}" title="Drag to reorder">${dragIcon}</span>
+          <button class="group-cell-remove" data-cell-index="${index}" title="Remove">&times;</button>
+        </div>
         <div class="group-cell-empty" data-cell-index="${index}">
           <input class="group-cell-search-input" type="text" placeholder="Search item..." data-cell-index="${index}" autocomplete="off" />
           <div class="group-search-dropdown is-hidden" data-cell-index="${index}"></div>
@@ -2024,12 +2193,12 @@ async function renderGroup(root) {
   }
 
   function renderCellLevelsHTML(cell, index) {
-    const keys = cell._levelKeys;
-    if (!keys || keys.length <= 1) return '';
+    const keys = cell._levelKeys || [];
+    const pills = keys.length > 1
+      ? keys.map((lv) => `<button class="pill ${lv === cell.level ? 'active' : ''}" data-level="${escapeHtml(lv)}" data-cell-index="${index}">+${escapeHtml(lv)}</button>`).join('')
+      : '';
     return `
-      <div class="group-cell-levels" data-cell-index="${index}">
-        ${keys.map((lv) => `<button class="pill ${lv === cell.level ? 'active' : ''}" data-level="${escapeHtml(lv)}" data-cell-index="${index}">+${escapeHtml(lv)}</button>`).join('')}
-      </div>
+      <div class="group-cell-levels" data-cell-index="${index}">${pills}</div>
     `;
   }
 
@@ -2088,12 +2257,34 @@ async function renderGroup(root) {
     </nav>
     <div class="range-container">
       <div class="button-row">${renderWindowButtons()}</div>
+      <div class="group-cols button-row" data-role="cols">${renderColsButtons()}</div>
+      <label class="switch group-smooth" title="Toggle smooth / straight lines">
+        <span class="switch-label straight">Straight</span>
+        <input type="checkbox" class="group-smooth-toggle"${groupSmooth ? ' checked' : ''} />
+        <span class="switch-slider"></span>
+        <span class="switch-label smooth">Smooth</span>
+      </label>
       <button class="group-clear-all" data-action="clear-all">Clear All</button>
     </div>
     <section class="card group-view-card">
       ${renderGridHTML()}
     </section>
   `);
+
+  applyCols();
+  window.addEventListener('resize', () => {
+    if (!root.querySelector('.group-grid')) return;
+    applyCols();
+  });
+
+  const groupSmoothToggle = root.querySelector('.group-smooth-toggle');
+  if (groupSmoothToggle) {
+    groupSmoothToggle.addEventListener('change', () => {
+      groupSmooth = groupSmoothToggle.checked;
+      saveSmoothPreference(groupSmooth);
+      reRenderAllCharts();
+    });
+  }
 
   // ── Event delegation ──
   root.addEventListener('click', handleClick);
@@ -2143,6 +2334,14 @@ async function renderGroup(root) {
   // ── Helpers ──
 
   function handleClick(e) {
+    const colBtn = e.target.closest('.group-col-pill');
+    if (colBtn) {
+      if (colBtn.disabled) return;
+      saveColsPref(parseInt(colBtn.getAttribute('data-cols'), 10));
+      applyCols();
+      return;
+    }
+
     const btnWindow = e.target.closest('[data-window]');
     if (btnWindow) {
       groupWindow = btnWindow.getAttribute('data-window');
@@ -2157,13 +2356,19 @@ async function renderGroup(root) {
     if (removeBtn) {
       const idx = parseInt(removeBtn.getAttribute('data-cell-index'), 10);
       if (!isNaN(idx) && idx >= 0 && idx < state.cells.length) {
+        const cellEl = root.querySelector(`.group-grid .group-cell[data-cell-index="${idx}"]`);
         if (state.cells.length > 1) {
+          // Remove just this cell (no full re-render) so the page doesn't jump.
           state.cells.splice(idx, 1);
+          if (cellEl) cellEl.remove();
+          reindexCells();
         } else {
           state.cells[0] = { slug: null, level: null };
+          if (cellEl) cellEl.outerHTML = renderCellEmpty(0);
         }
         saveGroupState();
-        reRenderGrid();
+        applyCols();
+        ensureAddButton();
       }
       return;
     }
@@ -2185,7 +2390,18 @@ async function renderGroup(root) {
       if (state.cells.length < MAX_CELLS) {
         state.cells.push({ slug: null, level: null });
         saveGroupState();
-        reRenderGrid();
+        const grid = root.querySelector('.group-grid');
+        const addButton = grid ? grid.querySelector('.group-add-cell') : null;
+        if (grid && addButton) {
+          // Insert only the new cell (no full re-render) so the page doesn't jump.
+          const holder = document.createElement('div');
+          holder.innerHTML = renderCellEmpty(state.cells.length - 1);
+          addButton.before(holder.firstElementChild);
+          applyCols();
+          if (state.cells.length >= MAX_CELLS) addButton.remove();
+        } else {
+          reRenderGrid();
+        }
       }
       return;
     }
@@ -2214,6 +2430,7 @@ async function renderGroup(root) {
 
     const overwriteBtn = e.target.closest('[data-action="overwrite-preset"]');
     if (overwriteBtn) {
+      if (!presetDirty()) return;
       const presets = loadPresets();
       if (currentPresetIndex >= 0 && currentPresetIndex < presets.length) {
         presets[currentPresetIndex] = { name: presets[currentPresetIndex].name, cells: capturePresetCells(), window: groupWindow };
@@ -2221,6 +2438,7 @@ async function renderGroup(root) {
         updateCurrentPresetUI();
         const dd = root.querySelector('.group-preset-dropdown');
         if (dd) setHTML(dd, renderPresetsHTML());
+        showOverwriteSaved();
       }
       return;
     }
@@ -2866,10 +3084,29 @@ async function renderGroup(root) {
     }
   }
 
+  function reindexCells() {
+    root.querySelectorAll('.group-grid .group-cell').forEach((cellEl, i) => {
+      cellEl.setAttribute('data-cell-index', String(i));
+      cellEl.querySelectorAll('[data-cell-index]').forEach((el) => el.setAttribute('data-cell-index', String(i)));
+    });
+  }
+
+  function ensureAddButton() {
+    const grid = root.querySelector('.group-grid');
+    if (!grid) return;
+    const existing = grid.querySelector('.group-add-cell');
+    if (state.cells.length < MAX_CELLS) {
+      if (!existing) grid.insertAdjacentHTML('beforeend', '<button class="group-add-cell" data-action="add">+ Add Item</button>');
+    } else if (existing) {
+      existing.remove();
+    }
+  }
+
   function reRenderGrid() {
     const grid = root.querySelector('.group-grid');
     if (!grid) return;
     grid.outerHTML = renderGridHTML();
+    applyCols();
     for (let i = 0; i < state.cells.length; i++) {
       if (state.cells[i].slug) renderCellChart(i);
     }
@@ -2904,6 +3141,24 @@ async function renderGroup(root) {
       }
       const levelData = levels[cell.level] || {};
 
+      // Level pills: hidden for single-level items, but keep the placeholder
+      // (empty container) so cells still align. Updated before the empty-data
+      // return so the selection always reflects the click.
+      let lvlsEl = cellEl.querySelector('.group-cell-levels');
+      if (!lvlsEl) {
+        lvlsEl = document.createElement('div');
+        lvlsEl.className = 'group-cell-levels';
+        lvlsEl.setAttribute('data-cell-index', idx);
+        cellEl.appendChild(lvlsEl);
+      }
+      if (levelKeys.length > 1) {
+        setHTML(lvlsEl, levelKeys.map((lv) =>
+          `<button class="pill ${lv === cell.level ? 'active' : ''}" data-level="${escapeHtml(lv)}" data-cell-index="${idx}">+${escapeHtml(lv)}</button>`
+        ).join(''));
+      } else {
+        setHTML(lvlsEl, '');
+      }
+
       const usesDaily = (WINDOW_CONFIG[groupWindow]?.hours || 0) >= (24 * 30);
       let series;
       if (usesDaily && ['30d', '60d', '90d', '120d'].includes(groupWindow)) {
@@ -2929,21 +3184,7 @@ async function renderGroup(root) {
         return;
       }
 
-      // Update level pills
-      let lvlsEl = cellEl.querySelector('.group-cell-levels');
-      if (!lvlsEl && levelKeys.length > 1) {
-        lvlsEl = document.createElement('div');
-        lvlsEl.className = 'group-cell-levels';
-        lvlsEl.setAttribute('data-cell-index', idx);
-        cellEl.appendChild(lvlsEl);
-      }
-      if (lvlsEl) {
-        setHTML(lvlsEl, levelKeys.map((lv) =>
-          `<button class="pill ${lv === cell.level ? 'active' : ''}" data-level="${escapeHtml(lv)}" data-cell-index="${idx}">+${escapeHtml(lv)}</button>`
-        ).join(''));
-      }
-
-      const chartData = buildChart(points, 960, 400, null, null, WINDOW_CONFIG[groupWindow], anchorTs, displayBucketMsForWindow(groupWindow));
+      const chartData = buildChart(points, 960, 400, null, null, WINDOW_CONFIG[groupWindow], anchorTs, displayBucketMsForWindow(groupWindow), groupSmooth);
       setHTML(chartWrap, chartData.html);
 
       const guideEl = document.createElement('div');
@@ -3082,6 +3323,7 @@ const TREND_COLUMNS = [
 ];
 
 async function renderTrends(root) {
+  root.className = 'shell shell-medium';
   const catalog = await loadCatalog();
   const iconFiles = catalog.iconFiles || {};
   const slugToName = {};
