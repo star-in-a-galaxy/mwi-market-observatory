@@ -54,6 +54,13 @@ jobs:
 
           touch _site/.nojekyll
 
+      - name: Stamp asset version (cache busting)
+        run: |
+          VERSION="${GITHUB_SHA::12}"
+          sed -i -E "s#(assets/(styles\.css|app\.js)\?v=)[^\"']+#\1${VERSION}#g" _site/*.html
+          echo "Stamped asset versions:"
+          grep -oE "assets/(styles\.css|app\.js)\?v=[A-Za-z0-9]+" _site/*.html || true
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

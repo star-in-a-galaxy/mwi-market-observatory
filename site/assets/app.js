@@ -112,7 +112,8 @@ const WINDOW_CONFIG = {
 };
 
 async function fetchJson(path) {
-  const response = await fetch(path);
+  // Revalidate with the server (ETag/304) so daily data isn't served stale.
+  const response = await fetch(path, { cache: 'no-cache' });
   if (!response.ok) {
     throw new Error(`Request failed: ${path} (${response.status})`);
   }
