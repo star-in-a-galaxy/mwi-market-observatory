@@ -19,6 +19,12 @@ const WINDOWS = [
 
 const MIN_POINTS_IN_WINDOW = 3;
 
+const HOUR_MS = 3600 * 1000;
+// Hourly data covers ~16 days, but the VWAP "Avg price" change needs the prior
+// window too (2x), so hourly is used for windows up to 7d; 14d/30d fall back to
+// the daily aggregate series.
+const HOURLY_MAX_MS = 7 * 24 * HOUR_MS;
+
 function parsePoint(point) {
   let ts, ask, bid, vol, price;
   if (Array.isArray(point)) {
@@ -77,6 +83,11 @@ function buildRawSeries(levelData) {
 function buildHourlySeries(levelData) {
   const hourlyRaw = levelData.h || levelData.hourly || [];
   return dedupePoints(hourlyRaw);
+}
+
+function buildDailySeries(levelData) {
+  const dailyRaw = levelData.d || levelData.daily || [];
+  return dedupePoints(dailyRaw);
 }
 
 function priceSeries(raw, field) {
@@ -182,32 +193,25 @@ function volChangePct(current, base) {
   return Math.round(((current - base) / base) * 1000) / 10;
 }
 
-function dailyVolumeMetrics(levelData) {
-  const dailyRaw = levelData.d || levelData.daily || [];
-  const vols = [];
-  for (const raw of dailyRaw) {
-    let ts, v;
-    if (Array.isArray(raw)) {
-      [ts, , , v] = raw;
-    } else if (raw && typeof raw === 'object') {
-      ts = raw.timestamp || raw.t;
-      v = raw.volume ?? raw.v;
-    }
-    if (typeof ts === 'number' && ts > 0 && typeof v === 'number' && v > 0) {
-      vols.push({ ts, v });
-    }
-  }
-  vols.sort((a, b) => a.ts - b.ts);
-  if (vols.length === 0) return null;
+function hourlyVolumeMetrics(hourly, anchorTs) {
+  if (hourly.length === 0) return null;
 
-  const lastDay = vols[vols.length - 1].v;
-  const prevDay = vols.length > 1 ? vols[vols.length - 2].v : 0;
-  const sum = (arr) => arr.reduce((acc, p) => acc + p.v, 0);
-  const vol7d = sum(vols.slice(-7));
-  const vol7dPrev = sum(vols.slice(-14, -7));
+  const now = anchorTs || hourly[hourly.length - 1].ts;
+  const sumRange = (startMs, endMs) => {
+    let vol = 0;
+    for (const p of hourly) {
+      if (p.ts > startMs && p.ts <= endMs) vol += p.vol;
+    }
+    return vol;
+  };
+
+  const vol1d = sumRange(now - 24 * HOUR_MS, now);
+  const vol1dPrev = sumRange(now - 48 * HOUR_MS, now - 24 * HOUR_MS);
+  const vol7d = sumRange(now - 7 * 24 * HOUR_MS, now);
+  const vol7dPrev = sumRange(now - 14 * 24 * HOUR_MS, now - 7 * 24 * HOUR_MS);
 
   return {
-    vol1d: { vol: lastDay, pct: volChangePct(lastDay, prevDay) },
+    vol1d: { vol: vol1d, pct: volChangePct(vol1d, vol1dPrev) },
     vol7d: { vol: vol7d, pct: volChangePct(vol7d, vol7dPrev) },
   };
 }
@@ -246,23 +250,33 @@ function computeTrends() {
       if (!levelData) continue;
       const raw = buildRawSeries(levelData);
       const hourly = buildHourlySeries(levelData);
+      const daily = buildDailySeries(levelData);
       if (raw.length > 0 && raw[raw.length - 1].ts > latestDataTimestamp) {
         latestDataTimestamp = raw[raw.length - 1].ts;
       }
       if (raw.length < 2) continue;
-      levelSeries[level] = { raw, hourly };
+      levelSeries[level] = { hourly, daily };
     }
 
     if (Object.keys(levelSeries).length === 0) continue;
 
     const levelsOut = {};
-    for (const [level, { raw, hourly }] of Object.entries(levelSeries)) {
-      const askSeries = priceSeries(raw, 'ask');
-      const bidSeries = priceSeries(raw, 'bid');
-      const vwapPts = vwapPoints(hourly);
+    for (const [level, { hourly, daily }] of Object.entries(levelSeries)) {
+      const askHourly = priceSeries(hourly, 'ask');
+      const bidHourly = priceSeries(hourly, 'bid');
+      const askDaily = priceSeries(daily, 'ask');
+      const bidDaily = priceSeries(daily, 'bid');
+      const vwapHourly = vwapPoints(hourly);
+      const vwapDaily = vwapPoints(daily);
 
       const windowOut = {};
       for (const window of WINDOWS) {
+        const useHourly = window.ms <= HOURLY_MAX_MS;
+        const askSeries = useHourly ? askHourly : askDaily;
+        const bidSeries = useHourly ? bidHourly : bidDaily;
+        const vwapPts = useHourly ? vwapHourly : vwapDaily;
+        const volSeries = useHourly ? hourly : daily;
+
         const basisOut = {};
         const ask = windowChange(askSeries, window.ms, latestDataTimestamp);
         const bid = windowChange(bidSeries, window.ms, latestDataTimestamp);
@@ -273,12 +287,12 @@ function computeTrends() {
         if (vwap) basisOut.vwap = { pct: Math.round(vwap.pct * 100) / 100, price: Math.round(vwap.price) };
 
         if (Object.keys(basisOut).length > 0) {
-          windowOut[window.key] = Object.assign(basisOut, { vol: Math.round(windowVolume(raw, window.ms, latestDataTimestamp)) });
+          windowOut[window.key] = Object.assign(basisOut, { vol: Math.round(windowVolume(volSeries, window.ms, latestDataTimestamp)) });
         }
       }
       if (Object.keys(windowOut).length === 0) continue;
 
-      const volMetrics = dailyVolumeMetrics(data[level]);
+      const volMetrics = hourlyVolumeMetrics(hourly, latestDataTimestamp);
       levelsOut[level] = Object.assign(windowOut, volMetrics || {});
     }
 

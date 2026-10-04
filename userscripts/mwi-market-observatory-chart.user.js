@@ -2,7 +2,7 @@
 // @name         MWI Market Observatory
 // @name:zh-CN   MWI 市场观察站
 // @namespace    mwi-market-observatory
-// @version      0.1.4
+// @version      0.1.5
 // @description  Show market price charts from the MWI Market Observatory in the marketplace and in item context menus.
 // @description:zh-CN 在市场及物品右键菜单中显示 MWI 市场观察站的价格图表。
 // @icon         https://star-in-a-galaxy.github.io/mwi-market-observatory/assets/logo.svg
@@ -1186,29 +1186,31 @@
       : (latest && latest.timestamp ? latest.timestamp : Date.now());
     const cutoff24 = now - 24 * hourMs;
     const cutoff48 = now - 48 * hourMs;
+    const cutoff7d = now - 7 * 24 * hourMs;
+    const cutoff14d = now - 14 * 24 * hourMs;
 
     let vol24 = 0, vol24Prev = 0;
     let pvCur = 0, pvCurV = 0, pvPrev = 0, pvPrevV = 0;
+    let vol7d = 0, vol7dPrev = 0, pv7 = 0, pv7V = 0;
     for (const pt of hourly) {
-      if (pt.timestamp > cutoff24) {
+      const ts = pt.timestamp;
+      if (typeof ts !== 'number') continue;
+
+      if (ts > cutoff24) {
         vol24 += pt.v || 0;
         if (pt.p > 0 && pt.v > 0) { pvCur += pt.p * pt.v; pvCurV += pt.v; }
-      } else if (pt.timestamp > cutoff48) {
+      } else if (ts > cutoff48) {
         vol24Prev += pt.v || 0;
         if (pt.p > 0 && pt.v > 0) { pvPrev += pt.p * pt.v; pvPrevV += pt.v; }
       }
+
+      if (ts > cutoff7d) {
+        vol7d += pt.v || 0;
+      } else if (ts > cutoff14d) {
+        vol7dPrev += pt.v || 0;
+        if (pt.p > 0 && pt.v > 0) { pv7 += pt.p * pt.v; pv7V += pt.v; }
+      }
     }
-
-    const cutoff7d = now - 7 * 24 * hourMs;
-    const cutoff14d = now - 14 * 24 * hourMs;
-    const last7 = daily.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff7d);
-    const prev7 = daily.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff14d && p.timestamp <= cutoff7d);
-    const sumV = (arr) => arr.reduce((s, p) => s + (p.v || 0), 0);
-    const vol7d = last7.length ? sumV(last7) : null;
-    const vol7dPrev = prev7.length ? sumV(prev7) : null;
-
-    let pv7 = 0, pv7V = 0;
-    for (const pt of prev7) if (pt.p > 0 && pt.v > 0) { pv7 += pt.p * pt.v; pv7V += pt.v; }
 
     // Ask/bid reference ~7 days ago (nearest available point).
     const refTarget = now - 7 * 24 * hourMs;

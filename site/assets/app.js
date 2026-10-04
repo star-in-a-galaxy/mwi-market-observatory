@@ -1703,22 +1703,26 @@ async function renderItem(root, slug) {
     const cutoff14d = anchorTs - 14 * 24 * hourMs;
 
     let vol24 = 0, vol24Prev = 0, pvCur = 0, pvCurV = 0, pvPrev = 0, pvPrevV = 0;
+    let vol7d = 0, vol7dPrev = 0, pv7 = 0, pv7V = 0;
     for (const pt of hourlySeries) {
-      if (pt.timestamp > cutoff24) {
+      const ts = pt.timestamp;
+      if (typeof ts !== 'number') continue;
+
+      if (ts > cutoff24) {
         vol24 += pt.v || 0;
         if (pt.p > 0 && pt.v > 0) { pvCur += pt.p * pt.v; pvCurV += pt.v; }
-      } else if (pt.timestamp > cutoff48) {
+      } else if (ts > cutoff48) {
         vol24Prev += pt.v || 0;
         if (pt.p > 0 && pt.v > 0) { pvPrev += pt.p * pt.v; pvPrevV += pt.v; }
       }
+
+      if (ts > cutoff7d) {
+        vol7d += pt.v || 0;
+      } else if (ts > cutoff14d) {
+        vol7dPrev += pt.v || 0;
+        if (pt.p > 0 && pt.v > 0) { pv7 += pt.p * pt.v; pv7V += pt.v; }
+      }
     }
-    const last7 = dailySeries.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff7d);
-    const prev7 = dailySeries.filter((p) => typeof p.timestamp === 'number' && p.timestamp > cutoff14d && p.timestamp <= cutoff7d);
-    const sumVolume = (arr) => arr.reduce((sum, p) => sum + (p.v || 0), 0);
-    const vol7d = last7.length ? sumVolume(last7) : 0;
-    const vol7dPrev = prev7.length ? sumVolume(prev7) : 0;
-    let pv7 = 0, pv7V = 0;
-    for (const pt of prev7) if (pt.p > 0 && pt.v > 0) { pv7 += pt.p * pt.v; pv7V += pt.v; }
 
     // Ask/bid reference ~7 days ago (nearest available point).
     const refTargetTs = anchorTs - 7 * 24 * hourMs;
