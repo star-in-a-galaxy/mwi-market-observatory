@@ -312,7 +312,7 @@ function computeTrends() {
   };
 
   const outputFile = path.join(DATA_DIR, 'trends.json');
-  fs.writeFileSync(outputFile, JSON.stringify(output, null, 2));
+  fs.writeFileSync(outputFile, JSON.stringify(output));
   console.log(`[trends] Wrote ${outputFile} with ${items.length} items in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
 }
 

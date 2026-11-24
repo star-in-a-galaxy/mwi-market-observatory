@@ -1019,7 +1019,14 @@ function resolveIconAssetPath(iconFiles, slug, extension) {
   return assetPath(`assets/item_icons/${encodeURIComponent(fileName)}`);
 }
 
-async function loadCatalog() {
+let G_CATALOG_PROMISE = null;
+function loadCatalog() {
+  // One request per page load; callers share the same promise, so it can be started early.
+  if (!G_CATALOG_PROMISE) G_CATALOG_PROMISE = fetchCatalog();
+  return G_CATALOG_PROMISE;
+}
+
+async function fetchCatalog() {
   // Return cached catalog if it exists
   if (G_CATALOG_CACHE) {
     return G_CATALOG_CACHE;
@@ -1121,7 +1128,13 @@ function titleCase(str) {
   return str.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
 }
 
-async function loadCategories() {
+let G_CATEGORIES_PROMISE = null;
+function loadCategories() {
+  if (!G_CATEGORIES_PROMISE) G_CATEGORIES_PROMISE = fetchCategories();
+  return G_CATEGORIES_PROMISE;
+}
+
+async function fetchCategories() {
   const files = [
     '01_resources.txt',
     '02_consumables.txt',
@@ -1135,23 +1148,22 @@ async function loadCategories() {
   const categories = [];
   const slugToCategory = {};
 
-  for (let i = 0; i < files.length; i++) {
-    const fname = files[i];
-    const label = titleCase(fname.replace(/^\d+_/, '').replace(/\.txt$/, '').replace(/_/g, ' '));
+  // all files at once: one round trip instead of eight
+  const texts = await Promise.all(files.map(async (fname) => {
     try {
       const res = await fetch(assetPath(`assets/item_categories/${fname}`));
-      if (!res.ok) {
-        categories.push({ id: i, label, slugs: [] });
-        continue;
-      }
-      const text = await res.text();
-      const slugs = text.split(/\r?\n/).map(l => l.trim().toLowerCase()).filter(Boolean);
-      categories.push({ id: i, label, slugs });
-      for (const slug of slugs) {
-        if (slug) slugToCategory[slug] = i;
-      }
+      return res.ok ? await res.text() : '';
     } catch (err) {
-      categories.push({ id: i, label, slugs: [] });
+      return '';
+    }
+  }));
+
+  for (let i = 0; i < files.length; i++) {
+    const label = titleCase(files[i].replace(/^\d+_/, '').replace(/\.txt$/, '').replace(/_/g, ' '));
+    const slugs = texts[i].split(/\r?\n/).map(l => l.trim().toLowerCase()).filter(Boolean);
+    categories.push({ id: i, label, slugs });
+    for (const slug of slugs) {
+      if (slug) slugToCategory[slug] = i;
     }
   }
 
@@ -1160,6 +1172,7 @@ async function loadCategories() {
 
 async function renderHome(root) {
   root.className = 'shell shell-medium';
+  const categoriesRequest = loadCategories();
   const catalog = await loadCatalog();
   const items = catalog.items || [];
 
@@ -1172,8 +1185,8 @@ async function renderHome(root) {
         const iconPng = resolveIconAssetPath(catalog.iconFiles, item.slug, 'png');
           const displayName = (item.name || slugToTitle(item.slug)).replace(/\s+Refined$/, ' (R)');
         return `
-      <a class="item-card" href="${itemLink(item.slug)}" loading="lazy">
-        <img class="item-icon" src="${iconSvg}" alt="${escapeHtml(item.name || slugToTitle(item.slug))}" data-fallback-src="${iconPng}" />
+      <a class="item-card" href="${itemLink(item.slug)}">
+        <img class="item-icon" loading="lazy" decoding="async" src="${iconSvg}" alt="${escapeHtml(item.name || slugToTitle(item.slug))}" data-fallback-src="${iconPng}" />
         <span class="item-card-title">${escapeHtml(displayName)}</span>
         ${favoriteStarHtml(item.slug, favoriteSet.has(String(item.slug).toLowerCase()))}
       </a>
@@ -1183,7 +1196,7 @@ async function renderHome(root) {
   };
 
   // Load categories and sort items by category order
-  const { categories, slugToCategory } = await loadCategories();
+  const { categories, slugToCategory } = await categoriesRequest;
 
   // Build sortedItems by concatenating categories in file order. Within each category
   // preserve the file order and ensure refined variants appear directly after their base.
@@ -1434,6 +1447,8 @@ function getDataGapWarningHtml() {
 }
 
 async function renderItem(root, slug) {
+  const itemRequest = fetchJson(assetPath(`data/public/items/${encodeURIComponent(slug)}.json`));
+  itemRequest.catch(() => {}); // handled where it is awaited
   const catalog = await loadCatalog();
   const anchorTs = getDataAnchorTs(catalog);
   let smoothLines = loadSmoothPreference();
@@ -1442,7 +1457,7 @@ async function renderItem(root, slug) {
 
   let itemData = null;
   try {
-    itemData = normalizePublicItemData(await fetchJson(assetPath(`data/public/items/${encodeURIComponent(slug)}.json`)));
+    itemData = normalizePublicItemData(await itemRequest);
   } catch (error) {
     itemData = null;
   }
@@ -2342,9 +2357,7 @@ async function renderGroup(root) {
   });
 
   // ── Load charts ──
-  for (let i = 0; i < state.cells.length; i++) {
-    if (state.cells[i].slug) await renderCellChart(i);
-  }
+  await Promise.all(state.cells.map((cell, i) => (cell.slug ? renderCellChart(i) : null)));
 
   // ── Helpers ──
 
@@ -3369,13 +3382,16 @@ async function renderMarket(root) {
 
 async function renderTrends(root) {
   root.className = 'shell shell-medium';
+  const trendsRequest = fetchJson(assetPath('data/public/trends.json'));
+  trendsRequest.catch(() => {}); // handled in loadTrends
+  const categoriesRequest = loadCategories();
   const catalog = await loadCatalog();
   const iconFiles = catalog.iconFiles || {};
   const slugToName = {};
   for (const item of catalog.items || []) {
     slugToName[item.slug] = item.name;
   }
-  const { categories, slugToCategory } = await loadCategories();
+  const { categories, slugToCategory } = await categoriesRequest;
 
   const PANEL_LIMIT = 50;
   const savedTrends = loadTrendsFilters();
@@ -3687,7 +3703,7 @@ const windowButtons = TREND_WINDOWS
 
 async function loadTrends() {
     try {
-      const data = await fetchJson(assetPath('data/public/trends.json'));
+      const data = await trendsRequest;
       const rawItems = Array.isArray(data.items) ? data.items : [];
       const hasLevels = rawItems.some((i) => i && i.levels);
       if (data.v !== 3 || !hasLevels) {

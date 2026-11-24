@@ -10,13 +10,13 @@ function readJson(filePath) {
 
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+  fs.writeFileSync(filePath, JSON.stringify(value));
 }
 
 function writeJsonAsync(filePath, value) {
   const dir = path.dirname(filePath);
   return fs.promises.mkdir(dir, { recursive: true }).then(() =>
-    fs.promises.writeFile(filePath, JSON.stringify(value, null, 2))
+    fs.promises.writeFile(filePath, JSON.stringify(value))
   );
 }
 
