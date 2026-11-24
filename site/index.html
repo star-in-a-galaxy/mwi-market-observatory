@@ -8,7 +8,7 @@
       (function () {
         var segments = window.location.pathname.split('/').filter(Boolean);
         var first = segments[0] || '';
-        var base = (first === 'items' || first === 'trends' || first === 'group') ? '/' : (first ? '/' + first + '/' : '/');
+        var base = (first === 'items' || first === 'movers' || first === 'trends' || first === 'group' || first === 'market') ? '/' : (first ? '/' + first + '/' : '/');
         window.__SITE_BASE__ = base;
         document.write('<base href="' + base + '">');
       })();
@@ -23,6 +23,7 @@
     </footer>
 
     <script src="./assets/purify.min.js"></script>
+    <script src="./assets/market.js?v=20260805dompurify_allowlist"></script>
     <script src="./assets/app.js?v=20260805dompurify_allowlist"></script>
   </body>
 </html>

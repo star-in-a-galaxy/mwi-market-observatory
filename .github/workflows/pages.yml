@@ -36,6 +36,7 @@ jobs:
         run: |
           node scripts/analyze.js
           node scripts/compute-trends.js
+          node scripts/compute-market.js
 
       - name: Prepare site artifact
         run: |
@@ -57,9 +58,9 @@ jobs:
       - name: Stamp asset version (cache busting)
         run: |
           VERSION="${GITHUB_SHA::12}"
-          sed -i -E "s#(assets/(styles\.css|app\.js)\?v=)[^\"']+#\1${VERSION}#g" _site/*.html
+          sed -i -E "s#(assets/(styles\.css|app\.js|market\.js)\?v=)[^\"']+#\1${VERSION}#g" _site/*.html
           echo "Stamped asset versions:"
-          grep -oE "assets/(styles\.css|app\.js)\?v=[A-Za-z0-9]+" _site/*.html || true
+          grep -oE "assets/(styles\.css|app\.js|market\.js)\?v=[A-Za-z0-9]+" _site/*.html || true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

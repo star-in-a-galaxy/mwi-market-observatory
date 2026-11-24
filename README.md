@@ -42,12 +42,15 @@ main (code)
 ├── scripts/
 │   ├── aggregate.js           # Hourly -> daily OHLCV + market values
 │   ├── analyze.js             # Build public data bundles and icon manifests
+│   ├── compute-market.js      # Market page data: daily turnover, price index, enhancement levels
 │   ├── compute-trends.js      # Compute item price trends (% change over time frames)
 │   ├── fetch.js               # Fetch marketplace + market values, dedupe, write hourly
 │   ├── prune.js               # Delete hourly files older than 16 days
 │   ├── publish-daily.js       # Append daily files to the daily branch
 │   ├── serve.js               # Local static server
-│   └── squash-data.js         # Collapse the data branch to one snapshot
+│   ├── squash-data.js         # Collapse the data branch to one snapshot
+│   ├── update-item-levels.js  # Refresh data/item_levels.json from a game client data export
+│   └── data/item_levels.json  # Item level of every enhanceable item (for the Market page)
 └── site/                      # The page source (index.html, assets/, ...)
 
 data (data branch)
@@ -100,11 +103,11 @@ Combines `main` (code) and `data` (data) at build time.
 **Steps:**
 1. Check out `main`
 2. Overlay `data/` from the `data` branch
-3. Run `analyze.js` and `compute-trends.js` to generate `data/public/`
+3. Run `analyze.js`, `compute-trends.js` and `compute-market.js` to generate `data/public/`
 4. Assemble `_site/` from `site/` + `data/public/` + `data/daily/`
 5. Deploy to GitHub Pages
 
-The UI is item-first: the home page is a searchable item browser, item pages live at `/items/<item_slug>`, a group comparison view lives at `/group`, and a price-trends table (gainers/losers by % change, sortable, with volume stats) lives at `/trends`.
+The UI is item-first: the home page is a searchable item browser, item pages live at `/items/<item_slug>`, a group comparison view lives at `/group`, a price movers table (gainers/losers by % change, sortable, with volume stats) lives at `/movers` (`/trends` redirects there), and the Market page (daily market turnover, price index, categories and enhancement levels) lives at `/market`.
 
 ## Data Format
 
@@ -200,13 +203,15 @@ Then generate the public data and serve:
 ```bash
 npm run analyze
 npm run trends
+npm run market
 npm run serve
 ```
 
 Open:
 - `http://localhost:4173/` for the item browser
 - `http://localhost:4173/items/cursed_bow` for an item detail page
-- `http://localhost:4173/trends` for the price-trends table
+- `http://localhost:4173/movers` for the price movers table
+- `http://localhost:4173/market` for the Market page
 
 Optional refresh commands:
 ```bash

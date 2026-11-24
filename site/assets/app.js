@@ -4,7 +4,7 @@ function getSiteBasePath() {
   }
 
   const segments = window.location.pathname.split('/').filter(Boolean);
-  if (segments.length === 0 || segments[0] === 'items' || segments[0] === 'trends') {
+  if (segments.length === 0 || ['items', 'market', 'group', 'movers', 'trends'].includes(segments[0])) {
     return '/';
   }
 
@@ -396,11 +396,18 @@ function getRoute() {
     }
     return { type: 'item', slug };
   }
-  if (cleaned === 'trends') {
+  if (cleaned === 'movers' || cleaned === 'trends') {
+    if (cleaned === 'trends') {
+      // the page used to be called Trends: keep old links working
+      window.history.replaceState(null, '', `${SITE_BASE_PATH}movers${window.location.search}`);
+    }
     return { type: 'trends' };
   }
   if (cleaned === 'group') {
     return { type: 'group' };
+  }
+  if (cleaned === 'market') {
+    return { type: 'market' };
   }
   return { type: 'home' };
 }
@@ -1266,8 +1273,9 @@ async function renderHome(root) {
     'Market Observatory',
     `
       <nav class="group-nav">
+        <a class="minimal-back-link" href="${SITE_BASE_PATH}market">Market</a>
         <a class="minimal-back-link" href="${SITE_BASE_PATH}group">Group View</a>
-        <a class="minimal-back-link" href="${SITE_BASE_PATH}trends">Trends</a>
+        <a class="minimal-back-link" href="${SITE_BASE_PATH}movers">Movers</a>
       </nav>
       <section class="card">
         <div class="section-header">
@@ -1824,8 +1832,9 @@ async function renderItem(root, slug) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
           Home
         </a>
+        <a class="minimal-back-link" href="${SITE_BASE_PATH}market">Market</a>
         <a class="minimal-back-link" href="${SITE_BASE_PATH}group">Group View</a>
-        <a class="minimal-back-link" href="${SITE_BASE_PATH}trends">Trends</a>
+        <a class="minimal-back-link" href="${SITE_BASE_PATH}movers">Movers</a>
       </nav>
       
       <section class="dashboard-card">
@@ -2244,7 +2253,8 @@ async function renderGroup(root) {
     </header>
     <nav class="group-nav">
       <a class="minimal-back-link" href="${SITE_BASE_PATH}">&#8592; Home</a>
-      <a class="minimal-back-link" href="${SITE_BASE_PATH}trends">Trends</a>
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}market">Market</a>
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}movers">Movers</a>
       <span class="group-nav-sep"></span>
       <div class="group-preset-controls">
         <div class="group-preset-buttons">
@@ -3278,6 +3288,8 @@ async function main() {
       await renderTrends(root);
     } else if (route.type === 'group') {
       await renderGroup(root);
+    } else if (route.type === 'market') {
+      await renderMarket(root);
     } else {
       await renderHome(root);
     }
@@ -3326,6 +3338,34 @@ const TREND_COLUMNS = [
   { key: 'vol7d', label: 'Vol 7d', weight: 6, sort: 'vol7d' },
   { key: 'vol7dPct', label: 'Δ 7d', weight: 7, sort: 'vol7dPct' },
 ];
+
+const MARKET_DATA_VERSION = 1;
+
+async function renderMarket(root) {
+  root.className = 'shell';
+  const nav = `<nav class="group-nav outside-back trends-back-link">
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Home</a>
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}group">Group View</a>
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}movers">Movers</a>
+    </nav>`;
+  const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" />`;
+  const show = (content) => renderShell(root, 'Market', `${nav}${content}`, 'Daily market turnover and prices', '', logoHtml);
+
+  show('<div class="trend-loading">Loading market data...</div>');
+  let data;
+  try {
+    data = await fetchJson(assetPath('data/public/market.json'));
+  } catch (error) {
+    show('<div class="trend-loading">Unable to load market data.</div>');
+    return;
+  }
+  if (!data || data.v !== MARKET_DATA_VERSION || !window.MarketPulse) {
+    show('<div class="trend-loading">Market data is out of date. Please do a hard refresh (Ctrl+Shift+R) to load the latest data.</div>');
+    return;
+  }
+  show('<div id="market-pulse"></div>');
+  window.MarketPulse.mount(root.querySelector('#market-pulse'), data);
+}
 
 async function renderTrends(root) {
   root.className = 'shell shell-medium';
@@ -3563,6 +3603,7 @@ function renderTable(list) {
   function renderTrendPage() {
     const backLink = `<nav class="group-nav outside-back trends-back-link">
       <a class="minimal-back-link" href="${SITE_BASE_PATH}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg> Home</a>
+      <a class="minimal-back-link" href="${SITE_BASE_PATH}market">Market</a>
       <a class="minimal-back-link" href="${SITE_BASE_PATH}group">Group View</a>
     </nav>`;
     const logoHtml = `<img src="${assetPath('assets/logo.svg')}" alt="Logo" class="hero-logo-img" />`;
@@ -3570,7 +3611,7 @@ function renderTable(list) {
     if (status === 'error') {
       renderShell(
         root,
-        'Market Trends',
+        'Movers',
         `${backLink}<div class="trend-loading">Unable to load trends data.</div>`,
         'Item price movers across different time frames',
         '',
@@ -3582,7 +3623,7 @@ function renderTable(list) {
 if (status === 'loading') {
       renderShell(
         root,
-        'Market Trends',
+        'Movers',
         `${backLink}<div class="trend-loading">Loading trends data...</div>`,
         'Item price movers across different time frames',
         '',
@@ -3594,8 +3635,8 @@ if (status === 'loading') {
     if (status === 'stale') {
       renderShell(
         root,
-        'Market Trends',
-        `${backLink}<div class="trend-loading">Trends data is out of date. Please do a hard refresh (Ctrl+Shift+R) to load the latest data.</div>`,
+        'Movers',
+        `${backLink}<div class="trend-loading">Movers data is out of date. Please do a hard refresh (Ctrl+Shift+R) to load the latest data.</div>`,
         'Item price movers across different time frames',
         '',
         logoHtml
@@ -3627,7 +3668,7 @@ const windowButtons = TREND_WINDOWS
 
     renderShell(
       root,
-      'Market Trends',
+      'Movers',
       `
         ${backLink}
         <div class="trends-controls">
